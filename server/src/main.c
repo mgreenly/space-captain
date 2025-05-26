@@ -3,9 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <limits.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "space-captain.c"
