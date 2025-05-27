@@ -9,8 +9,8 @@ Be forewarned this is more about learning "C" and Linux programming than actuall
 You can follow along at https://www.youtube.com/channel/UC7JijJhmmKrXaGyAxSJNBsQ
 
 
-Installing
-==========
+Dependencies
+============
 
 Things required to build and install the release version.
   * gcc or clang
@@ -20,6 +20,8 @@ Other tools I may use while developing
   * valgrind
   * ctags
 
+Installing
+==========
 
 ```
 git clone https://github.com/mgreenly/space-captain.git

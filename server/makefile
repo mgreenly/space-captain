@@ -21,7 +21,7 @@ else
 	LDFLAGS =
 endif
 
-# CHECKS = -fsanitize=address,undefined
+CHECKS = -fsanitize=address,undefined
 
 bin/$(NAME): $(wildcard src/*) makefile
 	mkdir -p bin
