@@ -12,6 +12,15 @@ You can follow along at https://www.youtube.com/channel/UC7JijJhmmKrXaGyAxSJNBsQ
 Installing
 ==========
 
+Things required to build and install the release version.
+  * gcc or clang
+  * pkg-config
+
+Other tools I may use while developing
+  * valgrind
+  * ctags
+
+
 ```
 git clone https://github.com/mgreenly/space-captain.git
 cd space-captian
