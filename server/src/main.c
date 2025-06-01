@@ -16,8 +16,10 @@
 
 #include "config.h"
 #include "game.h"
+#include "network.h"
 #include "state.h"
 
 #include "config.c"
 #include "game.c"
+#include "network.c"
 #include "state.c"

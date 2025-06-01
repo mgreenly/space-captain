@@ -5,7 +5,7 @@ void intHandler(int _dummy) {
     intCaught = true;
 }
 
-void *print_message_function( void *ptr )
+void *game_loop( void *ptr )
 {
   state *st = (state *) ptr;
 
@@ -18,6 +18,11 @@ void *print_message_function( void *ptr )
   return NULL;
 }
 
+//
+//
+// main
+//
+//
 int main(int argc, char *argv[]) {
 
   signal(SIGINT, intHandler);   // should use sigaction
@@ -46,12 +51,13 @@ int main(int argc, char *argv[]) {
 
   int  iret1;
   pthread_t thread1;
-  iret1 = pthread_create( &thread1, NULL, print_message_function, (void*) st);
+  iret1 = pthread_create( &thread1, NULL, game_loop, (void*) st);
 
-  /* network code */
+  network_loop();
 
   pthread_join( thread1, NULL);
 
+  printf("iret1: %d\n", iret1);
   st_result = state_write(argv[2], &st);
   state_free(&st);
   config_free(&cfg);

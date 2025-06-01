@@ -1,4 +1,4 @@
-int notmain(void) {
+int network_loop() {
   int SERVER_PORT = 8877;
   struct sockaddr_in server_address;
 
@@ -10,31 +10,31 @@ int notmain(void) {
   int listen_sock;
   if ((listen_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     printf("could not create listen socket\n");
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   // bind it to listen to the incoming connections on the created server // address, will return -1 on error
   if ((bind(listen_sock, (struct sockaddr *)&server_address, sizeof(server_address))) < 0) {
     printf("could not bind socket\n");
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   int wait_size = 16;  // maximum number of waiting clients, after which dropping begins
   if (listen(listen_sock, wait_size) < 0) {
     printf("could not open socket for listening\n");
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   // socket address used to store client address
   struct sockaddr_in client_address;
   unsigned int client_address_len = 0;
 
-  while(true) {
+  while(intCaught == false) {
 
     int sock;
     if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
       printf("could not open a socket to accept data\n");
-      exit(EXIT_FAILURE);
+    return 1;
     }
 
     int n = 0;
@@ -59,5 +59,5 @@ int notmain(void) {
   }
 
   close(listen_sock);
-  exit(EXIT_SUCCESS);
+  return 0;
 }
