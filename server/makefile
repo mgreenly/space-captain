@@ -34,8 +34,12 @@ bin/$(NAME)-dbg: $(wildcard src/*) makefile
 PHONY: all
 all: bin/$(NAME) bin/$(NAME)-dbg
 
+PHONY: build
+build: bin/$(NAME)-dbg
+
 PHONY: debug
 debug: bin/$(NAME)-dbg
+	@gdb -q --tui --args ./bin/$(NAME)-dbg
 
 PHONY: valgrind
 valgrind: bin/$(NAME)-dbg
@@ -44,8 +48,6 @@ valgrind: bin/$(NAME)-dbg
 tags: $(wildcard src/*) makefile
 	ctags -R --languages=C --c-kinds=+p --fields=+l src makefile
 
-PHONY: gdb
-gdb: bin/$(NAME)-dbg @gdb -q --tui --args ./bin/$(NAME)-dbg
 
 PHONY: run
 run: bin/$(NAME)

@@ -13,4 +13,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "config.h"
+
+#include "config.c"
 #include "space-captain.c"
