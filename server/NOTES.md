@@ -19,7 +19,7 @@ The server is only using environment variables for config
 start
 read environment variables to setup config
 read state
-read wall
+read wal
 enter main loop
     accepting/process connections
 

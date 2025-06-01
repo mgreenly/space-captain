@@ -3,7 +3,7 @@ int main() {
 
   config_result result = config_load(&cfg);
   if(result != CONFIG_SUCCESS) {
-    fprintf(stderr, "Failed to load configuration\n");
+    config_print_error(result, __FILE__, __LINE__);
     return EXIT_FAILURE;
   }
 
@@ -13,3 +13,4 @@ int main() {
 
   config_free(&cfg);
 }
+
