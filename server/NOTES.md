@@ -19,16 +19,27 @@ The server is almost certainly going to be distrubuted via a docker image
 
 
 
+
+SERVER
+======
+
 start
-read environment variables to setup config
-read state
-read wal
-enter main loop
-    accepting/process connections
-asked to shutdown
-    close connections
-    flush wal
+  read environment variables
+    read state
+      -read wal
+        enter main loop
+          -accepting connections
+            recv message
+              wal
+                update-state
+           stop accepting connections
     write state
+exit
+
+
+
+
+
 
 start
 read env-vars, read config, cli args override

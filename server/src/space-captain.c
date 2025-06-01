@@ -1,4 +1,12 @@
+static volatile bool intCaught = false;
+
+void intHandler(int _dummy) {
+    intCaught = true;
+}
+
 int main(int argc, char *argv[]) {
+
+  signal(SIGINT, intHandler);   // should use sigaction
 
   if (argc != 3) {
     fprintf(stderr, "Usage: %s <state_file>\n", argv[0]);
@@ -20,12 +28,16 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-
   puts(cfg->path);
-  printf("count: %d\n", st->count);
+
+  while(intCaught == false) {
+    st->count += 1;
+    printf("count: %d\n", st->count);
+
+    sleep(1);
+  }
 
   st_result = state_write(argv[2], &st);
-
   state_free(&st);
   config_free(&cfg);
 }

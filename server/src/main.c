@@ -1,21 +1,21 @@
 #define  _POSIX_C_SOURCE 200809L
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <limits.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-
 #include <arpa/inet.h>
+#include <errno.h>
+#include <limits.h>
 #include <netinet/in.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "state.h"
 
-#include "state.c"
 #include "config.c"
 #include "space-captain.c"
+#include "state.c"
