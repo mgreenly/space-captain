@@ -18,7 +18,7 @@ ifdef LIBS
 	LDFLAGS = $(shell pkg-config --libs $(LIBS))
 else
 	CFLAGS = -Wall -Wextra -pedantic -std=c18
-	LDFLAGS =
+	LDFLAGS = -lpthread
 endif
 
 CHECKS = -fsanitize=address,undefined

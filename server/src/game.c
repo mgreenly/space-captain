@@ -5,6 +5,19 @@ void intHandler(int _dummy) {
     intCaught = true;
 }
 
+void *print_message_function( void *ptr )
+{
+  state *st = (state *) ptr;
+
+  while(intCaught == false) {
+    st->count += 1;
+    printf("count: %d\n", st->count);
+    sleep(1);
+  }
+
+  return NULL;
+}
+
 int main(int argc, char *argv[]) {
 
   signal(SIGINT, intHandler);   // should use sigaction
@@ -31,12 +44,13 @@ int main(int argc, char *argv[]) {
 
   puts(cfg->path);
 
-  while(intCaught == false) {
-    st->count += 1;
-    printf("count: %d\n", st->count);
+  int  iret1;
+  pthread_t thread1;
+  iret1 = pthread_create( &thread1, NULL, print_message_function, (void*) st);
 
-    sleep(1);
-  }
+  /* network code */
+
+  pthread_join( thread1, NULL);
 
   st_result = state_write(argv[2], &st);
   state_free(&st);
