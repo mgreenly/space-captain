@@ -14,6 +14,8 @@
 #include <sys/socket.h>
 
 #include "config.h"
+#include "state.h"
 
+#include "state.c"
 #include "config.c"
 #include "space-captain.c"
