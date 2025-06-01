@@ -14,8 +14,9 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "game.h"
 #include "state.h"
 
 #include "config.c"
-#include "space-captain.c"
+#include "game.c"
 #include "state.c"

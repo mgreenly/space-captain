@@ -1,6 +1,7 @@
 static volatile bool intCaught = false;
 
 void intHandler(int _dummy) {
+    _dummy += 0; // avoid unused parameter warning
     intCaught = true;
 }
 
