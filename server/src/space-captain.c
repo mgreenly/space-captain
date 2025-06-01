@@ -1,6 +1,6 @@
 int main(int argc, char *argv[]) {
 
-  if (argc != 2) {
+  if (argc != 3) {
     fprintf(stderr, "Usage: %s <state_file>\n", argv[0]);
     return EXIT_FAILURE;
   }
@@ -20,9 +20,13 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+
   puts(cfg->path);
   printf("count: %d\n", st->count);
 
+  st_result = state_write(argv[2], &st);
+
+  state_free(&st);
   config_free(&cfg);
 }
 

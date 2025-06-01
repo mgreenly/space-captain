@@ -52,7 +52,7 @@ tags: $(wildcard src/*) makefile
 PHONY: run
 run: bin/$(NAME)
 	@clear
-	@./bin/$(NAME) state.dat
+	@./bin/$(NAME) state.dat dump.dat
 
 PHONY: install
 install: all

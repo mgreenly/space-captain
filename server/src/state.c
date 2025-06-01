@@ -1,3 +1,19 @@
+state_result state_write(char *filename, state **st) {
+  FILE *file = fopen(filename, "w");
+  if (file == NULL) {
+    return STATE_UNABLE_TO_OPEN_FILE;
+  }
+
+  size_t records_written = fwrite(*st, sizeof(state), 1, file);
+  if (records_written != 1) {
+    fclose(file);
+    return STATE_UNABLE_TO_WRITE_FILE;
+  }
+
+  fclose(file);
+  return STATE_SUCCESS;
+}
+
 //
 // state_load
 //
@@ -5,7 +21,6 @@ state_result state_load(char *filename, state **st) {
 
   (*st)= malloc(sizeof(state));
   if (*st == NULL) {
-    puts("----------------Error, failed to allocate memory for state.");
     return STATE_MALLOC_ERROR;
   }
 
@@ -23,15 +38,20 @@ state_result state_load(char *filename, state **st) {
   }
 
   fclose(file);
-  free(*st);
   return STATE_SUCCESS;
 }
 
+//
+// state_free
+//
 state_result state_free(state **st) {
   free(*st);
   return STATE_SUCCESS;
 }
 
+//
+// state_print_error
+//
 void state_print_error(state_result result, const char *filename, int line) {
   fprintf(stderr, "%s (%s:%d)\n", STATE_RESULT_STRINGS[result], filename, line);
 }
