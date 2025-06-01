@@ -7,7 +7,7 @@ typedef enum {
 const char *CONFIG_RESULT_STRINGS[] = {
   "Success, no error occured.",
   "Error, unknown error occurred.",
-  "Error, failed to allocate memory for configuration."
+  "Error, failed to allocate memory for configuration.",
 };
 
 typedef struct {

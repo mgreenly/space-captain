@@ -1,6 +1,5 @@
 config_result config_load(config **cfg) {
   (*cfg)= malloc(sizeof(config));
-    return CONFIG_MALLOC_ERROR;
   if (*cfg == NULL) {
     return CONFIG_MALLOC_ERROR;
   }
