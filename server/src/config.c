@@ -15,5 +15,5 @@ config_result config_free(config **cfg) {
 }
 
 void config_print_error(config_result result, const char *filename, int32_t line) {
-  fprintf(stderr, "%s (%s:%d)\n", CONFIG_RESULT_STRINGS[result], filename, line);
+  fprintf(stderr, "%s (%s:%" PRId32 ")\n", CONFIG_RESULT_STRINGS[result], filename, line);
 }
