@@ -1,7 +1,3 @@
-#
-# Set the program's name and the library dependencies.
-#
-
 NAME = space-captain
 LIBS =
 
@@ -36,7 +32,12 @@ CHECKS = -fsanitize=address,undefined
 # make install             - install release target
 #
 
+bin/%: tst/%.c
+	mkdir -p bin
+	gcc -o $@ $^
 
+tst/%_tests.c: src/%.c
+	touch $@
 
 # release
 bin/$(NAME): $(wildcard src/*) makefile
@@ -48,27 +49,23 @@ bin/$(NAME)-dbg: $(wildcard src/*) makefile
 	mkdir -p bin
 	$(CC) -o bin/$(NAME)-dbg src/main.c $(CFLAGS) -g3 -O0 $(LDFLAGS) $(CHECKS)
 
-# tests
-bin/$(NAME)-tst: $(wildcard src/*) $(wildcard tst/*) makefile
-	mkdir -p bin
-	$(CC) -o bin/$(NAME)-tst tst/main.c -g3 -O0
-
-PHONY: tests
-tests: bin/$(NAME)-tst
-
+SRC_FILES = $(wildcard src/*.c) $(wildcard src/*.h)
+TST_FILES = $(wildcard tst/*.c)
+TST_TARGETS = $(patsubst tst/%.c, bin/%, $(TST_FILES))
+tests: $(TST_TARGETS) $(SRC_FILES) makefile
 
 PHONY: all
-all: bin/$(NAME) bin/$(NAME)-dbg bin/$(NAME)-tst
+all: bin/$(NAME) bin/$(NAME)-dbg tests
+
+PHONY: test
+test: $(wildcard bin/*_tests)
+	for filename in $^; do \
+		./$$filename ; \
+	done
 
 PHONY: debug
 debug: bin/$(NAME)-dbg
 	@gdb -ex run -q --tui --args ./bin/$(NAME)-dbg dat/state.dat dat/dump.dat
-
-PHONY: test
-test: bin/$(NAME)-tst
-	@clear
-	@./bin/$(NAME)-tst
-
 
 PHONY: run
 run: bin/$(NAME)
@@ -90,7 +87,6 @@ clean:
 PHONY: valgrind
 valgrind: bin/$(NAME)-dbg
 	valgrind -s --leak-check=full --show-leak-kinds=all --show-reachable=yes ./bin/$(NAME)-dbg
-
 
 tags: $(wildcard src/*) makefile
 	ctags -R --languages=C --c-kinds=+p --fields=+l src makefile
