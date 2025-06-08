@@ -1,0 +1,102 @@
+TODO
+  * Use stdint & inttypes
+  * Tests for State
+  * Tests for Config
+  * Support release build with -DNDEBUG
+  * Support Linux x86_64 target
+  * support OSX arm64-apple-darwin target
+  * Support Windows x86_64 target
+
+CHECKOUT
+  * https://github.com/nivox/quickcheck4c
+  * https://github.com/google/oss-fuzz
+
+
+switch to using the below exclusively
+
+  #include <stdint.h>
+      * int8_t      uint8_t
+      * int16_t     uint16_t
+      * int32_t     uint32_t
+      * uint8_t     uint64_t
+
+  #include <inttypes.h>
+
+        "the format string %" PRIxPTR "\n"
+
+        * (first three letters)
+            * PRI for printf format
+            * SCN for scanf format
+        * (fourth letter)
+            * x for hexadecimal formatting
+            * u for unsigned formatting
+            * o for octal formatting
+            * i for integer formatting
+            * d for decimal formatting
+        * (extra letters)
+            * 8 for eight bit
+            * 16 for sixteen bit
+            * 32 for thirty-two bit
+            * 64 for sixty-four bit
+            * FAST8 for "fast" eight bit
+            * FAST16 for "fast" sixteen bit
+            * FAST32 for "fast" thirty-two bit
+            * FAST64 for "fast" sixty-four bit
+            * LEAST8 for "least" eight bit
+            * LEAST16 for "least" sixteen bit
+            * LEAST32 for "least" thirty-two bit
+            * LEAST64 for "least" sixty-four bit
+            * PTR for pointer
+            * MAX for maximum supported bit size
+
+
+
+/server
+    /c
+
+/client
+    /cli-client
+    /tui-client
+    /gfx-client
+    /web-client
+    /win-client
+    /mac-client
+
+
+The server is only using environment variables for config
+  .envrc
+
+The server is almost certainly going to be distrubuted via a docker image
+
+
+
+
+SERVER
+======
+
+start
+  read environment variables
+    read state
+      -read wal
+        enter main loop
+          -accepting connections
+            recv message
+              wal
+                update-state
+           stop accepting connections
+    write state
+exit
+
+
+
+
+
+
+start
+read env-vars, read config, cli args override
+enter game loop
+   send commands
+   updating local state view
+shutting down
+
+https://www.youtube.com/watch?v=JarMkGWTF8Y

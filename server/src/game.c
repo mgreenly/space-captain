@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   config_result result = config_load(&cfg);
   if(result != CONFIG_SUCCESS) {
     config_print_error(result, __FILE__, __LINE__);
-    return EXIT_FAILURE;
+   return EXIT_FAILURE;
   }
 
   state *st = NULL;
