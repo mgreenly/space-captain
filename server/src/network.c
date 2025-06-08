@@ -1,5 +1,5 @@
-int network_loop() {
-  int SERVER_PORT = 8877;
+  int32_t network_loop() {
+  int32_t SERVER_PORT = 8877;
   struct sockaddr_in server_address;
 
   memset(&server_address, 0, sizeof(server_address));
@@ -7,7 +7,7 @@ int network_loop() {
   server_address.sin_port = htons(SERVER_PORT);
   server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  int listen_sock;
+  int32_t listen_sock;
   if ((listen_sock = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
     printf("could not create listen socket\n");
     return 1;
@@ -19,7 +19,7 @@ int network_loop() {
     return 1;
   }
 
-  int wait_size = 16;  // maximum number of waiting clients, after which dropping begins
+  int32_t wait_size = 16;  // maximum number of waiting clients, after which dropping begins
   if (listen(listen_sock, wait_size) < 0) {
     printf("could not open socket for listening\n");
     return 1;
@@ -27,18 +27,18 @@ int network_loop() {
 
   // socket address used to store client address
   struct sockaddr_in client_address;
-  unsigned int client_address_len = 0;
+  uint32_t client_address_len = 0;
 
   while(intCaught == false) {
 
-    int sock;
+    int32_t sock;
     if ((sock = accept(listen_sock, (struct sockaddr *)&client_address, &client_address_len)) < 0) {
       printf("could not open a socket to accept data\n");
     return 1;
     }
 
-    int n = 0;
-    int len = 0, maxlen = 100;
+    int32_t n = 0;
+    int32_t len = 0, maxlen = 100;
     char buffer[maxlen];
     char *pbuffer = buffer;
 

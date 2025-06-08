@@ -23,7 +23,7 @@ void *game_loop( void *ptr )
 // main
 //
 //
-int main(int argc, char *argv[]) {
+int32_t main(int32_t argc, char *argv[]) {
 
   signal(SIGINT, intHandler);   // should use sigaction
 
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 
   puts(cfg->path);
 
-  int  iret1;
+  int32_t  iret1;
   pthread_t thread1;
   iret1 = pthread_create( &thread1, NULL, game_loop, (void*) st);
 

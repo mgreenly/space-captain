@@ -52,6 +52,6 @@ state_result state_free(state **st) {
 //
 // state_print_error
 //
-void state_print_error(state_result result, const char *filename, int line) {
+void state_print_error(state_result result, const char *filename, int32_t line) {
   fprintf(stderr, "%s (%s:%d)\n", STATE_RESULT_STRINGS[result], filename, line);
 }

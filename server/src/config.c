@@ -14,6 +14,6 @@ config_result config_free(config **cfg) {
   return CONFIG_SUCCESS;
 }
 
-void config_print_error(config_result result, const char *filename, int line) {
+void config_print_error(config_result result, const char *filename, int32_t line) {
   fprintf(stderr, "%s (%s:%d)\n", CONFIG_RESULT_STRINGS[result], filename, line);
 }
