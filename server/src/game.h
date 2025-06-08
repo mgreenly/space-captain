@@ -1,0 +1,2 @@
+
+static volatile bool intCaught;

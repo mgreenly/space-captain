@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
+
 config_result config_load(config **cfg) {
   (*cfg)= malloc(sizeof(config));
   if (*cfg == NULL) {

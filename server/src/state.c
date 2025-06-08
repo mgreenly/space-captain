@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
+
 state_result state_write(char *filename, state **st) {
   FILE *file = fopen(filename, "w");
   if (file == NULL) {

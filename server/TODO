@@ -1,11 +1,13 @@
 TODO
-  * Use stdint & inttypes
   * Tests for State
   * Tests for Config
   * Support release build with -DNDEBUG
   * Support Linux x86_64 target
   * support OSX arm64-apple-darwin target
   * Support Windows x86_64 target
+
+DONE
+  * Use stdint & inttypes
 
 CHECKOUT
   * https://github.com/nivox/quickcheck4c

@@ -1,4 +1,14 @@
-  int32_t network_loop() {
+#include <stdbool.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "game.h"
+
+int32_t network_loop() {
+
   int32_t SERVER_PORT = 8877;
   struct sockaddr_in server_address;
 
