@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <assert.h>
 
 config_result config_load(config **cfg) {
   (*cfg)= malloc(sizeof(config));
@@ -14,7 +15,10 @@ config_result config_load(config **cfg) {
 }
 
 config_result config_free(config **cfg) {
+  assert(*cfg != NULL);
+
   free(*cfg);
+
   return CONFIG_SUCCESS;
 }
 

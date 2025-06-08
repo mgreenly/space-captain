@@ -13,7 +13,8 @@ void tearDown(void) { }
 
 int main(void)
 {
+  puts("==============================================");
   UnityBegin("tst/network_tests.c");
-  RUN_TEST(test_network_foo, 20);
+  RUN_TEST(test_network_foo);
   return (UnityEnd());
 }

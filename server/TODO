@@ -1,5 +1,4 @@
 TODO
-  * fix `make tests`
   * Tests for State
   * Tests for Config
   * Support release build with -DNDEBUG

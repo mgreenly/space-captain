@@ -49,7 +49,10 @@ state_result state_load(char *filename, state **st) {
 // state_free
 //
 state_result state_free(state **st) {
+  assert(*st != NULL);
+
   free(*st);
+
   return STATE_SUCCESS;
 }
 
