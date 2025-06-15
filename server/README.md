@@ -26,7 +26,7 @@ Installing
 ```
 git clone https://github.com/mgreenly/space-captain.git
 cd space-captian
-PREFIX=$HOME/.local/bin make install
+make clean; make release; PREFIX=$HOME/.local/bin make install
 ```
 
 Testing
