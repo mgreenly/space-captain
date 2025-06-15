@@ -1,3 +1,16 @@
+#
+# make                     - build default target with debug symbols & instrumentation
+# make run                 - runs the release target
+# make debug               - runs the default target in the gdb:
+#
+# make tests               - build tests targets
+# make runtests            - runs the test targets in the gdb
+#
+# make release             - build full optimized release target
+# make runrelease          - build full optimized release target
+# make install             - install release target
+#
+
 NAME = space-captain
 LIBS =
 
@@ -19,25 +32,23 @@ endif
 
 CHECKS = -fsanitize=address,undefined
 
+PHONY: runtests
+runtests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
+	@for filename in $^; do \
+		./$$filename ; \
+	done
 
-#
-# make                     - build default target with debug symbols & instrumentation
-# make debug               - runs the default target in the gdb:
-#
-# make tests               - build tests targets
-# make test                - runs the test targets in the gdb
-#
-# make release             - build full optimized release target
-# make run                 - runs the release target
-# make install             - install release target
-#
+PHONY: tests
+tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
-bin/%: tst/%.c
-	mkdir -p bin
+bin/%_tests: tst/%_tests.c | bin
 	gcc -o $@ $^
 
-tst/%_tests.c: src/%.c
+tst/%_tests.c: src/%.c src/%.h
 	touch $@
+
+bin:
+	mkdir -p $@
 
 # release
 bin/$(NAME): $(wildcard src/*) makefile
@@ -49,19 +60,9 @@ bin/$(NAME)-dbg: $(wildcard src/*) makefile
 	mkdir -p bin
 	$(CC) -o bin/$(NAME)-dbg src/main.c $(CFLAGS) -g3 -O0 $(LDFLAGS) $(CHECKS)
 
-SRC_FILES = $(wildcard src/*.c) $(wildcard src/*.h)
-TST_FILES = $(wildcard tst/*.c)
-TST_TARGETS = $(patsubst tst/%.c, bin/%, $(TST_FILES))
-tests: $(TST_TARGETS) $(SRC_FILES) makefile
-
 PHONY: all
 all: bin/$(NAME) bin/$(NAME)-dbg tests
 
-PHONY: test
-test: $(wildcard bin/*_tests)
-	for filename in $^; do \
-		./$$filename ; \
-	done
 
 PHONY: debug
 debug: bin/$(NAME)-dbg

@@ -1,6 +1,7 @@
-#include <stdlib.h>
-#include <stdint.h>
+#include <assert.h>
 #include <inttypes.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 state_result state_write(char *filename, state **st) {
   FILE *file = fopen(filename, "w");
