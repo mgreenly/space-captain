@@ -8,7 +8,6 @@ PREFIX ?= ${HOME}/.local/bin
 CFLAGS = -Wall -Wextra -pedantic -std=c18 -g
 LDFLAGS = -lpthread
 
-
 default: build
 
 PHONY: build clean debug install release run
@@ -24,7 +23,6 @@ bin:
 
 $(PREFIX):
 	mkdir -p $@
-
 
 build: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 build: LDFLAGS := $(LDFLAGS)
