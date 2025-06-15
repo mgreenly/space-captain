@@ -74,10 +74,11 @@ run: bin/$(NAME)
 	@./bin/$(NAME) dat/state.dat dat/dump.dat
 
 PHONY: install
-install: all
-	echo "Installing $(NAME) to $(PREFIX)"
-	mkdir -p $(PREFIX)
-	cp bin/$(NAME) $(PREFIX)/
+install: all | $(PREFIX)
+	install -m 0755 bin/$(NAME) $(PREFIX)
+
+$(PREFIX):
+	mkdir -p $@
 
 PHONY: clean
 clean:
