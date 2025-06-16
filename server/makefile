@@ -1,17 +1,17 @@
 # The executable's name
-BIN = space-captain
+SERVER = space-captain
 
 # The default installation directory
 PREFIX ?= ${HOME}/.local/bin
 
 # The common build flags
-CFLAGS = -Wall -Wextra -pedantic -g -std=c18 -D_DEFAULT_SOURCE
+CFLAGS = -D_DEFAULT_SOURCE -std=c18 -Wall -Wextra -pedantic -g
 LDFLAGS = -lpthread
 
 default: build
 
-bin/$(BIN): $(wildcard src/*) makefile | bin
-	$(CC) -o bin/$(BIN) src/main.c $(CFLAGS) $(LDFLAGS)
+bin/$(SERVER): $(wildcard src/*) makefile | bin
+	$(CC) -o bin/$(SERVER) src/main.c $(CFLAGS) $(LDFLAGS)
 
 bin/%_tests: tst/%_tests.c | bin
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
@@ -32,7 +32,7 @@ PHONY: build clean debug install release run test tests
 
 build: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 build: LDFLAGS := $(LDFLAGS)
-build: bin/$(BIN)
+build: bin/$(SERVER)
 
 tests: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 tests: LDFLAGS := $(LDFLAGS)
@@ -40,23 +40,23 @@ tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
 release: CFLAGS := $(CFLAGS) -O2
 release: LDFLAGS := $(LDFLAGS)
-release: bin/$(BIN)
+release: bin/$(SERVER)
 
 install: $(PREFIX)
-	install -m 0755 bin/$(BIN) $(PREFIX)
+	install -m 0755 bin/$(SERVER) $(PREFIX)
 
 clean:
 	rm -rf result
 	rm -rf bin
 	rm -f  tags
 
-run: bin/$(BIN)
-	./bin/$(BIN) dat/state.dat dat/dump.dat
+run: bin/$(SERVER)
+	./bin/$(SERVER) dat/state.dat dat/dump.dat
 
 test: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 	@for filename in $^; do \
 		./$$filename ; \
 	done
 
-debug: bin/$(BIN)
-	@gdb -ex run -q --tui --args ./bin/$(BIN) dat/state.dat dat/dump.dat
+debug: bin/$(SERVER)
+	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
