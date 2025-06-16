@@ -5,7 +5,7 @@ BIN = space-captain
 PREFIX ?= ${HOME}/.local/bin
 
 # The common build flags
-CFLAGS = -Wall -Wextra -pedantic -std=c18 -g -D_POSIX_C_SOURCE=201710L -D_DEFAULT_SOURCE
+CFLAGS = -Wall -Wextra -pedantic -g -std=c18 -D_DEFAULT_SOURCE
 LDFLAGS = -lpthread
 
 default: build
