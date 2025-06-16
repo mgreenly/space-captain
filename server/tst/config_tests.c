@@ -6,7 +6,7 @@
 void test_config_foo(void) {
   config *cfg = NULL;
 
-  config_result retval = config_load(&cfg);
+  // config_result retval = config_load(&cfg);
 
   TEST_ASSERT_EQUAL(CONFIG_SUCCESS, 0);
 

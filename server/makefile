@@ -5,7 +5,7 @@ BIN = space-captain
 PREFIX ?= ${HOME}/.local/bin
 
 # The common build flags
-CFLAGS = -Wall -Wextra -pedantic -std=c18 -g
+CFLAGS = -Wall -Wextra -pedantic -std=c18 -g -D_POSIX_C_SOURCE=201710L -D_DEFAULT_SOURCE
 LDFLAGS = -lpthread
 
 default: build
@@ -14,7 +14,7 @@ bin/$(BIN): $(wildcard src/*) makefile | bin
 	$(CC) -o bin/$(BIN) src/main.c $(CFLAGS) $(LDFLAGS)
 
 bin/%_tests: tst/%_tests.c | bin
-	gcc -o $@ $^
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 tst/%_tests.c: src/%.c src/%.h
 	touch $@
@@ -34,6 +34,8 @@ build: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 build: LDFLAGS := $(LDFLAGS)
 build: bin/$(BIN)
 
+tests: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
+tests: LDFLAGS := $(LDFLAGS)
 tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
 release: CFLAGS := $(CFLAGS) -O2
