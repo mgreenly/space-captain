@@ -1,20 +1,28 @@
 # The executable's name
-SERVER = space-captain
+SERVER = server
+CLIENT = client
 
 # The default installation directory
 PREFIX ?= ${HOME}/.local/bin
 
 # The common build flags
 CFLAGS = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g
-LDFLAGS = -lpthread
+LDFLAGS =
 
-default: build
+all: bin/$(SERVER) bin/$(CLIENT)
 
 #
 # All the actual file targets.
 #
+bin/$(SERVER): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
+bin/$(SERVER): LDFLAGS := $(LDFLAGS) -lpthread
 bin/$(SERVER): $(wildcard src/*) makefile | bin
-	$(CC) -o bin/$(SERVER) src/main.c $(CFLAGS) $(LDFLAGS)
+	$(CC) -o bin/$(SERVER) src/server.c $(CFLAGS) $(LDFLAGS)
+
+bin/$(CLIENT): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
+bin/$(CLIENT): LDFLAGS := $(LDFLAGS)
+bin/$(CLIENT): $(wildcard src/*) makefile | bin
+	$(CC) -o bin/$(CLIENT) src/client.c $(CFLAGS) $(LDFLAGS)
 
 bin/%_tests: tst/%_tests.c | bin
 	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
@@ -35,23 +43,20 @@ $(PREFIX):
 # All the phony build targets.
 #
 PHONY: build
-build: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
-build: LDFLAGS := $(LDFLAGS)
-build: bin/$(SERVER)
+build: all
 
 PHONY: tests
 tests: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
-tests: LDFLAGS := $(LDFLAGS)
 tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
 PHONY: release
 release: CFLAGS := $(CFLAGS) -O2
-release: LDFLAGS := $(LDFLAGS)
-release: bin/$(SERVER)
+release: bin/$(SERVER) bin/$(CLIENT)
 
 PHONY: install
 install: $(PREFIX)
 	install -m 0755 bin/$(SERVER) $(PREFIX)
+	install -m 0755 bin/$(CLIENT) $(PREFIX)
 
 #
 # All the task targets.
@@ -62,16 +67,24 @@ clean:
 	rm -rf bin
 	rm -f  tags
 
-PHONY: run
-run: bin/$(SERVER)
-	./bin/$(SERVER) dat/state.dat dat/dump.dat
-
 PHONY: test
 test: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 	@for filename in $^; do \
 		./$$filename ; \
 	done
 
-PHONY: debug
-debug: bin/$(SERVER)
+PHONY: run-server
+run-server: bin/$(SERVER)
+	./bin/$(SERVER) dat/state.dat dat/dump.dat
+
+PHONY: run-client
+run-client: bin/$(CLIENT)
+	./bin/$(CLIENT)
+
+PHONY: debug-sever
+debug-server: bin/$(SERVER)
+	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
+
+PHONY: debug-client
+debug-client: bin/$(SERVER)
 	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
