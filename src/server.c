@@ -13,6 +13,10 @@
 #include "network.c"
 #include "state.c"
 
+#define PORT 4242
+#define HOST "127.0.0.1"
+#define NUM_WORKERS 4
+
 //
 //
 // main
