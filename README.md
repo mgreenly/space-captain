@@ -1,4 +1,4 @@
-![](https://github.com/mgreenly/space-captain/blob/beef285e4db72535b4698883c6fbbe68606f551e/img/spacecaptain-01.png)
+![](https://github.com/mgreenly/space-captain/blob/faa6752349538bfa05d595e004a8d658b0f5098d/dat/spacecaptain-01.png)
 
 Space Captain
 =============
