@@ -4,6 +4,8 @@
 
 #include "log.h"
 
+#include "queue.c"
+
 #define PORT 4242
 #define HOST "127.0.0.1"
 
