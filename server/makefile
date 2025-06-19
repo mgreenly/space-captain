@@ -10,6 +10,9 @@ LDFLAGS = -lpthread
 
 default: build
 
+#
+# All the actual file targets.
+#
 bin/$(SERVER): $(wildcard src/*) makefile | bin
 	$(CC) -o bin/$(SERVER) src/main.c $(CFLAGS) $(LDFLAGS)
 
@@ -28,35 +31,47 @@ bin:
 $(PREFIX):
 	mkdir -p $@
 
-PHONY: build clean debug install release run test tests
-
+#
+# All the phony build targets.
+#
+PHONY: build
 build: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 build: LDFLAGS := $(LDFLAGS)
 build: bin/$(SERVER)
 
+PHONY: tests
 tests: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 tests: LDFLAGS := $(LDFLAGS)
 tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
+PHONY: release
 release: CFLAGS := $(CFLAGS) -O2
 release: LDFLAGS := $(LDFLAGS)
 release: bin/$(SERVER)
 
+PHONY: install
 install: $(PREFIX)
 	install -m 0755 bin/$(SERVER) $(PREFIX)
 
+#
+# All the task targets.
+#
+PHONY: clean
 clean:
 	rm -rf result
 	rm -rf bin
 	rm -f  tags
 
+PHONY: run
 run: bin/$(SERVER)
 	./bin/$(SERVER) dat/state.dat dat/dump.dat
 
+PHONY: test
 test: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 	@for filename in $^; do \
 		./$$filename ; \
 	done
 
+PHONY: debug
 debug: bin/$(SERVER)
 	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
