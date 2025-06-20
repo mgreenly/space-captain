@@ -16,17 +16,34 @@
 // main
 //
 int32_t main(void) {
+
   queue_t* msg_queue = queue_create(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue. Exiting.");
     return EXIT_FAILURE;
   }
 
-  char *greeting = "Hello from the client!";
+  // message_header_t msg_header = { MSG_ECHO, strlen(greeting) + 1 };
 
-  queue_push(msg_queue, greeting);
+  char *msg_body = "Hello from the client!";
+  message_t *msg = malloc(sizeof(message_t));
+  msg->header.type = MSG_ECHO;
+  msg->header.length = strlen(msg_body) + 1;
+  msg->body = msg_body;
 
-  puts(queue_pop(msg_queue));
+
+  printf("%d\n", msg->header.type);
+  printf("%d\n", msg->header.length);
+  printf("%s\n", msg->body);
+
+  queue_push(msg_queue, msg);
+
+  message_t *msg2 = queue_pop(msg_queue);
+
+  printf("%s\n", msg2->body);
+
+
+  free(msg);
 
   queue_destroy(msg_queue);
 

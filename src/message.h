@@ -1,24 +1,24 @@
-// message.h
-
-#pragma once
+#ifndef MESSAGE_H
+#define MESSAGE_H
 
 #include <stdint.h>
 
-// Defines the types of messages that can be sent.
 typedef enum {
     MSG_ECHO,
     MSG_REVERSE,
-    MSG_TIME,
-} message_t;
+    MSG_TIME
+} message_type_t;
 
-// The fixed-size header for every message.
-// __attribute__((packed)) is a GCC/Clang extension to prevent the compiler
-// from adding padding between struct members, ensuring a consistent
-// binary layout.
-typedef struct __attribute__((packed)) {
-    message_t type;
-    uint32_t length; // Length of the body (including null terminator)
+typedef struct __attribute__((packed))  {
+    uint32_t type;
+    uint32_t length;
 } message_header_t;
 
-#define MAX_MSG_BODY_LEN 1024
-#define MAX_MSG_LEN (sizeof(message_header_t) + MAX_MSG_BODY_LEN)
+typedef struct {
+    int client_fd;
+    message_header_t header;
+    char* body;
+} message_t;
+
+#endif // MESSAGE_H
+
