@@ -7,8 +7,7 @@
 #include "message.h"
 
 typedef struct {
-    // message_t** buffer;
-    char **buffer;
+    message_t** buffer;
     size_t capacity;
     size_t size;
     size_t head;
