@@ -86,5 +86,5 @@ debug-server: bin/$(SERVER)
 	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
 
 PHONY: debug-client
-debug-client: bin/$(SERVER)
-	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
+debug-client: bin/$(CLIENT)
+	@gdb -q --tui --args ./bin/$(CLIENT)
