@@ -20,7 +20,7 @@ void test_queue_add_and_pop_message(void) {
     .body = test_message
   };
 
-  queue_push(queue, &msg);
+  queue_add(queue, &msg);
 
   message_t *popped_msg = queue_pop(queue);
   TEST_ASSERT_NOT_NULL(popped_msg);

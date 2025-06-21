@@ -19,7 +19,7 @@ typedef struct {
 
 queue_t* queue_create(size_t capacity);
 void queue_destroy(queue_t* q);
-void queue_push(queue_t* q, message_t* msg);
+void queue_add(queue_t* q, message_t* msg);
 message_t* queue_pop(queue_t* q);
 
 #endif // QUEUE_H

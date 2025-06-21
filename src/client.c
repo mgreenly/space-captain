@@ -36,7 +36,7 @@ int32_t main(void) {
   printf("%d\n", msg->header.length);
   printf("%s\n", msg->body);
 
-  queue_push(msg_queue, msg);
+  queue_add(msg_queue, msg);
 
   message_t *msg2 = queue_pop(msg_queue);
 

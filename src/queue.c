@@ -43,7 +43,7 @@ void queue_destroy(queue_t* q) {
     free(q);
 }
 
-void queue_push(queue_t* q, message_t* msg) {
+void queue_add(queue_t* q, message_t* msg) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
 
