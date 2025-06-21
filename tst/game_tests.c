@@ -16,7 +16,6 @@ void tearDown(void) { }
 
 int main(void)
 {
-  puts("==============================================");
   UnityBegin("tst/game_tests.c");
   RUN_TEST(test_game_foo);
   return (UnityEnd());

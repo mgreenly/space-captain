@@ -36,7 +36,6 @@ void tearDown(void) { }
 
 int main(void)
 {
-  puts("==============================================");
   UnityBegin("tst/queue_tests.c");
   RUN_TEST(test_queue_add_and_pop_message);
   return (UnityEnd());
