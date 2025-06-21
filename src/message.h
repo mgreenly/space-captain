@@ -15,7 +15,7 @@ typedef struct __attribute__((packed))  {
 } message_header_t;
 
 typedef struct {
-    int client_fd;
+    // int client_fd;
     message_header_t header;
     char* body;
 } message_t;
