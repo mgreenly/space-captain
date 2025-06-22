@@ -17,8 +17,11 @@ typedef struct {
     pthread_cond_t cond_not_full;
 } queue_t;
 
+typedef void (*queue_cleanup_fn)(message_t* msg, void* user_data);
+
 queue_t* queue_create(size_t capacity);
 void queue_destroy(queue_t* q);
+void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data);
 void queue_add(queue_t* q, message_t* msg);
 message_t* queue_pop(queue_t* q);
 int queue_try_add(queue_t* q, message_t* msg);

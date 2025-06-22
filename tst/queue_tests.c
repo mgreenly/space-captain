@@ -26,6 +26,30 @@ static message_t* create_test_message(message_type_t type, const char* body) {
   return msg;
 }
 
+// Cleanup callback tracker for testing
+typedef struct {
+    int cleanup_call_count;
+    message_t** cleaned_messages;
+    size_t messages_capacity;
+} cleanup_tracker_t;
+
+// Test cleanup callback that tracks calls
+static void test_cleanup_callback(message_t* msg, void* user_data) {
+    cleanup_tracker_t* tracker = (cleanup_tracker_t*)user_data;
+    
+    // Store the message pointer for verification
+    if ((size_t)tracker->cleanup_call_count < tracker->messages_capacity) {
+        tracker->cleaned_messages[tracker->cleanup_call_count] = msg;
+    }
+    
+    tracker->cleanup_call_count++;
+    
+    // Free the message as normal cleanup would do
+    free(msg->body);
+    free(msg);
+}
+
+
 void test_queue_add_and_pop_message(void) {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
@@ -575,6 +599,159 @@ void test_queue_get_size_with_try_operations(void) {
   queue_destroy(queue);
 }
 
+void test_queue_destroy_with_cleanup_empty_queue(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    cleanup_tracker_t tracker = {0};
+    message_t* cleaned[10];
+    tracker.cleaned_messages = cleaned;
+    tracker.messages_capacity = 10;
+    
+    // Destroy empty queue with cleanup callback
+    queue_destroy_with_cleanup(queue, test_cleanup_callback, &tracker);
+    
+    // Should not call cleanup for empty queue
+    TEST_ASSERT_EQUAL(0, tracker.cleanup_call_count);
+}
+
+void test_queue_destroy_with_cleanup_single_message(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    message_t *msg = create_test_message(MSG_ECHO, "cleanup test");
+    queue_add(queue, msg);
+    
+    cleanup_tracker_t tracker = {0};
+    message_t* cleaned[10];
+    tracker.cleaned_messages = cleaned;
+    tracker.messages_capacity = 10;
+    
+    queue_destroy_with_cleanup(queue, test_cleanup_callback, &tracker);
+    
+    // Should call cleanup once
+    TEST_ASSERT_EQUAL(1, tracker.cleanup_call_count);
+    TEST_ASSERT_EQUAL(msg, tracker.cleaned_messages[0]);
+}
+
+void test_queue_destroy_with_cleanup_multiple_messages(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Add multiple messages
+    message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+    message_t *msg2 = create_test_message(MSG_REVERSE, "msg2");  
+    message_t *msg3 = create_test_message(MSG_TIME, "msg3");
+    
+    queue_add(queue, msg1);
+    queue_add(queue, msg2);
+    queue_add(queue, msg3);
+    
+    cleanup_tracker_t tracker = {0};
+    message_t* cleaned[10];
+    tracker.cleaned_messages = cleaned;
+    tracker.messages_capacity = 10;
+    
+    queue_destroy_with_cleanup(queue, test_cleanup_callback, &tracker);
+    
+    // Should call cleanup for all 3 messages
+    TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
+    
+    // Verify all messages were cleaned (order may vary due to queue structure)
+    int found_msg1 = 0, found_msg2 = 0, found_msg3 = 0;
+    for (int i = 0; i < 3; i++) {
+        if (tracker.cleaned_messages[i] == msg1) found_msg1 = 1;
+        if (tracker.cleaned_messages[i] == msg2) found_msg2 = 1;
+        if (tracker.cleaned_messages[i] == msg3) found_msg3 = 1;
+    }
+    TEST_ASSERT_EQUAL(1, found_msg1);
+    TEST_ASSERT_EQUAL(1, found_msg2);
+    TEST_ASSERT_EQUAL(1, found_msg3);
+}
+
+void test_queue_destroy_with_cleanup_null_callback(void) {
+    queue_t *queue = queue_create(3);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Add messages that won't be cleaned up
+    message_t *msg1 = create_test_message(MSG_ECHO, "leaked1");
+    message_t *msg2 = create_test_message(MSG_ECHO, "leaked2");
+    
+    queue_add(queue, msg1);
+    queue_add(queue, msg2);
+    
+    // Destroy with NULL cleanup callback - messages will be drained but not freed
+    // This simulates the case where caller wants to handle cleanup elsewhere
+    queue_destroy_with_cleanup(queue, NULL, NULL);
+    
+    // Note: In real usage this would leak memory, but for testing we just
+    // verify the function handles NULL callback gracefully
+    // In practice, the caller would be responsible for message cleanup
+}
+
+void test_queue_destroy_with_cleanup_partial_queue(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Add messages, pop some, leave others
+    message_t *msg1 = create_test_message(MSG_ECHO, "pop_me");
+    message_t *msg2 = create_test_message(MSG_ECHO, "cleanup_me");
+    message_t *msg3 = create_test_message(MSG_ECHO, "cleanup_me_too");
+    
+    queue_add(queue, msg1);
+    queue_add(queue, msg2);
+    queue_add(queue, msg3);
+    
+    // Pop one message normally
+    message_t *popped = queue_pop(queue);
+    TEST_ASSERT_EQUAL(msg1, popped);
+    free(popped->body);
+    free(popped);
+    
+    // Destroy with remaining messages
+    cleanup_tracker_t tracker = {0};
+    message_t* cleaned[10];
+    tracker.cleaned_messages = cleaned;
+    tracker.messages_capacity = 10;
+    
+    queue_destroy_with_cleanup(queue, test_cleanup_callback, &tracker);
+    
+    // Should cleanup the 2 remaining messages
+    TEST_ASSERT_EQUAL(2, tracker.cleanup_call_count);
+}
+
+void test_queue_destroy_with_cleanup_thread_safety(void) {
+    queue_t *queue = queue_create(10);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Add messages from multiple threads first
+    pthread_t producers[3];
+    thread_data_t producer_data[3];
+    
+    for (int i = 0; i < 3; i++) {
+        producer_data[i].queue = queue;
+        producer_data[i].delay_ms = 10;
+        producer_data[i].test_value = i;
+        pthread_create(&producers[i], NULL, producer_thread, &producer_data[i]);
+    }
+    
+    // Wait for all producers to finish
+    for (int i = 0; i < 3; i++) {
+        pthread_join(producers[i], NULL);
+    }
+    
+    // Now destroy with cleanup - should handle all messages safely
+    cleanup_tracker_t tracker = {0};
+    message_t* cleaned[10];
+    tracker.cleaned_messages = cleaned;
+    tracker.messages_capacity = 10;
+    
+    queue_destroy_with_cleanup(queue, test_cleanup_callback, &tracker);
+    
+    // Should have cleaned up exactly 3 messages
+    TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -600,5 +777,11 @@ int main(void)
   RUN_TEST(test_queue_get_size_with_add_and_pop);
   RUN_TEST(test_queue_get_size_at_capacity);
   RUN_TEST(test_queue_get_size_with_try_operations);
+  RUN_TEST(test_queue_destroy_with_cleanup_empty_queue);
+  RUN_TEST(test_queue_destroy_with_cleanup_single_message);
+  RUN_TEST(test_queue_destroy_with_cleanup_multiple_messages);
+  RUN_TEST(test_queue_destroy_with_cleanup_null_callback);
+  RUN_TEST(test_queue_destroy_with_cleanup_partial_queue);
+  RUN_TEST(test_queue_destroy_with_cleanup_thread_safety);
   return (UnityEnd());
 }

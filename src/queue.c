@@ -43,6 +43,35 @@ void queue_destroy(queue_t* q) {
     free(q);
 }
 
+void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
+    assert(q != NULL);
+    
+    // Lock the queue to prevent any new operations
+    pthread_mutex_lock(&q->mutex);
+    
+    // Drain all remaining messages
+    while (q->size > 0) {
+        message_t* msg = q->buffer[q->head];
+        q->head = (q->head + 1) % q->capacity;
+        q->size--;
+        
+        // Apply cleanup callback if provided
+        if (cleanup_fn != NULL) {
+            cleanup_fn(msg, user_data);
+        }
+    }
+    
+    // Unlock before destroying synchronization primitives
+    pthread_mutex_unlock(&q->mutex);
+    
+    // Clean up queue structure
+    free(q->buffer);
+    pthread_mutex_destroy(&q->mutex);
+    pthread_cond_destroy(&q->cond_not_empty);
+    pthread_cond_destroy(&q->cond_not_full);
+    free(q);
+}
+
 void queue_add(queue_t* q, message_t* msg) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
