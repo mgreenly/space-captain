@@ -370,7 +370,7 @@ int queue_try_pop(queue_t* q, message_t** msg) {
  * @param q Pointer to the queue
  * @return true if the queue is empty, false otherwise (including on error)
  */
-bool queue_is_empty(const queue_t* q) {
+bool queue_is_empty(queue_t* q) {
     queue_errno = QUEUE_SUCCESS;
     
     if (q == NULL) {
@@ -378,9 +378,9 @@ bool queue_is_empty(const queue_t* q) {
         return false;
     }
     
-    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_lock(&q->mutex);
     bool is_empty = (q->size == 0);
-    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_unlock(&q->mutex);
     return is_empty;
 }
 
@@ -389,7 +389,7 @@ bool queue_is_empty(const queue_t* q) {
  * @param q Pointer to the queue
  * @return true if the queue is full, false otherwise (including on error)
  */
-bool queue_is_full(const queue_t* q) {
+bool queue_is_full(queue_t* q) {
     queue_errno = QUEUE_SUCCESS;
     
     if (q == NULL) {
@@ -397,9 +397,9 @@ bool queue_is_full(const queue_t* q) {
         return false;
     }
     
-    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_lock(&q->mutex);
     bool is_full = (q->size == q->capacity);
-    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_unlock(&q->mutex);
     return is_full;
 }
 
@@ -408,7 +408,7 @@ bool queue_is_full(const queue_t* q) {
  * @param q Pointer to the queue
  * @return Number of messages currently in the queue, 0 on error
  */
-size_t queue_get_size(const queue_t* q) {
+size_t queue_get_size(queue_t* q) {
     queue_errno = QUEUE_SUCCESS;
     
     if (q == NULL) {
@@ -416,8 +416,8 @@ size_t queue_get_size(const queue_t* q) {
         return 0;
     }
     
-    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_lock(&q->mutex);
     size_t size = q->size;
-    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    pthread_mutex_unlock(&q->mutex);
     return size;
 }

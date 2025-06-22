@@ -38,9 +38,9 @@ int queue_add(queue_t* q, message_t* msg);
 int queue_pop(queue_t* q, message_t** msg);
 int queue_try_add(queue_t* q, message_t* msg);
 int queue_try_pop(queue_t* q, message_t** msg);
-bool queue_is_empty(const queue_t* q);
-bool queue_is_full(const queue_t* q);
-size_t queue_get_size(const queue_t* q);
+bool queue_is_empty(queue_t* q);
+bool queue_is_full(queue_t* q);
+size_t queue_get_size(queue_t* q);
 
 // Error handling functions
 int queue_get_error(void);
