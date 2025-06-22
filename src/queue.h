@@ -16,6 +16,7 @@
 #define QUEUE_ERR_FULL     -5    // Queue is full (for try_add)
 #define QUEUE_ERR_EMPTY    -6    // Queue is empty (for try_pop)
 #define QUEUE_ERR_INVALID  -7    // Invalid parameter (e.g., capacity = 0)
+#define QUEUE_ERR_OVERFLOW -8    // Integer overflow in capacity calculation
 
 typedef struct {
     message_t** buffer;

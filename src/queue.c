@@ -12,6 +12,9 @@
 #define QUEUE_POP_TIMEOUT 2   // 2 seconds timeout for pop operations (shorter for testing)
 #define QUEUE_ADD_TIMEOUT 2   // 2 seconds timeout for add operations (shorter for testing)
 
+// Maximum safe capacity to prevent excessive allocations
+#define QUEUE_MAX_CAPACITY (SIZE_MAX / sizeof(message_t*) / 2)  // Safe maximum capacity
+
 // Thread-local error variable for queue operations
 static __thread int queue_errno = QUEUE_SUCCESS;
 
@@ -36,6 +39,7 @@ const char* queue_strerror(int err) {
         case QUEUE_ERR_FULL:    return "Queue is full";
         case QUEUE_ERR_EMPTY:   return "Queue is empty";
         case QUEUE_ERR_INVALID: return "Invalid parameter";
+        case QUEUE_ERR_OVERFLOW: return "Integer overflow in capacity calculation";
         default:                return "Unknown error";
     }
 }
@@ -58,9 +62,9 @@ static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_secon
 queue_t* queue_create(size_t capacity) {
     queue_errno = QUEUE_SUCCESS;
     
-    if (capacity == 0) {
-        queue_errno = QUEUE_ERR_INVALID;
-        log_error("Invalid capacity: %zu", capacity);
+    if (capacity == 0 || capacity > QUEUE_MAX_CAPACITY) {
+        queue_errno = (capacity == 0) ? QUEUE_ERR_INVALID : QUEUE_ERR_OVERFLOW;
+        log_error("Invalid capacity: %zu (max: %zu)", capacity, QUEUE_MAX_CAPACITY);
         return NULL;
     }
     
@@ -68,6 +72,15 @@ queue_t* queue_create(size_t capacity) {
     if (!q) {
         queue_errno = QUEUE_ERR_MEMORY;
         log_error("%s", "Failed to allocate memory for queue");
+        return NULL;
+    }
+
+    // Check for overflow before allocating buffer
+    size_t buffer_size;
+    if (__builtin_mul_overflow(capacity, sizeof(message_t*), &buffer_size)) {
+        queue_errno = QUEUE_ERR_OVERFLOW;
+        log_error("Integer overflow calculating buffer size for capacity %zu", capacity);
+        free(q);
         return NULL;
     }
 

@@ -1125,6 +1125,7 @@ void test_queue_strerror_returns_correct_messages(void) {
     TEST_ASSERT_EQUAL_STRING("Queue is full", queue_strerror(QUEUE_ERR_FULL));
     TEST_ASSERT_EQUAL_STRING("Queue is empty", queue_strerror(QUEUE_ERR_EMPTY));
     TEST_ASSERT_EQUAL_STRING("Invalid parameter", queue_strerror(QUEUE_ERR_INVALID));
+    TEST_ASSERT_EQUAL_STRING("Integer overflow in capacity calculation", queue_strerror(QUEUE_ERR_OVERFLOW));
     TEST_ASSERT_EQUAL_STRING("Unknown error", queue_strerror(999));
 }
 
@@ -1322,6 +1323,79 @@ void test_queue_get_size_with_null_queue(void) {
     TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
+// Test overflow detection in queue_create
+void test_queue_create_with_overflow_capacity(void) {
+    queue_clear_error();
+    
+    // Try to create queue with capacity that would overflow
+    size_t huge_capacity = SIZE_MAX / sizeof(message_t*) + 1;
+    queue_t* queue = queue_create(huge_capacity);
+    
+    TEST_ASSERT_NULL(queue);
+    TEST_ASSERT_EQUAL(QUEUE_ERR_OVERFLOW, queue_get_error());
+}
+
+void test_queue_create_with_max_capacity(void) {
+    queue_clear_error();
+    
+    // Try to create queue with exactly max allowed capacity
+    size_t max_capacity = SIZE_MAX / sizeof(message_t*) / 2;
+    queue_t* queue = queue_create(max_capacity);
+    
+    // This should fail - either due to safety limit or memory allocation
+    TEST_ASSERT_NULL(queue);
+    int error = queue_get_error();
+    // Could be QUEUE_ERR_OVERFLOW if caught by limit check, or QUEUE_ERR_MEMORY if allocation fails
+    TEST_ASSERT_TRUE(error == QUEUE_ERR_OVERFLOW || error == QUEUE_ERR_MEMORY);
+}
+
+void test_queue_create_with_safe_large_capacity(void) {
+    queue_clear_error();
+    
+    // Create queue with large but safe capacity
+    size_t large_capacity = 1000000; // 1 million
+    queue_t* queue = queue_create(large_capacity);
+    
+    // This should succeed if we have enough memory
+    if (queue != NULL) {
+        TEST_ASSERT_NOT_NULL(queue);
+        TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_get_error());
+        
+        // Verify basic operations work
+        message_t* msg = create_test_message(MSG_ECHO, "test");
+        TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg));
+        
+        message_t* popped = NULL;
+        TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_pop(queue, &popped));
+        TEST_ASSERT_NOT_NULL(popped);
+        
+        free(popped->body);
+        free(popped);
+        queue_destroy(queue);
+    } else {
+        // If allocation failed, it should be due to memory limits, not overflow
+        TEST_ASSERT_EQUAL(QUEUE_ERR_MEMORY, queue_get_error());
+    }
+}
+
+void test_queue_create_memory_allocation_failure(void) {
+    queue_clear_error();
+    
+    // Try to create queue with very large capacity that might fail allocation
+    // but not due to overflow
+    size_t huge_capacity = SIZE_MAX / sizeof(message_t*) / 4;
+    queue_t* queue = queue_create(huge_capacity);
+    
+    if (queue == NULL) {
+        // Should fail with either overflow (due to safety limit) or memory error
+        int error = queue_get_error();
+        TEST_ASSERT_TRUE(error == QUEUE_ERR_OVERFLOW || error == QUEUE_ERR_MEMORY);
+    } else {
+        // If it succeeded, clean up
+        queue_destroy(queue);
+    }
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -1383,6 +1457,12 @@ int main(void)
   RUN_TEST(test_queue_is_empty_with_null_queue);
   RUN_TEST(test_queue_is_full_with_null_queue);
   RUN_TEST(test_queue_get_size_with_null_queue);
+  
+  // Overflow detection tests
+  RUN_TEST(test_queue_create_with_overflow_capacity);
+  RUN_TEST(test_queue_create_with_max_capacity);
+  RUN_TEST(test_queue_create_with_safe_large_capacity);
+  RUN_TEST(test_queue_create_memory_allocation_failure);
   
   return (UnityEnd());
 }
