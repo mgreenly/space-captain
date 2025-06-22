@@ -36,7 +36,12 @@ int32_t main(void) {
   printf("%d\n", msg->header.length);
   printf("%s\n", msg->body);
 
-  queue_add(msg_queue, msg);
+  if (queue_add(msg_queue, msg) != QUEUE_SUCCESS) {
+    log_error("%s", "Failed to add message to queue");
+    free(msg);
+    queue_destroy(msg_queue);
+    return EXIT_FAILURE;
+  }
 
   message_t *msg2 = queue_pop(msg_queue);
 

@@ -131,10 +131,14 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
  * Adds a message to the queue, blocking if the queue is full.
  * Will timeout after QUEUE_ADD_TIMEOUT seconds if the queue remains full.
  * @param q Pointer to the queue (must not be NULL)
- * @param msg Pointer to the message to add
+ * @param msg Pointer to the message to add (must not be NULL)
+ * @return QUEUE_SUCCESS on success, or an error code on failure
  */
-void queue_add(queue_t* q, message_t* msg) {
-    assert(q != NULL);
+int queue_add(queue_t* q, message_t* msg) {
+    if (q == NULL || msg == NULL) {
+        return QUEUE_ERR_NULL;
+    }
+    
     pthread_mutex_lock(&q->mutex);
 
     while (q->size == q->capacity) {
@@ -146,12 +150,12 @@ void queue_add(queue_t* q, message_t* msg) {
         if (result == ETIMEDOUT) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
-            return; // Or could return error code if function signature changed
+            return QUEUE_ERR_TIMEOUT;
         }
         if (result != 0) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_add pthread_cond_timedwait failed: %d", result);
-            return;
+            return QUEUE_ERR_THREAD;
         }
     }
 
@@ -162,6 +166,8 @@ void queue_add(queue_t* q, message_t* msg) {
     // Signal a waiting consumer that there's a new item.
     pthread_cond_signal(&q->cond_not_empty);
     pthread_mutex_unlock(&q->mutex);
+    
+    return QUEUE_SUCCESS;
 }
 
 /**

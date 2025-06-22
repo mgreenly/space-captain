@@ -87,10 +87,10 @@ void* timeout_add_thread(void* arg) {
     timeout_thread_data_t *data = (timeout_thread_data_t*)arg;
 
     data->start_time = get_time_ms();
-    queue_add(data->queue, data->message);
+    int result = queue_add(data->queue, data->message);
     data->end_time = get_time_ms();
 
-    data->operation_result = 0; // queue_add doesn't return error in current design
+    data->operation_result = result;
     return NULL;
 }
 
@@ -102,7 +102,8 @@ void test_queue_add_and_pop_message(void) {
   // Always use dynamic allocation for messages
   message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_SIMPLE);
 
-  queue_add(queue, msg);
+  int result = queue_add(queue, msg);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
   message_t *popped_msg = queue_pop(queue);
   TEST_ASSERT_NOT_NULL(popped_msg);
@@ -133,6 +134,7 @@ void* producer_thread(void* arg) {
   message_t *msg = create_test_message(MSG_ECHO, buffer);
 
   queue_add(data->queue, msg);
+  // Result could be stored in thread_data if needed for verification
 
   return NULL;
 }
@@ -181,10 +183,10 @@ void* blocking_producer_thread(void* arg) {
   message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_BLOCKED);
 
   // This should block since queue is full
-  queue_add(data->queue, msg);
+  int result = queue_add(data->queue, msg);
 
-  // Set test_value to indicate we successfully added after blocking
-  data->test_value = 1;
+  // Set test_value based on success
+  data->test_value = (result == QUEUE_SUCCESS) ? 1 : 0;
 
   return NULL;
 }
@@ -213,8 +215,8 @@ void test_queue_add_blocks_on_full_queue(void) {
   message_t *msg1 = create_test_message(MSG_ECHO, TEST_MSG_FILL_1);
   message_t *msg2 = create_test_message(MSG_ECHO, TEST_MSG_FILL_2);
 
-  queue_add(queue, msg1);
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
 
   // Queue is now full
 
@@ -264,8 +266,8 @@ void test_queue_try_add_returns_error_on_full(void) {
   message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
   message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
 
-  queue_add(queue, msg1);
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
 
   // Queue is now full, try_add should return -1
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
@@ -323,7 +325,7 @@ void test_queue_try_pop_returns_message(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   message_t *msg = create_test_message(MSG_ECHO, "pop test");
-  queue_add(queue, msg);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg));
 
   // Try to pop, should get the message
   message_t *popped = queue_try_pop(queue);
@@ -346,7 +348,7 @@ void test_queue_try_operations_mixed(void) {
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
 
   TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg1));
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg3));
 
   // Queue is full now
@@ -399,7 +401,7 @@ void test_queue_is_empty_after_add_and_pop(void) {
 
   // Add a message, should not be empty
   message_t *msg = create_test_message(MSG_ECHO, "test");
-  queue_add(queue, msg);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg));
   TEST_ASSERT_EQUAL(0, queue_is_empty(queue));
 
   // Pop the message, should be empty again
@@ -458,12 +460,12 @@ void test_queue_is_full_after_filling_queue(void) {
 
   // Add first message, should not be full yet
   message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(0, queue_is_full(queue));
 
   // Add second message, should now be full
   message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(1, queue_is_full(queue));
 
   // Pop one message, should not be full anymore
@@ -540,15 +542,15 @@ void test_queue_get_size_with_add_and_pop(void) {
 
   // Add messages and verify size increases
   message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(1, queue_get_size(queue));
 
   message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(2, queue_get_size(queue));
 
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
-  queue_add(queue, msg3);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg3));
   TEST_ASSERT_EQUAL(3, queue_get_size(queue));
 
   // Pop messages and verify size decreases
@@ -579,13 +581,13 @@ void test_queue_get_size_at_capacity(void) {
   message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
 
-  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(1, queue_get_size(queue));
 
-  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(2, queue_get_size(queue));
 
-  queue_add(queue, msg3);
+  TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg3));
   TEST_ASSERT_EQUAL(3, queue_get_size(queue));
 
   // Verify size equals capacity when full
@@ -665,7 +667,7 @@ void test_queue_destroy_with_cleanup_single_message(void) {
     TEST_ASSERT_NOT_NULL(queue);
 
     message_t *msg = create_test_message(MSG_ECHO, "cleanup test");
-    queue_add(queue, msg);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg));
 
     cleanup_tracker_t tracker = {0};
     message_t* cleaned[10];
@@ -688,9 +690,9 @@ void test_queue_destroy_with_cleanup_multiple_messages(void) {
     message_t *msg2 = create_test_message(MSG_REVERSE, "msg2");
     message_t *msg3 = create_test_message(MSG_TIME, "msg3");
 
-    queue_add(queue, msg1);
-    queue_add(queue, msg2);
-    queue_add(queue, msg3);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg3));
 
     cleanup_tracker_t tracker = {0};
     message_t* cleaned[10];
@@ -722,8 +724,8 @@ void test_queue_destroy_with_cleanup_null_callback(void) {
     message_t *msg1 = create_test_message(MSG_ECHO, "leaked1");
     message_t *msg2 = create_test_message(MSG_ECHO, "leaked2");
 
-    queue_add(queue, msg1);
-    queue_add(queue, msg2);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
 
     // Destroy with NULL cleanup callback - messages will be drained but not freed
     // This simulates the case where caller wants to handle cleanup elsewhere
@@ -743,9 +745,9 @@ void test_queue_destroy_with_cleanup_partial_queue(void) {
     message_t *msg2 = create_test_message(MSG_ECHO, "cleanup_me");
     message_t *msg3 = create_test_message(MSG_ECHO, "cleanup_me_too");
 
-    queue_add(queue, msg1);
-    queue_add(queue, msg2);
-    queue_add(queue, msg3);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg3));
 
     // Pop one message normally
     message_t *popped = queue_pop(queue);
@@ -833,8 +835,8 @@ void test_queue_add_timeout_on_full_queue(void) {
     // Fill the queue to capacity
     message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
     message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
-    queue_add(queue, msg1);
-    queue_add(queue, msg2);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
 
     // Try to add another message - should timeout
     pthread_t thread;
@@ -844,6 +846,9 @@ void test_queue_add_timeout_on_full_queue(void) {
 
     pthread_create(&thread, NULL, timeout_add_thread, &thread_data);
     pthread_join(thread, NULL);
+
+    // Verify timeout occurred by checking operation_result
+    TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, thread_data.operation_result);
 
     // Verify timing (should timeout after 2 seconds)
     long long elapsed_ms = thread_data.end_time - thread_data.start_time;
@@ -911,8 +916,8 @@ void test_queue_add_succeeds_before_timeout(void) {
     // Fill queue
     message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
     message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
-    queue_add(queue, msg1);
-    queue_add(queue, msg2);
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
 
     pthread_t add_thread, pop_thread;
     timeout_thread_data_t add_data = {0};
@@ -983,8 +988,9 @@ void test_queue_timeout_error_conditions(void) {
 
     // Add should succeed immediately on empty queue
     long long start = get_time_ms();
-    queue_add(queue, msg);
+    int result = queue_add(queue, msg);
     long long elapsed = get_time_ms() - start;
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
     // Should complete very quickly, not wait for timeout
     TEST_ASSERT_LESS_THAN(1000, elapsed); // Less than 1 second
@@ -999,6 +1005,54 @@ void test_queue_timeout_error_conditions(void) {
 
     free(popped->body);
     free(popped);
+    queue_destroy(queue);
+}
+
+void test_queue_add_returns_error_on_null_queue(void) {
+    message_t *msg = create_test_message(MSG_ECHO, "test");
+    int result = queue_add(NULL, msg);
+    TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
+    free(msg->body);
+    free(msg);
+}
+
+void test_queue_add_returns_error_on_null_message(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    int result = queue_add(queue, NULL);
+    TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
+    
+    queue_destroy(queue);
+}
+
+void test_queue_add_timeout_returns_error_code(void) {
+    queue_t *queue = queue_create(2);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Fill the queue
+    message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
+    message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
+    TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
+    
+    // Try to add another - should timeout
+    message_t *timeout_msg = create_test_message(MSG_ECHO, "timeout");
+    long long start = get_time_ms();
+    int result = queue_add(queue, timeout_msg);
+    long long elapsed = get_time_ms() - start;
+    
+    TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, result);
+    TEST_ASSERT_GREATER_OR_EQUAL(2000 - TIMEOUT_MARGIN_MS, elapsed);
+    
+    // Clean up
+    free(timeout_msg->body);
+    free(timeout_msg);
+    message_t *remaining;
+    while ((remaining = queue_try_pop(queue)) != NULL) {
+        free(remaining->body);
+        free(remaining);
+    }
     queue_destroy(queue);
 }
 
@@ -1039,5 +1093,8 @@ int main(void)
   RUN_TEST(test_queue_add_succeeds_before_timeout);
   RUN_TEST(test_queue_timeout_thread_safety);
   RUN_TEST(test_queue_timeout_error_conditions);
+  RUN_TEST(test_queue_add_returns_error_on_null_queue);
+  RUN_TEST(test_queue_add_returns_error_on_null_message);
+  RUN_TEST(test_queue_add_timeout_returns_error_code);
   return (UnityEnd());
 }

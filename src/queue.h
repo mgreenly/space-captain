@@ -6,6 +6,12 @@
 
 #include "message.h"
 
+// Queue operation return codes
+#define QUEUE_SUCCESS      0
+#define QUEUE_ERR_TIMEOUT  -1
+#define QUEUE_ERR_THREAD   -2
+#define QUEUE_ERR_NULL     -3
+
 typedef struct {
     message_t** buffer;
     size_t capacity;
@@ -22,7 +28,7 @@ typedef void (*queue_cleanup_fn)(message_t* msg, void* user_data);
 queue_t* queue_create(size_t capacity);
 void queue_destroy(queue_t* q);
 void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data);
-void queue_add(queue_t* q, message_t* msg);
+int queue_add(queue_t* q, message_t* msg);
 message_t* queue_pop(queue_t* q);
 int queue_try_add(queue_t* q, message_t* msg);
 message_t* queue_try_pop(queue_t* q);
