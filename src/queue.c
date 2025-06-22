@@ -57,25 +57,25 @@ void queue_destroy(queue_t* q) {
 
 void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
     assert(q != NULL);
-    
+
     // Lock the queue to prevent any new operations
     pthread_mutex_lock(&q->mutex);
-    
+
     // Drain all remaining messages
     while (q->size > 0) {
         message_t* msg = q->buffer[q->head];
         q->head = (q->head + 1) % q->capacity;
         q->size--;
-        
+
         // Apply cleanup callback if provided
         if (cleanup_fn != NULL) {
             cleanup_fn(msg, user_data);
         }
     }
-    
+
     // Unlock before destroying synchronization primitives
     pthread_mutex_unlock(&q->mutex);
-    
+
     // Clean up queue structure
     free(q->buffer);
     pthread_mutex_destroy(&q->mutex);
@@ -92,7 +92,7 @@ void queue_add(queue_t* q, message_t* msg) {
         // Queue is full, wait for a spot to open up with timeout
         struct timespec timeout;
         get_absolute_timeout(&timeout, QUEUE_ADD_TIMEOUT);
-        
+
         int result = pthread_cond_timedwait(&q->cond_not_full, &q->mutex, &timeout);
         if (result == ETIMEDOUT) {
             pthread_mutex_unlock(&q->mutex);
@@ -123,7 +123,7 @@ message_t* queue_pop(queue_t* q) {
         // Queue is empty, wait for an item to be pushed with timeout
         struct timespec timeout;
         get_absolute_timeout(&timeout, QUEUE_POP_TIMEOUT);
-        
+
         int result = pthread_cond_timedwait(&q->cond_not_empty, &q->mutex, &timeout);
         if (result == ETIMEDOUT) {
             pthread_mutex_unlock(&q->mutex);
