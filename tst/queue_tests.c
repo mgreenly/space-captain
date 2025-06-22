@@ -187,6 +187,130 @@ void test_queue_add_blocks_on_full_queue(void) {
   queue_destroy(queue);
 }
 
+void test_queue_try_add_returns_error_on_full(void) {
+  queue_t *queue = queue_create(2);  // Small capacity
+  TEST_ASSERT_NOT_NULL(queue);
+
+  // Fill the queue to capacity
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  
+  queue_add(queue, msg1);
+  queue_add(queue, msg2);
+  
+  // Queue is now full, try_add should return -1
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  int result = queue_try_add(queue, msg3);
+  TEST_ASSERT_EQUAL(-1, result);
+  
+  // Clean up msg3 since it wasn't added
+  free(msg3->body);
+  free(msg3);
+  
+  // Clean up queue messages
+  for (int i = 0; i < 2; i++) {
+    message_t *msg = queue_pop(queue);
+    free(msg->body);
+    free(msg);
+  }
+  
+  queue_destroy(queue);
+}
+
+void test_queue_try_add_succeeds_with_space(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  message_t *msg = create_test_message(MSG_ECHO, "test message");
+  
+  // Try to add to empty queue, should succeed
+  int result = queue_try_add(queue, msg);
+  TEST_ASSERT_EQUAL(0, result);
+  
+  // Verify message was added
+  message_t *popped = queue_pop(queue);
+  TEST_ASSERT_NOT_NULL(popped);
+  TEST_ASSERT_EQUAL_STRING("test message", popped->body);
+  
+  free(popped->body);
+  free(popped);
+  
+  queue_destroy(queue);
+}
+
+void test_queue_try_pop_returns_null_on_empty(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Try to pop from empty queue
+  message_t *msg = queue_try_pop(queue);
+  TEST_ASSERT_NULL(msg);
+  
+  queue_destroy(queue);
+}
+
+void test_queue_try_pop_returns_message(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  message_t *msg = create_test_message(MSG_ECHO, "pop test");
+  queue_add(queue, msg);
+  
+  // Try to pop, should get the message
+  message_t *popped = queue_try_pop(queue);
+  TEST_ASSERT_NOT_NULL(popped);
+  TEST_ASSERT_EQUAL_STRING("pop test", popped->body);
+  
+  free(popped->body);
+  free(popped);
+  
+  queue_destroy(queue);
+}
+
+void test_queue_try_operations_mixed(void) {
+  queue_t *queue = queue_create(3);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Add messages using both methods
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg1));
+  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg3));
+  
+  // Queue is full now
+  message_t *msg4 = create_test_message(MSG_ECHO, "msg4");
+  TEST_ASSERT_EQUAL(-1, queue_try_add(queue, msg4));
+  free(msg4->body);
+  free(msg4);
+  
+  // Pop using both methods
+  message_t *p1 = queue_try_pop(queue);
+  TEST_ASSERT_NOT_NULL(p1);
+  TEST_ASSERT_EQUAL_STRING("msg1", p1->body);
+  free(p1->body);
+  free(p1);
+  
+  message_t *p2 = queue_pop(queue);
+  TEST_ASSERT_NOT_NULL(p2);
+  TEST_ASSERT_EQUAL_STRING("msg2", p2->body);
+  free(p2->body);
+  free(p2);
+  
+  message_t *p3 = queue_try_pop(queue);
+  TEST_ASSERT_NOT_NULL(p3);
+  TEST_ASSERT_EQUAL_STRING("msg3", p3->body);
+  free(p3->body);
+  free(p3);
+  
+  // Queue should be empty now
+  TEST_ASSERT_NULL(queue_try_pop(queue));
+  
+  queue_destroy(queue);
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -197,5 +321,10 @@ int main(void)
   RUN_TEST(test_queue_add_and_pop_message);
   RUN_TEST(test_queue_pop_blocks_until_push);
   RUN_TEST(test_queue_add_blocks_on_full_queue);
+  RUN_TEST(test_queue_try_add_returns_error_on_full);
+  RUN_TEST(test_queue_try_add_succeeds_with_space);
+  RUN_TEST(test_queue_try_pop_returns_null_on_empty);
+  RUN_TEST(test_queue_try_pop_returns_message);
+  RUN_TEST(test_queue_try_operations_mixed);
   return (UnityEnd());
 }

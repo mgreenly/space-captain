@@ -21,5 +21,7 @@ queue_t* queue_create(size_t capacity);
 void queue_destroy(queue_t* q);
 void queue_add(queue_t* q, message_t* msg);
 message_t* queue_pop(queue_t* q);
+int queue_try_add(queue_t* q, message_t* msg);
+message_t* queue_try_pop(queue_t* q);
 
 #endif // QUEUE_H

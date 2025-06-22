@@ -80,3 +80,45 @@ message_t* queue_pop(queue_t* q) {
 
     return msg;
 }
+
+int queue_try_add(queue_t* q, message_t* msg) {
+    assert(q != NULL);
+    pthread_mutex_lock(&q->mutex);
+
+    if (q->size == q->capacity) {
+        // Queue is full, return error immediately
+        pthread_mutex_unlock(&q->mutex);
+        return -1;
+    }
+
+    q->buffer[q->tail] = msg;
+    q->tail = (q->tail + 1) % q->capacity;
+    q->size++;
+
+    // Signal a waiting consumer that there's a new item.
+    pthread_cond_signal(&q->cond_not_empty);
+    pthread_mutex_unlock(&q->mutex);
+
+    return 0;
+}
+
+message_t* queue_try_pop(queue_t* q) {
+    assert(q != NULL);
+    pthread_mutex_lock(&q->mutex);
+
+    if (q->size == 0) {
+        // Queue is empty, return NULL immediately
+        pthread_mutex_unlock(&q->mutex);
+        return NULL;
+    }
+
+    message_t* msg = q->buffer[q->head];
+    q->head = (q->head + 1) % q->capacity;
+    q->size--;
+
+    // Signal a waiting producer that there's new space.
+    pthread_cond_signal(&q->cond_not_full);
+    pthread_mutex_unlock(&q->mutex);
+
+    return msg;
+}
