@@ -32,7 +32,8 @@ typedef struct {
     size_t size;
     size_t head;
     size_t tail;
-    pthread_mutex_t mutex;
+    pthread_rwlock_t rwlock;       // Reader-writer lock for data access
+    pthread_mutex_t cond_mutex;    // Separate mutex for condition variables
     pthread_cond_t cond_not_empty;
     pthread_cond_t cond_not_full;
 } queue_t;

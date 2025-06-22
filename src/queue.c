@@ -89,10 +89,20 @@ queue_t* queue_create(size_t capacity) {
     q->head = 0;
     q->tail = 0;
     
-    // Initialize mutex with error checking
-    if (pthread_mutex_init(&q->mutex, NULL) != 0) {
+    // Initialize rwlock with error checking
+    if (pthread_rwlock_init(&q->rwlock, NULL) != 0) {
         queue_errno = QUEUE_ERR_THREAD;
-        log_error("%s", "Failed to initialize queue mutex");
+        log_error("%s", "Failed to initialize queue rwlock");
+        free(q->buffer);
+        free(q);
+        return NULL;
+    }
+    
+    // Initialize condition mutex with error checking
+    if (pthread_mutex_init(&q->cond_mutex, NULL) != 0) {
+        queue_errno = QUEUE_ERR_THREAD;
+        log_error("%s", "Failed to initialize condition mutex");
+        pthread_rwlock_destroy(&q->rwlock);
         free(q->buffer);
         free(q);
         return NULL;
@@ -102,7 +112,8 @@ queue_t* queue_create(size_t capacity) {
     if (pthread_cond_init(&q->cond_not_empty, NULL) != 0) {
         queue_errno = QUEUE_ERR_THREAD;
         log_error("%s", "Failed to initialize cond_not_empty");
-        pthread_mutex_destroy(&q->mutex);
+        pthread_mutex_destroy(&q->cond_mutex);
+        pthread_rwlock_destroy(&q->rwlock);
         free(q->buffer);
         free(q);
         return NULL;
@@ -112,7 +123,8 @@ queue_t* queue_create(size_t capacity) {
         queue_errno = QUEUE_ERR_THREAD;
         log_error("%s", "Failed to initialize cond_not_full");
         pthread_cond_destroy(&q->cond_not_empty);
-        pthread_mutex_destroy(&q->mutex);
+        pthread_mutex_destroy(&q->cond_mutex);
+        pthread_rwlock_destroy(&q->rwlock);
         free(q->buffer);
         free(q);
         return NULL;
@@ -138,11 +150,13 @@ int queue_destroy(queue_t* q) {
     // Note: This does not free the messages themselves,
     // as ownership is transferred out of the queue on pop.
     // The caller is responsible for freeing messages.
-    int err = pthread_mutex_destroy(&q->mutex);
+    int err = pthread_rwlock_destroy(&q->rwlock);
     if (err != 0) {
         queue_errno = QUEUE_ERR_THREAD;
-        log_error("Failed to destroy mutex: %d", err);
+        log_error("Failed to destroy rwlock: %d", err);
     }
+    
+    pthread_mutex_destroy(&q->cond_mutex);
     
     free(q->buffer);
     pthread_cond_destroy(&q->cond_not_empty);
@@ -165,7 +179,7 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
     }
 
     // Lock the queue to prevent any new operations
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_wrlock(&q->rwlock);
 
     // Drain all remaining messages
     while (q->size > 0) {
@@ -180,11 +194,12 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
     }
 
     // Unlock before destroying synchronization primitives
-    pthread_mutex_unlock(&q->mutex);
+    pthread_rwlock_unlock(&q->rwlock);
 
     // Clean up queue structure
     free(q->buffer);
-    pthread_mutex_destroy(&q->mutex);
+    pthread_rwlock_destroy(&q->rwlock);
+    pthread_mutex_destroy(&q->cond_mutex);
     pthread_cond_destroy(&q->cond_not_empty);
     pthread_cond_destroy(&q->cond_not_full);
     free(q);
@@ -205,35 +220,46 @@ int queue_add(queue_t* q, message_t* msg) {
         return QUEUE_ERR_NULL;
     }
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_wrlock(&q->rwlock);
 
     while (q->size == q->capacity) {
-        // Queue is full, wait for a spot to open up with timeout
+        // Queue is full, must unlock rwlock before waiting on condition
+        pthread_rwlock_unlock(&q->rwlock);
+        
+        // Use condition mutex for waiting
+        pthread_mutex_lock(&q->cond_mutex);
+        
         struct timespec timeout;
         get_absolute_timeout(&timeout, QUEUE_ADD_TIMEOUT);
 
-        int result = pthread_cond_timedwait(&q->cond_not_full, &q->mutex, &timeout);
+        int result = pthread_cond_timedwait(&q->cond_not_full, &q->cond_mutex, &timeout);
+        pthread_mutex_unlock(&q->cond_mutex);
+        
         if (result == ETIMEDOUT) {
-            pthread_mutex_unlock(&q->mutex);
             log_error("queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
             queue_errno = QUEUE_ERR_TIMEOUT;
             return QUEUE_ERR_TIMEOUT;
         }
         if (result != 0) {
-            pthread_mutex_unlock(&q->mutex);
             log_error("queue_add pthread_cond_timedwait failed: %d", result);
             queue_errno = QUEUE_ERR_THREAD;
             return QUEUE_ERR_THREAD;
         }
+        
+        // Re-acquire write lock and check condition again
+        pthread_rwlock_wrlock(&q->rwlock);
     }
 
     q->buffer[q->tail] = msg;
     q->tail = (q->tail + 1) % q->capacity;
     q->size++;
 
-    // Signal a waiting consumer that there's a new item.
+    pthread_rwlock_unlock(&q->rwlock);
+    
+    // Signal a waiting consumer that there's a new item
+    pthread_mutex_lock(&q->cond_mutex);
     pthread_cond_signal(&q->cond_not_empty);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&q->cond_mutex);
     
     return QUEUE_SUCCESS;
 }
@@ -255,35 +281,46 @@ int queue_pop(queue_t* q, message_t** msg) {
     
     *msg = NULL;
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_wrlock(&q->rwlock);
 
     while (q->size == 0) {
-        // Queue is empty, wait for an item to be pushed with timeout
+        // Queue is empty, must unlock rwlock before waiting on condition
+        pthread_rwlock_unlock(&q->rwlock);
+        
+        // Use condition mutex for waiting
+        pthread_mutex_lock(&q->cond_mutex);
+        
         struct timespec timeout;
         get_absolute_timeout(&timeout, QUEUE_POP_TIMEOUT);
 
-        int result = pthread_cond_timedwait(&q->cond_not_empty, &q->mutex, &timeout);
+        int result = pthread_cond_timedwait(&q->cond_not_empty, &q->cond_mutex, &timeout);
+        pthread_mutex_unlock(&q->cond_mutex);
+        
         if (result == ETIMEDOUT) {
-            pthread_mutex_unlock(&q->mutex);
             log_error("queue_pop timed out after %d seconds", QUEUE_POP_TIMEOUT);
             queue_errno = QUEUE_ERR_TIMEOUT;
             return QUEUE_ERR_TIMEOUT;
         }
         if (result != 0) {
-            pthread_mutex_unlock(&q->mutex);
             log_error("queue_pop pthread_cond_timedwait failed: %d", result);
             queue_errno = QUEUE_ERR_THREAD;
             return QUEUE_ERR_THREAD;
         }
+        
+        // Re-acquire write lock and check condition again
+        pthread_rwlock_wrlock(&q->rwlock);
     }
 
     *msg = q->buffer[q->head];
     q->head = (q->head + 1) % q->capacity;
     q->size--;
 
-    // Signal a waiting producer that there's new space.
+    pthread_rwlock_unlock(&q->rwlock);
+    
+    // Signal a waiting producer that there's new space
+    pthread_mutex_lock(&q->cond_mutex);
     pthread_cond_signal(&q->cond_not_full);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&q->cond_mutex);
 
     return QUEUE_SUCCESS;
 }
@@ -302,11 +339,11 @@ int queue_try_add(queue_t* q, message_t* msg) {
         return QUEUE_ERR_NULL;
     }
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_wrlock(&q->rwlock);
 
     if (q->size == q->capacity) {
         // Queue is full, return error immediately
-        pthread_mutex_unlock(&q->mutex);
+        pthread_rwlock_unlock(&q->rwlock);
         queue_errno = QUEUE_ERR_FULL;
         return QUEUE_ERR_FULL;
     }
@@ -315,9 +352,12 @@ int queue_try_add(queue_t* q, message_t* msg) {
     q->tail = (q->tail + 1) % q->capacity;
     q->size++;
 
+    pthread_rwlock_unlock(&q->rwlock);
+    
     // Signal a waiting consumer that there's a new item.
+    pthread_mutex_lock(&q->cond_mutex);
     pthread_cond_signal(&q->cond_not_empty);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&q->cond_mutex);
 
     return QUEUE_SUCCESS;
 }
@@ -338,11 +378,11 @@ int queue_try_pop(queue_t* q, message_t** msg) {
     
     *msg = NULL;
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_wrlock(&q->rwlock);
 
     if (q->size == 0) {
         // Queue is empty, return error immediately
-        pthread_mutex_unlock(&q->mutex);
+        pthread_rwlock_unlock(&q->rwlock);
         queue_errno = QUEUE_ERR_EMPTY;
         return QUEUE_ERR_EMPTY;
     }
@@ -351,9 +391,12 @@ int queue_try_pop(queue_t* q, message_t** msg) {
     q->head = (q->head + 1) % q->capacity;
     q->size--;
 
+    pthread_rwlock_unlock(&q->rwlock);
+    
     // Signal a waiting producer that there's new space.
+    pthread_mutex_lock(&q->cond_mutex);
     pthread_cond_signal(&q->cond_not_full);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&q->cond_mutex);
 
     return QUEUE_SUCCESS;
 }
@@ -371,9 +414,9 @@ bool queue_is_empty(queue_t* q) {
         return false;
     }
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_rdlock(&q->rwlock);
     bool is_empty = (q->size == 0);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_rwlock_unlock(&q->rwlock);
     return is_empty;
 }
 
@@ -390,9 +433,9 @@ bool queue_is_full(queue_t* q) {
         return false;
     }
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_rdlock(&q->rwlock);
     bool is_full = (q->size == q->capacity);
-    pthread_mutex_unlock(&q->mutex);
+    pthread_rwlock_unlock(&q->rwlock);
     return is_full;
 }
 
@@ -409,8 +452,8 @@ size_t queue_get_size(queue_t* q) {
         return 0;
     }
     
-    pthread_mutex_lock(&q->mutex);
+    pthread_rwlock_rdlock(&q->rwlock);
     size_t size = q->size;
-    pthread_mutex_unlock(&q->mutex);
+    pthread_rwlock_unlock(&q->rwlock);
     return size;
 }
