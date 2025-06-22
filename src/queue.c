@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <time.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "message.h"
 #include "queue.h"
@@ -355,18 +356,18 @@ int queue_try_pop(queue_t* q, message_t** msg) {
 /**
  * Checks if the queue is empty (thread-safe).
  * @param q Pointer to the queue
- * @return 1 if the queue is empty, 0 otherwise, -1 on error
+ * @return true if the queue is empty, false otherwise (including on error)
  */
-int queue_is_empty(const queue_t* q) {
+bool queue_is_empty(const queue_t* q) {
     queue_errno = QUEUE_SUCCESS;
     
     if (q == NULL) {
         queue_errno = QUEUE_ERR_NULL;
-        return -1;
+        return false;
     }
     
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
-    int is_empty = (q->size == 0);
+    bool is_empty = (q->size == 0);
     pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
     return is_empty;
 }
@@ -374,18 +375,18 @@ int queue_is_empty(const queue_t* q) {
 /**
  * Checks if the queue is full (thread-safe).
  * @param q Pointer to the queue
- * @return 1 if the queue is full, 0 otherwise, -1 on error
+ * @return true if the queue is full, false otherwise (including on error)
  */
-int queue_is_full(const queue_t* q) {
+bool queue_is_full(const queue_t* q) {
     queue_errno = QUEUE_SUCCESS;
     
     if (q == NULL) {
         queue_errno = QUEUE_ERR_NULL;
-        return -1;
+        return false;
     }
     
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
-    int is_full = (q->size == q->capacity);
+    bool is_full = (q->size == q->capacity);
     pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
     return is_full;
 }

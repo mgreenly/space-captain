@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "vendor/unity.c"
 
@@ -403,7 +404,7 @@ void test_queue_is_empty_on_new_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // New queue should be empty
-  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  TEST_ASSERT_TRUE(queue_is_empty(queue));
 
   queue_destroy(queue);
 }
@@ -413,17 +414,17 @@ void test_queue_is_empty_after_add_and_pop(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Initially empty
-  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  TEST_ASSERT_TRUE(queue_is_empty(queue));
 
   // Add a message, should not be empty
   message_t *msg = create_test_message(MSG_ECHO, "test");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg));
-  TEST_ASSERT_EQUAL(0, queue_is_empty(queue));
+  TEST_ASSERT_FALSE(queue_is_empty(queue));
 
   // Pop the message, should be empty again
   message_t *popped = NULL;
   queue_pop(queue, &popped);
-  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  TEST_ASSERT_TRUE(queue_is_empty(queue));
 
   // Clean up
   free(popped->body);
@@ -444,7 +445,7 @@ void test_queue_is_empty_thread_safety(void) {
   pthread_create(&consumer, NULL, consumer_thread, &consumer_data);
 
   // Queue should still be empty initially
-  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  TEST_ASSERT_TRUE(queue_is_empty(queue));
 
   // Start producer after small delay
   pthread_create(&producer, NULL, producer_thread, &producer_data);
@@ -453,7 +454,7 @@ void test_queue_is_empty_thread_safety(void) {
   pthread_join(producer, NULL);
 
   // Queue should be empty after consumer got the message
-  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  TEST_ASSERT_TRUE(queue_is_empty(queue));
 
   queue_destroy(queue);
 }
@@ -463,7 +464,7 @@ void test_queue_is_full_on_new_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // New queue should not be full
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   queue_destroy(queue);
 }
@@ -473,22 +474,22 @@ void test_queue_is_full_after_filling_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Initially not full
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   // Add first message, should not be full yet
   message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg1));
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   // Add second message, should now be full
   message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_add(queue, msg2));
-  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  TEST_ASSERT_TRUE(queue_is_full(queue));
 
   // Pop one message, should not be full anymore
   message_t *popped = NULL;
   queue_pop(queue, &popped);
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   // Clean up
   free(popped->body);
@@ -513,18 +514,18 @@ void test_queue_is_full_with_try_operations(void) {
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_try_add(queue, msg1));
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_try_add(queue, msg2));
-  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  TEST_ASSERT_FALSE(queue_is_full(queue));
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_try_add(queue, msg3));
-  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  TEST_ASSERT_TRUE(queue_is_full(queue));
 
   // Try to add another message, should fail since queue is full
   message_t *msg4 = create_test_message(MSG_ECHO, "msg4");
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, queue_try_add(queue, msg4));
-  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  TEST_ASSERT_TRUE(queue_is_full(queue));
 
   // Clean up unused message
   free(msg4->body);
@@ -614,7 +615,7 @@ void test_queue_get_size_at_capacity(void) {
   TEST_ASSERT_EQUAL(3, queue_get_size(queue));
 
   // Verify size equals capacity when full
-  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  TEST_ASSERT_TRUE(queue_is_full(queue));
   TEST_ASSERT_EQUAL(3, queue_get_size(queue));
 
   // Clean up
@@ -1299,17 +1300,17 @@ void test_queue_try_pop_null_parameters(void) {
 
 void test_queue_is_empty_with_null_queue(void) {
     queue_clear_error();
-    int result = queue_is_empty(NULL);
+    bool result = queue_is_empty(NULL);
     
-    TEST_ASSERT_EQUAL(-1, result);
+    TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
 void test_queue_is_full_with_null_queue(void) {
     queue_clear_error();
-    int result = queue_is_full(NULL);
+    bool result = queue_is_full(NULL);
     
-    TEST_ASSERT_EQUAL(-1, result);
+    TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
