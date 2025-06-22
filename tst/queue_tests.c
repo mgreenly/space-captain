@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "vendor/unity.c"
 
@@ -16,6 +17,10 @@
 #define TEST_MSG_BLOCKED "Blocked msg"
 #define TEST_MSG_FILL_1 "msg1"
 #define TEST_MSG_FILL_2 "msg2"
+
+// Timeout test constants
+#define TIMEOUT_TEST_SECONDS 2    // Shorter timeout for faster testing
+#define TIMEOUT_MARGIN_MS 500     // Allow 500ms margin for timing variations
 
 // Helper function to create a dynamically allocated message
 static message_t* create_test_message(message_type_t type, const char* body) {
@@ -47,6 +52,46 @@ static void test_cleanup_callback(message_t* msg, void* user_data) {
     // Free the message as normal cleanup would do
     free(msg->body);
     free(msg);
+}
+
+// Helper to get current time in milliseconds
+static long long get_time_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    return (long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
+
+// Thread data for timeout testing
+typedef struct {
+    queue_t *queue;
+    long long start_time;
+    long long end_time;
+    int operation_result;  // 0 = success, -1 = timeout/error
+    message_t *message;    // For pop operations
+} timeout_thread_data_t;
+
+// Thread function for testing queue_pop timeout
+void* timeout_pop_thread(void* arg) {
+    timeout_thread_data_t *data = (timeout_thread_data_t*)arg;
+    
+    data->start_time = get_time_ms();
+    data->message = queue_pop(data->queue);
+    data->end_time = get_time_ms();
+    
+    data->operation_result = (data->message != NULL) ? 0 : -1;
+    return NULL;
+}
+
+// Thread function for testing queue_add timeout
+void* timeout_add_thread(void* arg) {
+    timeout_thread_data_t *data = (timeout_thread_data_t*)arg;
+    
+    data->start_time = get_time_ms();
+    queue_add(data->queue, data->message);
+    data->end_time = get_time_ms();
+    
+    data->operation_result = 0; // queue_add doesn't return error in current design
+    return NULL;
 }
 
 
@@ -752,6 +797,211 @@ void test_queue_destroy_with_cleanup_thread_safety(void) {
     TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
 }
 
+void test_queue_pop_timeout_on_empty_queue(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    pthread_t thread;
+    timeout_thread_data_t thread_data = {0};
+    thread_data.queue = queue;
+    
+    // Start thread that will try to pop from empty queue
+    pthread_create(&thread, NULL, timeout_pop_thread, &thread_data);
+    
+    // Wait for thread to complete (should timeout)
+    pthread_join(thread, NULL);
+    
+    // Verify timeout occurred
+    TEST_ASSERT_EQUAL(-1, thread_data.operation_result);
+    TEST_ASSERT_NULL(thread_data.message);
+    
+    // Verify timing (should be around 2 seconds timeout)
+    long long elapsed_ms = thread_data.end_time - thread_data.start_time;
+    long long expected_timeout_ms = 2 * 1000;
+    
+    // Allow some margin for timing variations
+    TEST_ASSERT_GREATER_OR_EQUAL(expected_timeout_ms - TIMEOUT_MARGIN_MS, elapsed_ms);
+    TEST_ASSERT_LESS_OR_EQUAL(expected_timeout_ms + TIMEOUT_MARGIN_MS, elapsed_ms);
+    
+    queue_destroy(queue);
+}
+
+void test_queue_add_timeout_on_full_queue(void) {
+    queue_t *queue = queue_create(2);  // Small capacity
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Fill the queue to capacity
+    message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
+    message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+    queue_add(queue, msg1);
+    queue_add(queue, msg2);
+    
+    // Try to add another message - should timeout
+    pthread_t thread;
+    timeout_thread_data_t thread_data = {0};
+    thread_data.queue = queue;
+    thread_data.message = create_test_message(MSG_ECHO, "timeout_msg");
+    
+    pthread_create(&thread, NULL, timeout_add_thread, &thread_data);
+    pthread_join(thread, NULL);
+    
+    // Verify timing (should timeout after 2 seconds)
+    long long elapsed_ms = thread_data.end_time - thread_data.start_time;
+    long long expected_timeout_ms = 2 * 1000;
+    
+    TEST_ASSERT_GREATER_OR_EQUAL(expected_timeout_ms - TIMEOUT_MARGIN_MS, elapsed_ms);
+    TEST_ASSERT_LESS_OR_EQUAL(expected_timeout_ms + TIMEOUT_MARGIN_MS, elapsed_ms);
+    
+    // Clean up - the timeout message may or may not have been added
+    // depending on exact timing, so clean up safely
+    message_t *remaining;
+    while ((remaining = queue_try_pop(queue)) != NULL) {
+        free(remaining->body);
+        free(remaining);
+    }
+    
+    // Clean up timeout message if it wasn't added
+    if (thread_data.message) {
+        free(thread_data.message->body);
+        free(thread_data.message);
+    }
+    
+    queue_destroy(queue);
+}
+
+void test_queue_pop_succeeds_before_timeout(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    pthread_t pop_thread, add_thread;
+    timeout_thread_data_t pop_data = {0};
+    thread_data_t add_data = {queue, 1000, 42}; // Add message after 1 second
+    
+    pop_data.queue = queue;
+    
+    // Start pop thread first (will wait)
+    pthread_create(&pop_thread, NULL, timeout_pop_thread, &pop_data);
+    
+    // Start add thread with delay (should unblock pop before timeout)
+    pthread_create(&add_thread, NULL, producer_thread, &add_data);
+    
+    pthread_join(pop_thread, NULL);
+    pthread_join(add_thread, NULL);
+    
+    // Verify pop succeeded (didn't timeout)
+    TEST_ASSERT_EQUAL(0, pop_data.operation_result);
+    TEST_ASSERT_NOT_NULL(pop_data.message);
+    
+    // Verify timing was less than timeout
+    long long elapsed_ms = pop_data.end_time - pop_data.start_time;
+    long long timeout_ms = 2 * 1000;
+    TEST_ASSERT_LESS_THAN(timeout_ms, elapsed_ms);
+    
+    // Clean up message
+    free(pop_data.message->body);
+    free(pop_data.message);
+    
+    queue_destroy(queue);
+}
+
+void test_queue_add_succeeds_before_timeout(void) {
+    queue_t *queue = queue_create(2);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Fill queue
+    message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
+    message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+    queue_add(queue, msg1);
+    queue_add(queue, msg2);
+    
+    pthread_t add_thread, pop_thread;
+    timeout_thread_data_t add_data = {0};
+    thread_data_t pop_data = {queue, 1000, 0}; // Pop after 1 second
+    
+    add_data.queue = queue;
+    add_data.message = create_test_message(MSG_ECHO, "add_test");
+    
+    // Start add thread (will block on full queue)
+    pthread_create(&add_thread, NULL, timeout_add_thread, &add_data);
+    
+    // Start delayed consumer to make space
+    pthread_create(&pop_thread, NULL, delayed_consumer_thread, &pop_data);
+    
+    pthread_join(add_thread, NULL);
+    pthread_join(pop_thread, NULL);
+    
+    // Verify add completed before timeout
+    long long elapsed_ms = add_data.end_time - add_data.start_time;
+    long long timeout_ms = 2 * 1000;
+    TEST_ASSERT_LESS_THAN(timeout_ms, elapsed_ms);
+    
+    // Clean up remaining messages
+    message_t *remaining;
+    while ((remaining = queue_try_pop(queue)) != NULL) {
+        free(remaining->body);
+        free(remaining);
+    }
+    
+    queue_destroy(queue);
+}
+
+void test_queue_timeout_thread_safety(void) {
+    queue_t *queue = queue_create(3);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Test multiple threads timing out simultaneously
+    pthread_t pop_threads[3];
+    timeout_thread_data_t pop_data[3];
+    
+    for (int i = 0; i < 3; i++) {
+        pop_data[i].queue = queue;
+        pop_data[i].message = NULL;
+        pop_data[i].operation_result = 0;
+        pthread_create(&pop_threads[i], NULL, timeout_pop_thread, &pop_data[i]);
+    }
+    
+    // Wait for all threads to timeout
+    for (int i = 0; i < 3; i++) {
+        pthread_join(pop_threads[i], NULL);
+    }
+    
+    // Verify all threads timed out properly
+    for (int i = 0; i < 3; i++) {
+        TEST_ASSERT_EQUAL(-1, pop_data[i].operation_result);
+        TEST_ASSERT_NULL(pop_data[i].message);
+    }
+    
+    queue_destroy(queue);
+}
+
+void test_queue_timeout_error_conditions(void) {
+    queue_t *queue = queue_create(5);
+    TEST_ASSERT_NOT_NULL(queue);
+    
+    // Test that timeout doesn't interfere with normal operations
+    message_t *msg = create_test_message(MSG_ECHO, "normal_op");
+    
+    // Add should succeed immediately on empty queue
+    long long start = get_time_ms();
+    queue_add(queue, msg);
+    long long elapsed = get_time_ms() - start;
+    
+    // Should complete very quickly, not wait for timeout
+    TEST_ASSERT_LESS_THAN(1000, elapsed); // Less than 1 second
+    
+    // Pop should succeed immediately on non-empty queue
+    start = get_time_ms();
+    message_t *popped = queue_pop(queue);
+    elapsed = get_time_ms() - start;
+    
+    TEST_ASSERT_NOT_NULL(popped);
+    TEST_ASSERT_LESS_THAN(1000, elapsed); // Less than 1 second
+    
+    free(popped->body);
+    free(popped);
+    queue_destroy(queue);
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -783,5 +1033,11 @@ int main(void)
   RUN_TEST(test_queue_destroy_with_cleanup_null_callback);
   RUN_TEST(test_queue_destroy_with_cleanup_partial_queue);
   RUN_TEST(test_queue_destroy_with_cleanup_thread_safety);
+  RUN_TEST(test_queue_pop_timeout_on_empty_queue);
+  RUN_TEST(test_queue_add_timeout_on_full_queue);
+  RUN_TEST(test_queue_pop_succeeds_before_timeout);
+  RUN_TEST(test_queue_add_succeeds_before_timeout);
+  RUN_TEST(test_queue_timeout_thread_safety);
+  RUN_TEST(test_queue_timeout_error_conditions);
   return (UnityEnd());
 }

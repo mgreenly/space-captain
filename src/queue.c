@@ -1,9 +1,21 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <time.h>
+#include <errno.h>
 
 #include "message.h"
 #include "queue.h"
 #include "log.h"
+
+// Timeout values in seconds for blocking operations
+#define QUEUE_POP_TIMEOUT 2   // 2 seconds timeout for pop operations (shorter for testing)
+#define QUEUE_ADD_TIMEOUT 2   // 2 seconds timeout for add operations (shorter for testing)
+
+// Helper function to calculate absolute timeout from relative timeout
+static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_seconds) {
+    clock_gettime(CLOCK_REALTIME, abs_timeout);
+    abs_timeout->tv_sec += timeout_seconds;
+}
 
 queue_t* queue_create(size_t capacity) {
     assert(capacity > 0);
@@ -77,8 +89,21 @@ void queue_add(queue_t* q, message_t* msg) {
     pthread_mutex_lock(&q->mutex);
 
     while (q->size == q->capacity) {
-        // Queue is full, wait for a spot to open up.
-        pthread_cond_wait(&q->cond_not_full, &q->mutex);
+        // Queue is full, wait for a spot to open up with timeout
+        struct timespec timeout;
+        get_absolute_timeout(&timeout, QUEUE_ADD_TIMEOUT);
+        
+        int result = pthread_cond_timedwait(&q->cond_not_full, &q->mutex, &timeout);
+        if (result == ETIMEDOUT) {
+            pthread_mutex_unlock(&q->mutex);
+            log_error("queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
+            return; // Or could return error code if function signature changed
+        }
+        if (result != 0) {
+            pthread_mutex_unlock(&q->mutex);
+            log_error("queue_add pthread_cond_timedwait failed: %d", result);
+            return;
+        }
     }
 
     q->buffer[q->tail] = msg;
@@ -95,8 +120,21 @@ message_t* queue_pop(queue_t* q) {
     pthread_mutex_lock(&q->mutex);
 
     while (q->size == 0) {
-        // Queue is empty, wait for an item to be pushed.
-        pthread_cond_wait(&q->cond_not_empty, &q->mutex);
+        // Queue is empty, wait for an item to be pushed with timeout
+        struct timespec timeout;
+        get_absolute_timeout(&timeout, QUEUE_POP_TIMEOUT);
+        
+        int result = pthread_cond_timedwait(&q->cond_not_empty, &q->mutex, &timeout);
+        if (result == ETIMEDOUT) {
+            pthread_mutex_unlock(&q->mutex);
+            log_error("queue_pop timed out after %d seconds", QUEUE_POP_TIMEOUT);
+            return NULL;
+        }
+        if (result != 0) {
+            pthread_mutex_unlock(&q->mutex);
+            log_error("queue_pop pthread_cond_timedwait failed: %d", result);
+            return NULL;
+        }
     }
 
     message_t* msg = q->buffer[q->head];
