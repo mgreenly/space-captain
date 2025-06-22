@@ -7,13 +7,6 @@
 #include "queue.h"
 #include "log.h"
 
-// Timeout values in seconds for blocking operations
-#define QUEUE_POP_TIMEOUT 2   // 2 seconds timeout for pop operations (shorter for testing)
-#define QUEUE_ADD_TIMEOUT 2   // 2 seconds timeout for add operations (shorter for testing)
-
-// Maximum safe capacity to prevent excessive allocations
-#define QUEUE_MAX_CAPACITY (SIZE_MAX / sizeof(message_t*) / 2)  // Safe maximum capacity
-
 // Thread-local error variable for queue operations
 static __thread int queue_errno = QUEUE_SUCCESS;
 
