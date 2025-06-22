@@ -62,6 +62,7 @@ Uses Unity testing framework. Test files follow naming convention `*_tests.c` in
 ## Code Style Guidelines
 
 - Always trim trailing whitespace from all lines when making code edits
+- Always generate function comments that describe the parameters and return values
 
 ## Git Commit Guidelines
 

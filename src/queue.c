@@ -11,12 +11,21 @@
 #define QUEUE_POP_TIMEOUT 2   // 2 seconds timeout for pop operations (shorter for testing)
 #define QUEUE_ADD_TIMEOUT 2   // 2 seconds timeout for add operations (shorter for testing)
 
-// Helper function to calculate absolute timeout from relative timeout
+/**
+ * Calculates an absolute timeout from a relative timeout in seconds.
+ * @param abs_timeout Pointer to timespec structure to store the absolute timeout
+ * @param timeout_seconds Number of seconds from now for the timeout
+ */
 static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_seconds) {
     clock_gettime(CLOCK_REALTIME, abs_timeout);
     abs_timeout->tv_sec += timeout_seconds;
 }
 
+/**
+ * Creates a new thread-safe message queue with the specified capacity.
+ * @param capacity Maximum number of messages the queue can hold (must be > 0)
+ * @return Pointer to the newly created queue, or NULL on allocation failure
+ */
 queue_t* queue_create(size_t capacity) {
     assert(capacity > 0);
     queue_t* q = malloc(sizeof(queue_t));
@@ -43,6 +52,11 @@ queue_t* queue_create(size_t capacity) {
     return q;
 }
 
+/**
+ * Destroys a queue and frees its resources.
+ * Note: Does not free messages still in the queue - caller is responsible.
+ * @param q Pointer to the queue to destroy (must not be NULL)
+ */
 void queue_destroy(queue_t* q) {
     assert(q != NULL);
     // Note: This does not free the messages themselves,
@@ -55,6 +69,12 @@ void queue_destroy(queue_t* q) {
     free(q);
 }
 
+/**
+ * Destroys a queue and applies a cleanup function to all remaining messages.
+ * @param q Pointer to the queue to destroy (must not be NULL)
+ * @param cleanup_fn Optional callback to process each remaining message (can be NULL)
+ * @param user_data Optional user data passed to the cleanup function
+ */
 void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
     assert(q != NULL);
 
@@ -84,6 +104,12 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
     free(q);
 }
 
+/**
+ * Adds a message to the queue, blocking if the queue is full.
+ * Will timeout after QUEUE_ADD_TIMEOUT seconds if the queue remains full.
+ * @param q Pointer to the queue (must not be NULL)
+ * @param msg Pointer to the message to add
+ */
 void queue_add(queue_t* q, message_t* msg) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
@@ -115,6 +141,12 @@ void queue_add(queue_t* q, message_t* msg) {
     pthread_mutex_unlock(&q->mutex);
 }
 
+/**
+ * Removes and returns a message from the queue, blocking if empty.
+ * Will timeout after QUEUE_POP_TIMEOUT seconds if the queue remains empty.
+ * @param q Pointer to the queue (must not be NULL)
+ * @return Pointer to the removed message, or NULL on timeout/error
+ */
 message_t* queue_pop(queue_t* q) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
@@ -148,6 +180,12 @@ message_t* queue_pop(queue_t* q) {
     return msg;
 }
 
+/**
+ * Attempts to add a message to the queue without blocking.
+ * @param q Pointer to the queue (must not be NULL)
+ * @param msg Pointer to the message to add
+ * @return 0 on success, -1 if the queue is full
+ */
 int queue_try_add(queue_t* q, message_t* msg) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
@@ -169,6 +207,11 @@ int queue_try_add(queue_t* q, message_t* msg) {
     return 0;
 }
 
+/**
+ * Attempts to remove and return a message from the queue without blocking.
+ * @param q Pointer to the queue (must not be NULL)
+ * @return Pointer to the removed message, or NULL if the queue is empty
+ */
 message_t* queue_try_pop(queue_t* q) {
     assert(q != NULL);
     pthread_mutex_lock(&q->mutex);
@@ -190,6 +233,11 @@ message_t* queue_try_pop(queue_t* q) {
     return msg;
 }
 
+/**
+ * Checks if the queue is empty (thread-safe).
+ * @param q Pointer to the queue (must not be NULL)
+ * @return 1 if the queue is empty, 0 otherwise
+ */
 int queue_is_empty(const queue_t* q) {
     assert(q != NULL);
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
@@ -198,6 +246,11 @@ int queue_is_empty(const queue_t* q) {
     return is_empty;
 }
 
+/**
+ * Checks if the queue is full (thread-safe).
+ * @param q Pointer to the queue (must not be NULL)
+ * @return 1 if the queue is full, 0 otherwise
+ */
 int queue_is_full(const queue_t* q) {
     assert(q != NULL);
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
@@ -206,6 +259,11 @@ int queue_is_full(const queue_t* q) {
     return is_full;
 }
 
+/**
+ * Gets the current number of messages in the queue (thread-safe).
+ * @param q Pointer to the queue (must not be NULL)
+ * @return Number of messages currently in the queue
+ */
 size_t queue_get_size(const queue_t* q) {
     assert(q != NULL);
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
