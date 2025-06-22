@@ -95,6 +95,98 @@ void test_queue_pop_blocks_until_push(void) {
   queue_destroy(queue);
 }
 
+void* blocking_producer_thread(void* arg) {
+  thread_data_t *data = (thread_data_t*)arg;
+
+  // Create and add a message
+  message_t *msg = malloc(sizeof(message_t));
+  msg->header.type = MSG_ECHO;
+  msg->header.length = 10;
+  msg->body = strdup("Blocked msg");
+
+  // This should block since queue is full
+  queue_add(data->queue, msg);
+
+  // Set test_value to indicate we successfully added after blocking
+  data->test_value = 1;
+
+  return NULL;
+}
+
+void* delayed_consumer_thread(void* arg) {
+  thread_data_t *data = (thread_data_t*)arg;
+
+  // Wait before consuming to ensure producer blocks
+  usleep(data->delay_ms * 1000);
+
+  // Pop one message to make space
+  message_t *msg = queue_pop(data->queue);
+  if (msg) {
+    free(msg->body);
+    free(msg);
+  }
+
+  return NULL;
+}
+
+void test_queue_add_blocks_on_full_queue(void) {
+  queue_t *queue = queue_create(2);  // Small capacity
+  TEST_ASSERT_NOT_NULL(queue);
+
+  // Fill the queue to capacity with dynamically allocated messages
+  message_t *msg1 = malloc(sizeof(message_t));
+  msg1->header.type = MSG_ECHO;
+  msg1->header.length = 5;
+  msg1->body = strdup("msg1");
+
+  message_t *msg2 = malloc(sizeof(message_t));
+  msg2->header.type = MSG_ECHO;
+  msg2->header.length = 5;
+  msg2->body = strdup("msg2");
+
+  queue_add(queue, msg1);
+  queue_add(queue, msg2);
+
+  // Queue is now full
+
+  pthread_t producer, consumer;
+  thread_data_t producer_data = {queue, 0, 0};  // test_value will be set to 1 when add completes
+  thread_data_t consumer_data = {queue, 100, 0};  // wait 100ms before consuming
+
+  // Start producer that will block trying to add to full queue
+  pthread_create(&producer, NULL, blocking_producer_thread, &producer_data);
+
+  // Give producer time to reach the blocking point
+  usleep(50000);  // 50ms
+
+  // Verify producer hasn't completed yet (still blocked)
+  TEST_ASSERT_EQUAL(0, producer_data.test_value);
+
+  // Start consumer that will free up space after delay
+  pthread_create(&consumer, NULL, delayed_consumer_thread, &consumer_data);
+
+  // Wait for both threads to complete
+  pthread_join(producer, NULL);
+  pthread_join(consumer, NULL);
+
+  // Verify producer was able to add message after consumer freed space
+  TEST_ASSERT_EQUAL(1, producer_data.test_value);
+
+  // Clean up remaining messages
+  // The delayed_consumer_thread already freed one message (either msg1 or msg2)
+  // The blocking_producer_thread added one message
+  // So there should be exactly 2 messages left in the queue
+  for (int i = 0; i < 2; i++) {
+    message_t *remaining = queue_pop(queue);
+    if (remaining) {
+      free(remaining->body);
+      free(remaining);
+    }
+  }
+
+  queue_destroy(queue);
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -104,5 +196,6 @@ int main(void)
   UnityBegin("tst/queue_tests.c");
   RUN_TEST(test_queue_add_and_pop_message);
   RUN_TEST(test_queue_pop_blocks_until_push);
+  RUN_TEST(test_queue_add_blocks_on_full_queue);
   return (UnityEnd());
 }
