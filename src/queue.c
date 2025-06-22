@@ -45,9 +45,32 @@ queue_t* queue_create(size_t capacity) {
     q->size = 0;
     q->head = 0;
     q->tail = 0;
-    pthread_mutex_init(&q->mutex, NULL);
-    pthread_cond_init(&q->cond_not_empty, NULL);
-    pthread_cond_init(&q->cond_not_full, NULL);
+    
+    // Initialize mutex with error checking
+    if (pthread_mutex_init(&q->mutex, NULL) != 0) {
+        log_error("%s", "Failed to initialize queue mutex");
+        free(q->buffer);
+        free(q);
+        return NULL;
+    }
+    
+    // Initialize condition variables with error checking
+    if (pthread_cond_init(&q->cond_not_empty, NULL) != 0) {
+        log_error("%s", "Failed to initialize cond_not_empty");
+        pthread_mutex_destroy(&q->mutex);
+        free(q->buffer);
+        free(q);
+        return NULL;
+    }
+    
+    if (pthread_cond_init(&q->cond_not_full, NULL) != 0) {
+        log_error("%s", "Failed to initialize cond_not_full");
+        pthread_cond_destroy(&q->cond_not_empty);
+        pthread_mutex_destroy(&q->mutex);
+        free(q->buffer);
+        free(q);
+        return NULL;
+    }
 
     return q;
 }
