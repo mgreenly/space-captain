@@ -11,6 +11,34 @@
 #define QUEUE_POP_TIMEOUT 2   // 2 seconds timeout for pop operations (shorter for testing)
 #define QUEUE_ADD_TIMEOUT 2   // 2 seconds timeout for add operations (shorter for testing)
 
+// Thread-local error variable for queue operations
+static __thread int queue_errno = QUEUE_SUCCESS;
+
+// Function to get last queue error
+int queue_get_error(void) {
+    return queue_errno;
+}
+
+// Function to clear queue error
+void queue_clear_error(void) {
+    queue_errno = QUEUE_SUCCESS;
+}
+
+// Function to get error string
+const char* queue_strerror(int err) {
+    switch (err) {
+        case QUEUE_SUCCESS:     return "Success";
+        case QUEUE_ERR_TIMEOUT: return "Operation timed out";
+        case QUEUE_ERR_THREAD:  return "Thread operation failed";
+        case QUEUE_ERR_NULL:    return "Null pointer parameter";
+        case QUEUE_ERR_MEMORY:  return "Memory allocation failed";
+        case QUEUE_ERR_FULL:    return "Queue is full";
+        case QUEUE_ERR_EMPTY:   return "Queue is empty";
+        case QUEUE_ERR_INVALID: return "Invalid parameter";
+        default:                return "Unknown error";
+    }
+}
+
 /**
  * Calculates an absolute timeout from a relative timeout in seconds.
  * @param abs_timeout Pointer to timespec structure to store the absolute timeout
@@ -27,15 +55,24 @@ static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_secon
  * @return Pointer to the newly created queue, or NULL on allocation failure
  */
 queue_t* queue_create(size_t capacity) {
-    assert(capacity > 0);
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (capacity == 0) {
+        queue_errno = QUEUE_ERR_INVALID;
+        log_error("Invalid capacity: %zu", capacity);
+        return NULL;
+    }
+    
     queue_t* q = malloc(sizeof(queue_t));
     if (!q) {
+        queue_errno = QUEUE_ERR_MEMORY;
         log_error("%s", "Failed to allocate memory for queue");
         return NULL;
     }
 
     q->buffer = malloc(sizeof(message_t*) * capacity);
     if (!q->buffer) {
+        queue_errno = QUEUE_ERR_MEMORY;
         log_error("%s", "Failed to allocate memory for queue buffer");
         free(q);
         return NULL;
@@ -48,6 +85,7 @@ queue_t* queue_create(size_t capacity) {
     
     // Initialize mutex with error checking
     if (pthread_mutex_init(&q->mutex, NULL) != 0) {
+        queue_errno = QUEUE_ERR_THREAD;
         log_error("%s", "Failed to initialize queue mutex");
         free(q->buffer);
         free(q);
@@ -56,6 +94,7 @@ queue_t* queue_create(size_t capacity) {
     
     // Initialize condition variables with error checking
     if (pthread_cond_init(&q->cond_not_empty, NULL) != 0) {
+        queue_errno = QUEUE_ERR_THREAD;
         log_error("%s", "Failed to initialize cond_not_empty");
         pthread_mutex_destroy(&q->mutex);
         free(q->buffer);
@@ -64,6 +103,7 @@ queue_t* queue_create(size_t capacity) {
     }
     
     if (pthread_cond_init(&q->cond_not_full, NULL) != 0) {
+        queue_errno = QUEUE_ERR_THREAD;
         log_error("%s", "Failed to initialize cond_not_full");
         pthread_cond_destroy(&q->cond_not_empty);
         pthread_mutex_destroy(&q->mutex);
@@ -78,18 +118,32 @@ queue_t* queue_create(size_t capacity) {
 /**
  * Destroys a queue and frees its resources.
  * Note: Does not free messages still in the queue - caller is responsible.
- * @param q Pointer to the queue to destroy (must not be NULL)
+ * @param q Pointer to the queue to destroy
+ * @return QUEUE_SUCCESS on success, or an error code on failure
  */
-void queue_destroy(queue_t* q) {
-    assert(q != NULL);
+int queue_destroy(queue_t* q) {
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return QUEUE_ERR_NULL;
+    }
+    
     // Note: This does not free the messages themselves,
     // as ownership is transferred out of the queue on pop.
     // The caller is responsible for freeing messages.
+    int err = pthread_mutex_destroy(&q->mutex);
+    if (err != 0) {
+        queue_errno = QUEUE_ERR_THREAD;
+        log_error("Failed to destroy mutex: %d", err);
+    }
+    
     free(q->buffer);
-    pthread_mutex_destroy(&q->mutex);
     pthread_cond_destroy(&q->cond_not_empty);
     pthread_cond_destroy(&q->cond_not_full);
     free(q);
+    
+    return queue_errno;
 }
 
 /**
@@ -99,7 +153,10 @@ void queue_destroy(queue_t* q) {
  * @param user_data Optional user data passed to the cleanup function
  */
 void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
-    assert(q != NULL);
+    if (q == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return;
+    }
 
     // Lock the queue to prevent any new operations
     pthread_mutex_lock(&q->mutex);
@@ -135,7 +192,10 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
  * @return QUEUE_SUCCESS on success, or an error code on failure
  */
 int queue_add(queue_t* q, message_t* msg) {
+    queue_errno = QUEUE_SUCCESS;
+    
     if (q == NULL || msg == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
         return QUEUE_ERR_NULL;
     }
     
@@ -150,11 +210,13 @@ int queue_add(queue_t* q, message_t* msg) {
         if (result == ETIMEDOUT) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
+            queue_errno = QUEUE_ERR_TIMEOUT;
             return QUEUE_ERR_TIMEOUT;
         }
         if (result != 0) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_add pthread_cond_timedwait failed: %d", result);
+            queue_errno = QUEUE_ERR_THREAD;
             return QUEUE_ERR_THREAD;
         }
     }
@@ -173,11 +235,20 @@ int queue_add(queue_t* q, message_t* msg) {
 /**
  * Removes and returns a message from the queue, blocking if empty.
  * Will timeout after QUEUE_POP_TIMEOUT seconds if the queue remains empty.
- * @param q Pointer to the queue (must not be NULL)
- * @return Pointer to the removed message, or NULL on timeout/error
+ * @param q Pointer to the queue
+ * @param msg Pointer to store the removed message
+ * @return QUEUE_SUCCESS on success, or an error code on failure
  */
-message_t* queue_pop(queue_t* q) {
-    assert(q != NULL);
+int queue_pop(queue_t* q, message_t** msg) {
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL || msg == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return QUEUE_ERR_NULL;
+    }
+    
+    *msg = NULL;
+    
     pthread_mutex_lock(&q->mutex);
 
     while (q->size == 0) {
@@ -189,16 +260,18 @@ message_t* queue_pop(queue_t* q) {
         if (result == ETIMEDOUT) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_pop timed out after %d seconds", QUEUE_POP_TIMEOUT);
-            return NULL;
+            queue_errno = QUEUE_ERR_TIMEOUT;
+            return QUEUE_ERR_TIMEOUT;
         }
         if (result != 0) {
             pthread_mutex_unlock(&q->mutex);
             log_error("queue_pop pthread_cond_timedwait failed: %d", result);
-            return NULL;
+            queue_errno = QUEUE_ERR_THREAD;
+            return QUEUE_ERR_THREAD;
         }
     }
 
-    message_t* msg = q->buffer[q->head];
+    *msg = q->buffer[q->head];
     q->head = (q->head + 1) % q->capacity;
     q->size--;
 
@@ -206,23 +279,30 @@ message_t* queue_pop(queue_t* q) {
     pthread_cond_signal(&q->cond_not_full);
     pthread_mutex_unlock(&q->mutex);
 
-    return msg;
+    return QUEUE_SUCCESS;
 }
 
 /**
  * Attempts to add a message to the queue without blocking.
- * @param q Pointer to the queue (must not be NULL)
+ * @param q Pointer to the queue
  * @param msg Pointer to the message to add
- * @return 0 on success, -1 if the queue is full
+ * @return QUEUE_SUCCESS on success, or an error code on failure
  */
 int queue_try_add(queue_t* q, message_t* msg) {
-    assert(q != NULL);
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL || msg == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return QUEUE_ERR_NULL;
+    }
+    
     pthread_mutex_lock(&q->mutex);
 
     if (q->size == q->capacity) {
         // Queue is full, return error immediately
         pthread_mutex_unlock(&q->mutex);
-        return -1;
+        queue_errno = QUEUE_ERR_FULL;
+        return QUEUE_ERR_FULL;
     }
 
     q->buffer[q->tail] = msg;
@@ -233,25 +313,35 @@ int queue_try_add(queue_t* q, message_t* msg) {
     pthread_cond_signal(&q->cond_not_empty);
     pthread_mutex_unlock(&q->mutex);
 
-    return 0;
+    return QUEUE_SUCCESS;
 }
 
 /**
  * Attempts to remove and return a message from the queue without blocking.
- * @param q Pointer to the queue (must not be NULL)
- * @return Pointer to the removed message, or NULL if the queue is empty
+ * @param q Pointer to the queue
+ * @param msg Pointer to store the removed message
+ * @return QUEUE_SUCCESS on success, or an error code on failure
  */
-message_t* queue_try_pop(queue_t* q) {
-    assert(q != NULL);
+int queue_try_pop(queue_t* q, message_t** msg) {
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL || msg == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return QUEUE_ERR_NULL;
+    }
+    
+    *msg = NULL;
+    
     pthread_mutex_lock(&q->mutex);
 
     if (q->size == 0) {
-        // Queue is empty, return NULL immediately
+        // Queue is empty, return error immediately
         pthread_mutex_unlock(&q->mutex);
-        return NULL;
+        queue_errno = QUEUE_ERR_EMPTY;
+        return QUEUE_ERR_EMPTY;
     }
 
-    message_t* msg = q->buffer[q->head];
+    *msg = q->buffer[q->head];
     q->head = (q->head + 1) % q->capacity;
     q->size--;
 
@@ -259,16 +349,22 @@ message_t* queue_try_pop(queue_t* q) {
     pthread_cond_signal(&q->cond_not_full);
     pthread_mutex_unlock(&q->mutex);
 
-    return msg;
+    return QUEUE_SUCCESS;
 }
 
 /**
  * Checks if the queue is empty (thread-safe).
- * @param q Pointer to the queue (must not be NULL)
- * @return 1 if the queue is empty, 0 otherwise
+ * @param q Pointer to the queue
+ * @return 1 if the queue is empty, 0 otherwise, -1 on error
  */
 int queue_is_empty(const queue_t* q) {
-    assert(q != NULL);
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return -1;
+    }
+    
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
     int is_empty = (q->size == 0);
     pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
@@ -277,11 +373,17 @@ int queue_is_empty(const queue_t* q) {
 
 /**
  * Checks if the queue is full (thread-safe).
- * @param q Pointer to the queue (must not be NULL)
- * @return 1 if the queue is full, 0 otherwise
+ * @param q Pointer to the queue
+ * @return 1 if the queue is full, 0 otherwise, -1 on error
  */
 int queue_is_full(const queue_t* q) {
-    assert(q != NULL);
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return -1;
+    }
+    
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
     int is_full = (q->size == q->capacity);
     pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
@@ -290,11 +392,17 @@ int queue_is_full(const queue_t* q) {
 
 /**
  * Gets the current number of messages in the queue (thread-safe).
- * @param q Pointer to the queue (must not be NULL)
- * @return Number of messages currently in the queue
+ * @param q Pointer to the queue
+ * @return Number of messages currently in the queue, 0 on error
  */
 size_t queue_get_size(const queue_t* q) {
-    assert(q != NULL);
+    queue_errno = QUEUE_SUCCESS;
+    
+    if (q == NULL) {
+        queue_errno = QUEUE_ERR_NULL;
+        return 0;
+    }
+    
     pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
     size_t size = q->size;
     pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);

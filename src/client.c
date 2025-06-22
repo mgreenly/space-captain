@@ -43,7 +43,13 @@ int32_t main(void) {
     return EXIT_FAILURE;
   }
 
-  message_t *msg2 = queue_pop(msg_queue);
+  message_t *msg2 = NULL;
+  if (queue_pop(msg_queue, &msg2) != QUEUE_SUCCESS) {
+    log_error("%s", "Failed to pop message from queue");
+    free(msg);
+    queue_destroy(msg_queue);
+    return EXIT_FAILURE;
+  }
 
   printf("%s\n", msg2->body);
 
