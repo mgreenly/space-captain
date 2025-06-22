@@ -10,26 +10,39 @@
 #include "../src/queue.h"
 #include "../src/queue.c"
 
+// Define all test strings at the top
+#define TEST_MSG_SIMPLE "This is the test message"
+#define TEST_MSG_FORMAT "Test message %d"
+#define TEST_MSG_BLOCKED "Blocked msg"
+#define TEST_MSG_FILL_1 "msg1"
+#define TEST_MSG_FILL_2 "msg2"
+
+// Helper function to create a dynamically allocated message
+static message_t* create_test_message(message_type_t type, const char* body) {
+  message_t *msg = malloc(sizeof(message_t));
+  msg->header.type = type;
+  msg->header.length = strlen(body);
+  msg->body = strdup(body);
+  return msg;
+}
+
 void test_queue_add_and_pop_message(void) {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
 
-  char *test_message = "This is the test message";
+  // Always use dynamic allocation for messages
+  message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_SIMPLE);
 
-  message_t msg = {
-    .header = {
-      .type = MSG_ECHO,
-      .length = strlen(test_message)
-    },
-    .body = test_message
-  };
-
-  queue_add(queue, &msg);
+  queue_add(queue, msg);
 
   message_t *popped_msg = queue_pop(queue);
   TEST_ASSERT_NOT_NULL(popped_msg);
   TEST_ASSERT_EQUAL(MSG_ECHO, popped_msg->header.type);
-  TEST_ASSERT_EQUAL_STRING(test_message, popped_msg->body);
+  TEST_ASSERT_EQUAL_STRING(TEST_MSG_SIMPLE, popped_msg->body);
+
+  // Clean up dynamically allocated message
+  free(popped_msg->body);
+  free(popped_msg);
 
   queue_destroy(queue);
 }
@@ -46,12 +59,9 @@ void* producer_thread(void* arg) {
   usleep(data->delay_ms * 1000);
 
   char buffer[64];
-  snprintf(buffer, sizeof(buffer), "Test message %d", data->test_value);
+  snprintf(buffer, sizeof(buffer), TEST_MSG_FORMAT, data->test_value);
 
-  message_t *msg = malloc(sizeof(message_t));
-  msg->header.type = MSG_ECHO;
-  msg->header.length = strlen(buffer);
-  msg->body = strdup(buffer);
+  message_t *msg = create_test_message(MSG_ECHO, buffer);
 
   queue_add(data->queue, msg);
 
@@ -99,10 +109,7 @@ void* blocking_producer_thread(void* arg) {
   thread_data_t *data = (thread_data_t*)arg;
 
   // Create and add a message
-  message_t *msg = malloc(sizeof(message_t));
-  msg->header.type = MSG_ECHO;
-  msg->header.length = 10;
-  msg->body = strdup("Blocked msg");
+  message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_BLOCKED);
 
   // This should block since queue is full
   queue_add(data->queue, msg);
@@ -134,15 +141,8 @@ void test_queue_add_blocks_on_full_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill the queue to capacity with dynamically allocated messages
-  message_t *msg1 = malloc(sizeof(message_t));
-  msg1->header.type = MSG_ECHO;
-  msg1->header.length = 5;
-  msg1->body = strdup("msg1");
-
-  message_t *msg2 = malloc(sizeof(message_t));
-  msg2->header.type = MSG_ECHO;
-  msg2->header.length = 5;
-  msg2->body = strdup("msg2");
+  message_t *msg1 = create_test_message(MSG_ECHO, TEST_MSG_FILL_1);
+  message_t *msg2 = create_test_message(MSG_ECHO, TEST_MSG_FILL_2);
 
   queue_add(queue, msg1);
   queue_add(queue, msg2);
