@@ -27,15 +27,15 @@
 #define QUEUE_MAX_CAPACITY (SIZE_MAX / sizeof(message_t*) / 2)  // Safe maximum capacity
 
 typedef struct {
-    message_t** buffer;
-    size_t capacity;
-    size_t size;
-    size_t head;
-    size_t tail;
-    pthread_rwlock_t rwlock;       // Reader-writer lock for data access
-    pthread_mutex_t cond_mutex;    // Separate mutex for condition variables
-    pthread_cond_t cond_not_empty;
-    pthread_cond_t cond_not_full;
+  message_t** buffer;
+  size_t capacity;
+  size_t size;
+  size_t head;
+  size_t tail;
+  pthread_rwlock_t rwlock;       // Reader-writer lock for data access
+  pthread_mutex_t cond_mutex;    // Separate mutex for condition variables
+  pthread_cond_t cond_not_empty;
+  pthread_cond_t cond_not_full;
 } queue_t;
 
 typedef void (*queue_cleanup_fn)(message_t* msg, void* user_data);
