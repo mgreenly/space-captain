@@ -122,3 +122,27 @@ message_t* queue_try_pop(queue_t* q) {
 
     return msg;
 }
+
+int queue_is_empty(const queue_t* q) {
+    assert(q != NULL);
+    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    int is_empty = (q->size == 0);
+    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    return is_empty;
+}
+
+int queue_is_full(const queue_t* q) {
+    assert(q != NULL);
+    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    int is_full = (q->size == q->capacity);
+    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    return is_full;
+}
+
+size_t queue_get_size(const queue_t* q) {
+    assert(q != NULL);
+    pthread_mutex_lock((pthread_mutex_t*)&q->mutex);
+    size_t size = q->size;
+    pthread_mutex_unlock((pthread_mutex_t*)&q->mutex);
+    return size;
+}

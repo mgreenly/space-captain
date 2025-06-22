@@ -311,6 +311,270 @@ void test_queue_try_operations_mixed(void) {
   queue_destroy(queue);
 }
 
+void test_queue_is_empty_on_new_queue(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // New queue should be empty
+  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  
+  queue_destroy(queue);
+}
+
+void test_queue_is_empty_after_add_and_pop(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Initially empty
+  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  
+  // Add a message, should not be empty
+  message_t *msg = create_test_message(MSG_ECHO, "test");
+  queue_add(queue, msg);
+  TEST_ASSERT_EQUAL(0, queue_is_empty(queue));
+  
+  // Pop the message, should be empty again
+  message_t *popped = queue_pop(queue);
+  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  
+  // Clean up
+  free(popped->body);
+  free(popped);
+  queue_destroy(queue);
+}
+
+void test_queue_is_empty_thread_safety(void) {
+  queue_t *queue = queue_create(10);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Test that queue_is_empty works correctly with concurrent operations
+  pthread_t producer, consumer;
+  thread_data_t producer_data = {queue, 50, 42};
+  thread_data_t consumer_data = {queue, 0, 0};
+  
+  // Start consumer first (will block on empty queue)
+  pthread_create(&consumer, NULL, consumer_thread, &consumer_data);
+  
+  // Queue should still be empty initially
+  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  
+  // Start producer after small delay
+  pthread_create(&producer, NULL, producer_thread, &producer_data);
+  
+  pthread_join(consumer, NULL);
+  pthread_join(producer, NULL);
+  
+  // Queue should be empty after consumer got the message
+  TEST_ASSERT_EQUAL(1, queue_is_empty(queue));
+  
+  queue_destroy(queue);
+}
+
+void test_queue_is_full_on_new_queue(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // New queue should not be full
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  queue_destroy(queue);
+}
+
+void test_queue_is_full_after_filling_queue(void) {
+  queue_t *queue = queue_create(2);  // Small capacity for easy testing
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Initially not full
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  // Add first message, should not be full yet
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  // Add second message, should now be full
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  
+  // Pop one message, should not be full anymore
+  message_t *popped = queue_pop(queue);
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  // Clean up
+  free(popped->body);
+  free(popped);
+  
+  // Clean up remaining message
+  message_t *remaining = queue_pop(queue);
+  free(remaining->body);
+  free(remaining);
+  
+  queue_destroy(queue);
+}
+
+void test_queue_is_full_with_try_operations(void) {
+  queue_t *queue = queue_create(3);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Fill queue using try_add operations
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg1));
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg2));
+  TEST_ASSERT_EQUAL(0, queue_is_full(queue));
+  
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg3));
+  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  
+  // Try to add another message, should fail since queue is full
+  message_t *msg4 = create_test_message(MSG_ECHO, "msg4");
+  TEST_ASSERT_EQUAL(-1, queue_try_add(queue, msg4));
+  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  
+  // Clean up unused message
+  free(msg4->body);
+  free(msg4);
+  
+  // Clean up queue
+  for (int i = 0; i < 3; i++) {
+    message_t *msg = queue_try_pop(queue);
+    if (msg) {
+      free(msg->body);
+      free(msg);
+    }
+  }
+  
+  queue_destroy(queue);
+}
+
+void test_queue_get_size_on_new_queue(void) {
+  queue_t *queue = queue_create(10);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // New queue should have size 0
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  
+  queue_destroy(queue);
+}
+
+void test_queue_get_size_with_add_and_pop(void) {
+  queue_t *queue = queue_create(5);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Initially size 0
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  
+  // Add messages and verify size increases
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(1, queue_get_size(queue));
+  
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(2, queue_get_size(queue));
+  
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  queue_add(queue, msg3);
+  TEST_ASSERT_EQUAL(3, queue_get_size(queue));
+  
+  // Pop messages and verify size decreases
+  message_t *popped1 = queue_pop(queue);
+  TEST_ASSERT_EQUAL(2, queue_get_size(queue));
+  free(popped1->body);
+  free(popped1);
+  
+  message_t *popped2 = queue_pop(queue);
+  TEST_ASSERT_EQUAL(1, queue_get_size(queue));
+  free(popped2->body);
+  free(popped2);
+  
+  message_t *popped3 = queue_pop(queue);
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  free(popped3->body);
+  free(popped3);
+  
+  queue_destroy(queue);
+}
+
+void test_queue_get_size_at_capacity(void) {
+  queue_t *queue = queue_create(3);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  // Fill queue to capacity and verify size
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  
+  queue_add(queue, msg1);
+  TEST_ASSERT_EQUAL(1, queue_get_size(queue));
+  
+  queue_add(queue, msg2);
+  TEST_ASSERT_EQUAL(2, queue_get_size(queue));
+  
+  queue_add(queue, msg3);
+  TEST_ASSERT_EQUAL(3, queue_get_size(queue));
+  
+  // Verify size equals capacity when full
+  TEST_ASSERT_EQUAL(1, queue_is_full(queue));
+  TEST_ASSERT_EQUAL(3, queue_get_size(queue));
+  
+  // Clean up
+  for (int i = 0; i < 3; i++) {
+    message_t *msg = queue_pop(queue);
+    free(msg->body);
+    free(msg);
+  }
+  
+  queue_destroy(queue);
+}
+
+void test_queue_get_size_with_try_operations(void) {
+  queue_t *queue = queue_create(2);
+  TEST_ASSERT_NOT_NULL(queue);
+  
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  
+  // Use try_add operations
+  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg1));
+  TEST_ASSERT_EQUAL(1, queue_get_size(queue));
+  
+  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  TEST_ASSERT_EQUAL(0, queue_try_add(queue, msg2));
+  TEST_ASSERT_EQUAL(2, queue_get_size(queue));
+  
+  // Queue is full, try_add should fail but size should remain same
+  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  TEST_ASSERT_EQUAL(-1, queue_try_add(queue, msg3));
+  TEST_ASSERT_EQUAL(2, queue_get_size(queue));
+  free(msg3->body);
+  free(msg3);
+  
+  // Use try_pop operations
+  message_t *popped1 = queue_try_pop(queue);
+  TEST_ASSERT_NOT_NULL(popped1);
+  TEST_ASSERT_EQUAL(1, queue_get_size(queue));
+  free(popped1->body);
+  free(popped1);
+  
+  message_t *popped2 = queue_try_pop(queue);
+  TEST_ASSERT_NOT_NULL(popped2);
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  free(popped2->body);
+  free(popped2);
+  
+  // Queue is empty, try_pop should return NULL but size should remain 0
+  TEST_ASSERT_NULL(queue_try_pop(queue));
+  TEST_ASSERT_EQUAL(0, queue_get_size(queue));
+  
+  queue_destroy(queue);
+}
+
 void setUp(void) { }
 
 void tearDown(void) { }
@@ -326,5 +590,15 @@ int main(void)
   RUN_TEST(test_queue_try_pop_returns_null_on_empty);
   RUN_TEST(test_queue_try_pop_returns_message);
   RUN_TEST(test_queue_try_operations_mixed);
+  RUN_TEST(test_queue_is_empty_on_new_queue);
+  RUN_TEST(test_queue_is_empty_after_add_and_pop);
+  RUN_TEST(test_queue_is_empty_thread_safety);
+  RUN_TEST(test_queue_is_full_on_new_queue);
+  RUN_TEST(test_queue_is_full_after_filling_queue);
+  RUN_TEST(test_queue_is_full_with_try_operations);
+  RUN_TEST(test_queue_get_size_on_new_queue);
+  RUN_TEST(test_queue_get_size_with_add_and_pop);
+  RUN_TEST(test_queue_get_size_at_capacity);
+  RUN_TEST(test_queue_get_size_with_try_operations);
   return (UnityEnd());
 }
