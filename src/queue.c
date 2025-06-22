@@ -64,14 +64,14 @@ queue_t* queue_create(size_t capacity) {
         return NULL;
     }
     
-    queue_t* q = malloc(sizeof(queue_t));
+    queue_t* q = calloc(1, sizeof(queue_t));
     if (!q) {
         queue_errno = QUEUE_ERR_MEMORY;
         log_error("%s", "Failed to allocate memory for queue");
         return NULL;
     }
 
-    q->buffer = malloc(sizeof(message_t*) * capacity);
+    q->buffer = calloc(capacity, sizeof(message_t*));
     if (!q->buffer) {
         queue_errno = QUEUE_ERR_MEMORY;
         log_error("%s", "Failed to allocate memory for queue buffer");
