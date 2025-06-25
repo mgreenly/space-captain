@@ -37,6 +37,11 @@ Create a git commit with proper Claude co-authorship attribution.
    git status
    ```
 
+7. Push the commit to the remote repository:
+   ```bash
+   git push
+   ```
+
 **Important notes:**
 - The commit message should NOT include type prefixes (like fix:, refactor:, add:, etc.)
 - The co-author line should use the current model's identifier (dynamically determined)
