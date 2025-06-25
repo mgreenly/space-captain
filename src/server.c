@@ -22,8 +22,7 @@
 // main
 //
 //
-int32_t
-main(int32_t argc, char *argv[]) {
+int32_t main(int32_t argc, char *argv[]) {
   signal(SIGINT, intHandler); // should use sigaction
 
   if (argc != 3) {

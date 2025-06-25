@@ -14,8 +14,7 @@
 //
 // main
 //
-int32_t
-main(void) {
+int32_t main(void) {
   queue_t *msg_queue = queue_create(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue. Exiting.");
