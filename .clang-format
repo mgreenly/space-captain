@@ -53,7 +53,7 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: TopLevelDefinitions  # -psl: procedure start lines
+AlwaysBreakAfterReturnType: None  # Keep return type on same line as function name
 BinPackArguments: true
 BinPackParameters: true
 KeepEmptyLinesAtTheStartOfBlocks: false
