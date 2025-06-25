@@ -1,15 +1,13 @@
 static volatile bool intCaught = false;
 
 void
-intHandler(int _dummy)
-{
-  _dummy += 0;                  // avoid unused parameter warning
+intHandler(int _dummy) {
+  _dummy += 0; // avoid unused parameter warning
   intCaught = true;
 }
 
 void *
-game_loop(void *ptr)
-{
+game_loop(void *ptr) {
   state *st = (state *) ptr;
 
   while (intCaught == false) {

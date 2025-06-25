@@ -20,7 +20,7 @@ const char *STATE_RESULT_STRINGS[] = {
   "Error, failed to write state file.",
 };
 
-state_result state_write(char *filename, state ** st);
-state_result state_load(char *filename, state ** st);
-state_result state_free(state ** st);
+state_result state_write(char *filename, state **st);
+state_result state_load(char *filename, state **st);
+state_result state_free(state **st);
 void state_print_error(state_result result, const char *filename, int32_t line);

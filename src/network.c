@@ -8,9 +8,7 @@
 #include "game.h"
 
 int32_t
-network_loop()
-{
-
+network_loop() {
   int32_t SERVER_PORT = 8877;
   struct sockaddr_in server_address;
 
@@ -24,13 +22,14 @@ network_loop()
     printf("could not create listen socket\n");
     return 1;
   }
-  // bind it to listen to the incoming connections on the created server // address, will return -1 on error
+  // bind it to listen to the incoming connections on the created server // address, will return -1
+  // on error
   if ((bind(listen_sock, (struct sockaddr *) &server_address, sizeof(server_address))) < 0) {
     printf("could not bind socket\n");
     return 1;
   }
 
-  int32_t wait_size = 16;       // maximum number of waiting clients, after which dropping begins
+  int32_t wait_size = 16; // maximum number of waiting clients, after which dropping begins
   if (listen(listen_sock, wait_size) < 0) {
     printf("could not open socket for listening\n");
     return 1;
@@ -40,9 +39,9 @@ network_loop()
   uint32_t client_address_len = 0;
 
   while (intCaught == false) {
-
     int32_t sock;
-    if ((sock = accept(listen_sock, (struct sockaddr *) &client_address, &client_address_len)) < 0) {
+    if ((sock = accept(listen_sock, (struct sockaddr *) &client_address, &client_address_len)) <
+        0) {
       printf("could not open a socket to accept data\n");
       return 1;
     }

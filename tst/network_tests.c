@@ -4,24 +4,20 @@
 #include "../src/network.c"
 
 void
-test_network_foo(void)
-{
+test_network_foo(void) {
   TEST_ASSERT_EQUAL(0, 0);
 }
 
 void
-setUp(void)
-{
+setUp(void) {
 }
 
 void
-tearDown(void)
-{
+tearDown(void) {
 }
 
 int
-main(void)
-{
+main(void) {
   UnityBegin("tst/network_tests.c");
   RUN_TEST(test_network_foo);
   return (UnityEnd());

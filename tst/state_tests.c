@@ -4,24 +4,20 @@
 #include "../src/state.c"
 
 void
-test_state_foo(void)
-{
+test_state_foo(void) {
   TEST_ASSERT_EQUAL(0, 0);
 }
 
 void
-setUp(void)
-{
+setUp(void) {
 }
 
 void
-tearDown(void)
-{
+tearDown(void) {
 }
 
 int
-main(void)
-{
+main(void) {
   UnityBegin("tst/state_tests.c");
   RUN_TEST(test_state_foo);
   return (UnityEnd());

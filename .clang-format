@@ -1,0 +1,76 @@
+---
+# Based on GNU indent .indent.pro configuration
+# -kr: K&R style base
+BasedOnStyle: LLVM
+
+# Core formatting
+IndentWidth: 2                    # -i2: indent level 2
+ContinuationIndentWidth: 2        # -ci2: continuation indent 2
+UseTab: Never                     # -nut: no tabs
+
+# Line length
+ColumnLimit: 100                  # -l100: line length 100
+
+# Brace placement
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never    # -kr style for control statements
+  AfterEnum: false
+  AfterFunction: false            # Functions on same line (key difference from indent)
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false               # -ce: cuddle else
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Spacing
+SpaceBeforeParens: ControlStatements  # -npcs: no space between function and parentheses
+SpaceInEmptyParentheses: false        # -nprs: no space after parentheses
+SpaceBeforeAssignmentOperators: true  # -sai: space after if
+SpaceAfterCStyleCast: true            # -saf: space after for
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+SpacesInParentheses: false
+SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
+SpacesInContainerLiterals: true
+SpacesInSquareBrackets: false
+
+# Other formatting
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: TopLevelDefinitions  # -psl: procedure start lines
+BinPackArguments: true
+BinPackParameters: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+PointerAlignment: Right
+DerivePointerAlignment: false
+SortIncludes: Never              # Preserve include order
+
+# Comments
+AlignTrailingComments: true
+ReflowComments: true
+CommentPragmas: '^ IWYU pragma:'
+
+# Penalties (prefer breaking at certain points)
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200

@@ -4,8 +4,7 @@
 #include "../src/config.c"
 
 void
-test_config_foo(void)
-{
+test_config_foo(void) {
   config *cfg = NULL;
 
   config_result retval = config_load(&cfg);
@@ -17,18 +16,15 @@ test_config_foo(void)
 }
 
 void
-setUp(void)
-{
+setUp(void) {
 }
 
 void
-tearDown(void)
-{
+tearDown(void) {
 }
 
 int
-main(void)
-{
+main(void) {
   UnityBegin("tst/config_tests.c");
   RUN_TEST(test_config_foo);
   return (UnityEnd());

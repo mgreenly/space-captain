@@ -23,10 +23,8 @@
 //
 //
 int32_t
-main(int32_t argc, char *argv[])
-{
-
-  signal(SIGINT, intHandler);   // should use sigaction
+main(int32_t argc, char *argv[]) {
+  signal(SIGINT, intHandler); // should use sigaction
 
   if (argc != 3) {
     fprintf(stderr, "Usage: %s <state_file>\n", argv[0]);

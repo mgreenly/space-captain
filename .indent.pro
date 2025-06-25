@@ -1,5 +1,4 @@
--br
--brs
+-kr
 -ce
 -ci2
 -cli2
@@ -8,7 +7,6 @@
 -lc100
 -npcs
 -nprs
--npsl
 -saf
 -sai
 -saw

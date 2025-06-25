@@ -13,15 +13,14 @@
 #define LOG_TIME_BUFFER_SIZE 20
 
 // ANSI color codes
-#define KNRM  "\x1B[0m"
-#define KRED  "\x1B[31m"
-#define KGRN  "\x1B[32m"
-#define KYEL  "\x1B[33m"
-#define KBLU  "\x1B[34m"
+#define KNRM "\x1B[0m"
+#define KRED "\x1B[31m"
+#define KGRN "\x1B[32m"
+#define KYEL "\x1B[33m"
+#define KBLU "\x1B[34m"
 
 static inline void
-log_timestamp(FILE * stream)
-{
+log_timestamp(FILE *stream) {
   char time_buf[LOG_TIME_BUFFER_SIZE];
   time_t now = time(NULL);
   struct tm *t = localtime(&now);
@@ -29,10 +28,11 @@ log_timestamp(FILE * stream)
   fprintf(stream, "%s ", time_buf);
 }
 
-#define log_base(level, color, stream, fmt, ...) do { \
-    log_timestamp(stream); \
-    fprintf(stream, "%s" level ": " KNRM fmt "\n", color, ##__VA_ARGS__); \
-} while(0)
+#define log_base(level, color, stream, fmt, ...)                                                   \
+  do {                                                                                             \
+    log_timestamp(stream);                                                                         \
+    fprintf(stream, "%s" level ": " KNRM fmt "\n", color, ##__VA_ARGS__);                          \
+  } while (0)
 
 #if LOG_LEVEL >= 1
 #define log_error(fmt, ...) log_base("ERROR", KRED, stderr, fmt, ##__VA_ARGS__)
