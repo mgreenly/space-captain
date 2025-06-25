@@ -1,0 +1,17 @@
+-br
+-brs
+-ce
+-ci2
+-cli2
+-i2
+-l100
+-lc100
+-npcs
+-nprs
+-npsl
+-saf
+-sai
+-saw
+-sob
+-nut
+-nbc
