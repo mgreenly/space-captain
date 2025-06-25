@@ -88,3 +88,7 @@ debug-server: bin/$(SERVER)
 PHONY: debug-client
 debug-client: bin/$(CLIENT)
 	@gdb -q --tui --args ./bin/$(CLIENT)
+
+PHONY: fmt
+fmt:
+	@find . -path ./vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | xargs -0 -r indent

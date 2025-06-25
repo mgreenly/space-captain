@@ -26,6 +26,7 @@ The project uses a `makefile` build system.
 - `make run-client` - Run client
 - `make debug-server` - Run server in GDB with TUI
 - `make debug-client` - Run client in GDB with TUI
+- `make fmt` - Apply GNU indent formatting to all C source and header files (excluding vendor/)
 
 ## Architecture
 
@@ -63,6 +64,7 @@ Uses Unity testing framework. Test files follow naming convention `*_tests.c` in
 - Always trim trailing whitespace when modifying *.c files
 - Always generate function comments that describe the parameters and return values
 - Alawys use single line comments and never use block comments.
+- Always apply GNU indent to any C source or header files after modifying them by running `make fmt` or using the indent command directly
 
 ## Git Commit Guidelines
 
