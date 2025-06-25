@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-state_result state_write(char *filename, state ** st)
+state_result
+state_write(char *filename, state ** st)
 {
   FILE *file = fopen(filename, "w");
   if (file == NULL) {
@@ -23,7 +24,8 @@ state_result state_write(char *filename, state ** st)
 //
 // state_load
 //
-state_result state_load(char *filename, state ** st)
+state_result
+state_load(char *filename, state ** st)
 {
 
   (*st) = malloc(sizeof(state));
@@ -51,7 +53,8 @@ state_result state_load(char *filename, state ** st)
 //
 // state_free
 //
-state_result state_free(state ** st)
+state_result
+state_free(state ** st)
 {
   assert(*st != NULL);
 
@@ -63,7 +66,8 @@ state_result state_free(state ** st)
 //
 // state_print_error
 //
-void state_print_error(state_result result, const char *filename, int32_t line)
+void
+state_print_error(state_result result, const char *filename, int32_t line)
 {
   fprintf(stderr, "%s (%s:%" PRId32 ")\n", STATE_RESULT_STRINGS[result], filename, line);
 }

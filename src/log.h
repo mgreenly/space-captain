@@ -19,7 +19,8 @@
 #define KYEL  "\x1B[33m"
 #define KBLU  "\x1B[34m"
 
-static inline void log_timestamp(FILE * stream)
+static inline void
+log_timestamp(FILE * stream)
 {
   char time_buf[LOG_TIME_BUFFER_SIZE];
   time_t now = time(NULL);

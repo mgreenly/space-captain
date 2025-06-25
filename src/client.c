@@ -14,7 +14,8 @@
 //
 // main
 //
-int32_t main(void)
+int32_t
+main(void)
 {
 
   queue_t *msg_queue = queue_create(QUEUE_CAPACITY);

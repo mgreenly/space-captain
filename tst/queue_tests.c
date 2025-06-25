@@ -24,7 +24,8 @@
 #define TIMEOUT_MARGIN_MS 500   // Allow 500ms margin for timing variations
 
 // Helper function to create a dynamically allocated message
-static message_t *create_test_message(message_type_t type, const char *body)
+static message_t *
+create_test_message(message_type_t type, const char *body)
 {
   message_t *msg = malloc(sizeof(message_t));
   msg->header.type = type;
@@ -41,7 +42,8 @@ typedef struct {
 } cleanup_tracker_t;
 
 // Test cleanup callback that tracks calls
-static void test_cleanup_callback(message_t * msg, void *user_data)
+static void
+test_cleanup_callback(message_t * msg, void *user_data)
 {
   cleanup_tracker_t *tracker = (cleanup_tracker_t *) user_data;
 
@@ -58,7 +60,8 @@ static void test_cleanup_callback(message_t * msg, void *user_data)
 }
 
 // Helper to get current time in milliseconds
-static long long get_time_ms(void)
+static long long
+get_time_ms(void)
 {
   struct timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);
@@ -75,7 +78,8 @@ typedef struct {
 } timeout_thread_data_t;
 
 // Thread function for testing queue_pop timeout
-void *timeout_pop_thread(void *arg)
+void *
+timeout_pop_thread(void *arg)
 {
   timeout_thread_data_t *data = (timeout_thread_data_t *) arg;
 
@@ -86,7 +90,8 @@ void *timeout_pop_thread(void *arg)
 }
 
 // Thread function for testing queue_add timeout
-void *timeout_add_thread(void *arg)
+void *
+timeout_add_thread(void *arg)
 {
   timeout_thread_data_t *data = (timeout_thread_data_t *) arg;
 
@@ -98,7 +103,8 @@ void *timeout_add_thread(void *arg)
   return NULL;
 }
 
-void test_queue_add_and_pop_message(void)
+void
+test_queue_add_and_pop_message(void)
 {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
@@ -129,7 +135,8 @@ typedef struct {
   int test_value;
 } thread_data_t;
 
-void *producer_thread(void *arg)
+void *
+producer_thread(void *arg)
 {
   thread_data_t *data = (thread_data_t *) arg;
 
@@ -146,7 +153,8 @@ void *producer_thread(void *arg)
   return NULL;
 }
 
-void *consumer_thread(void *arg)
+void *
+consumer_thread(void *arg)
 {
   thread_data_t *data = (thread_data_t *) arg;
 
@@ -163,7 +171,8 @@ void *consumer_thread(void *arg)
   return NULL;
 }
 
-void test_queue_pop_blocks_until_push(void)
+void
+test_queue_pop_blocks_until_push(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -186,7 +195,8 @@ void test_queue_pop_blocks_until_push(void)
   queue_destroy(queue);
 }
 
-void *blocking_producer_thread(void *arg)
+void *
+blocking_producer_thread(void *arg)
 {
   thread_data_t *data = (thread_data_t *) arg;
 
@@ -202,7 +212,8 @@ void *blocking_producer_thread(void *arg)
   return NULL;
 }
 
-void *delayed_consumer_thread(void *arg)
+void *
+delayed_consumer_thread(void *arg)
 {
   thread_data_t *data = (thread_data_t *) arg;
 
@@ -220,7 +231,8 @@ void *delayed_consumer_thread(void *arg)
   return NULL;
 }
 
-void test_queue_add_blocks_on_full_queue(void)
+void
+test_queue_add_blocks_on_full_queue(void)
 {
   queue_t *queue = queue_create(2);     // Small capacity
   TEST_ASSERT_NOT_NULL(queue);
@@ -273,7 +285,8 @@ void test_queue_add_blocks_on_full_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_add_returns_error_on_full(void)
+void
+test_queue_try_add_returns_error_on_full(void)
 {
   queue_t *queue = queue_create(2);     // Small capacity
   TEST_ASSERT_NOT_NULL(queue);
@@ -307,7 +320,8 @@ void test_queue_try_add_returns_error_on_full(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_add_succeeds_with_space(void)
+void
+test_queue_try_add_succeeds_with_space(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -330,7 +344,8 @@ void test_queue_try_add_succeeds_with_space(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_pop_returns_null_on_empty(void)
+void
+test_queue_try_pop_returns_null_on_empty(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -344,7 +359,8 @@ void test_queue_try_pop_returns_null_on_empty(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_pop_returns_message(void)
+void
+test_queue_try_pop_returns_message(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -365,7 +381,8 @@ void test_queue_try_pop_returns_message(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_operations_mixed(void)
+void
+test_queue_try_operations_mixed(void)
 {
   queue_t *queue = queue_create(3);
   TEST_ASSERT_NOT_NULL(queue);
@@ -415,7 +432,8 @@ void test_queue_try_operations_mixed(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_empty_on_new_queue(void)
+void
+test_queue_is_empty_on_new_queue(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -426,7 +444,8 @@ void test_queue_is_empty_on_new_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_empty_after_add_and_pop(void)
+void
+test_queue_is_empty_after_add_and_pop(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -450,7 +469,8 @@ void test_queue_is_empty_after_add_and_pop(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_empty_thread_safety(void)
+void
+test_queue_is_empty_thread_safety(void)
 {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
@@ -478,7 +498,8 @@ void test_queue_is_empty_thread_safety(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_full_on_new_queue(void)
+void
+test_queue_is_full_on_new_queue(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -489,7 +510,8 @@ void test_queue_is_full_on_new_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_full_after_filling_queue(void)
+void
+test_queue_is_full_after_filling_queue(void)
 {
   queue_t *queue = queue_create(2);     // Small capacity for easy testing
   TEST_ASSERT_NOT_NULL(queue);
@@ -525,7 +547,8 @@ void test_queue_is_full_after_filling_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_full_with_try_operations(void)
+void
+test_queue_is_full_with_try_operations(void)
 {
   queue_t *queue = queue_create(3);
   TEST_ASSERT_NOT_NULL(queue);
@@ -566,7 +589,8 @@ void test_queue_is_full_with_try_operations(void)
   queue_destroy(queue);
 }
 
-void test_queue_get_size_on_new_queue(void)
+void
+test_queue_get_size_on_new_queue(void)
 {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
@@ -577,7 +601,8 @@ void test_queue_get_size_on_new_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_get_size_with_add_and_pop(void)
+void
+test_queue_get_size_with_add_and_pop(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -620,7 +645,8 @@ void test_queue_get_size_with_add_and_pop(void)
   queue_destroy(queue);
 }
 
-void test_queue_get_size_at_capacity(void)
+void
+test_queue_get_size_at_capacity(void)
 {
   queue_t *queue = queue_create(3);
   TEST_ASSERT_NOT_NULL(queue);
@@ -656,7 +682,8 @@ void test_queue_get_size_at_capacity(void)
   queue_destroy(queue);
 }
 
-void test_queue_get_size_with_try_operations(void)
+void
+test_queue_get_size_with_try_operations(void)
 {
   queue_t *queue = queue_create(2);
   TEST_ASSERT_NOT_NULL(queue);
@@ -703,7 +730,8 @@ void test_queue_get_size_with_try_operations(void)
   queue_destroy(queue);
 }
 
-void test_queue_destroy_with_cleanup_empty_queue(void)
+void
+test_queue_destroy_with_cleanup_empty_queue(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -720,7 +748,8 @@ void test_queue_destroy_with_cleanup_empty_queue(void)
   TEST_ASSERT_EQUAL(0, tracker.cleanup_call_count);
 }
 
-void test_queue_destroy_with_cleanup_single_message(void)
+void
+test_queue_destroy_with_cleanup_single_message(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -740,7 +769,8 @@ void test_queue_destroy_with_cleanup_single_message(void)
   TEST_ASSERT_EQUAL(msg, tracker.cleaned_messages[0]);
 }
 
-void test_queue_destroy_with_cleanup_multiple_messages(void)
+void
+test_queue_destroy_with_cleanup_multiple_messages(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -779,7 +809,8 @@ void test_queue_destroy_with_cleanup_multiple_messages(void)
   TEST_ASSERT_EQUAL(1, found_msg3);
 }
 
-void test_queue_destroy_with_cleanup_null_callback(void)
+void
+test_queue_destroy_with_cleanup_null_callback(void)
 {
   queue_t *queue = queue_create(3);
   TEST_ASSERT_NOT_NULL(queue);
@@ -800,7 +831,8 @@ void test_queue_destroy_with_cleanup_null_callback(void)
   // In practice, the caller would be responsible for message cleanup
 }
 
-void test_queue_destroy_with_cleanup_partial_queue(void)
+void
+test_queue_destroy_with_cleanup_partial_queue(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -833,7 +865,8 @@ void test_queue_destroy_with_cleanup_partial_queue(void)
   TEST_ASSERT_EQUAL(2, tracker.cleanup_call_count);
 }
 
-void test_queue_destroy_with_cleanup_thread_safety(void)
+void
+test_queue_destroy_with_cleanup_thread_safety(void)
 {
   queue_t *queue = queue_create(10);
   TEST_ASSERT_NOT_NULL(queue);
@@ -866,7 +899,8 @@ void test_queue_destroy_with_cleanup_thread_safety(void)
   TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
 }
 
-void test_queue_pop_timeout_on_empty_queue(void)
+void
+test_queue_pop_timeout_on_empty_queue(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -896,7 +930,8 @@ void test_queue_pop_timeout_on_empty_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_add_timeout_on_full_queue(void)
+void
+test_queue_add_timeout_on_full_queue(void)
 {
   queue_t *queue = queue_create(2);     // Small capacity
   TEST_ASSERT_NOT_NULL(queue);
@@ -944,7 +979,8 @@ void test_queue_add_timeout_on_full_queue(void)
   queue_destroy(queue);
 }
 
-void test_queue_pop_succeeds_before_timeout(void)
+void
+test_queue_pop_succeeds_before_timeout(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -980,7 +1016,8 @@ void test_queue_pop_succeeds_before_timeout(void)
   queue_destroy(queue);
 }
 
-void test_queue_add_succeeds_before_timeout(void)
+void
+test_queue_add_succeeds_before_timeout(void)
 {
   queue_t *queue = queue_create(2);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1023,7 +1060,8 @@ void test_queue_add_succeeds_before_timeout(void)
   queue_destroy(queue);
 }
 
-void test_queue_timeout_thread_safety(void)
+void
+test_queue_timeout_thread_safety(void)
 {
   queue_t *queue = queue_create(3);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1053,7 +1091,8 @@ void test_queue_timeout_thread_safety(void)
   queue_destroy(queue);
 }
 
-void test_queue_timeout_error_conditions(void)
+void
+test_queue_timeout_error_conditions(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1084,7 +1123,8 @@ void test_queue_timeout_error_conditions(void)
   queue_destroy(queue);
 }
 
-void test_queue_add_returns_error_on_null_queue(void)
+void
+test_queue_add_returns_error_on_null_queue(void)
 {
   message_t *msg = create_test_message(MSG_ECHO, "test");
   int result = queue_add(NULL, msg);
@@ -1093,7 +1133,8 @@ void test_queue_add_returns_error_on_null_queue(void)
   free(msg);
 }
 
-void test_queue_add_returns_error_on_null_message(void)
+void
+test_queue_add_returns_error_on_null_message(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1104,7 +1145,8 @@ void test_queue_add_returns_error_on_null_message(void)
   queue_destroy(queue);
 }
 
-void test_queue_add_timeout_returns_error_code(void)
+void
+test_queue_add_timeout_returns_error_code(void)
 {
   queue_t *queue = queue_create(2);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1137,14 +1179,16 @@ void test_queue_add_timeout_returns_error_code(void)
 }
 
 // Test errno functions
-void test_queue_get_error_initial_state(void)
+void
+test_queue_get_error_initial_state(void)
 {
   // Verify error starts at QUEUE_SUCCESS
   queue_clear_error();
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_get_error());
 }
 
-void test_queue_get_error_after_null_parameter(void)
+void
+test_queue_get_error_after_null_parameter(void)
 {
   queue_clear_error();
   int result = queue_add(NULL, NULL);
@@ -1152,7 +1196,8 @@ void test_queue_get_error_after_null_parameter(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
-void test_queue_clear_error_resets_state(void)
+void
+test_queue_clear_error_resets_state(void)
 {
   // Set an error condition
   queue_add(NULL, NULL);
@@ -1163,7 +1208,8 @@ void test_queue_clear_error_resets_state(void)
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_get_error());
 }
 
-void test_queue_strerror_returns_correct_messages(void)
+void
+test_queue_strerror_returns_correct_messages(void)
 {
   TEST_ASSERT_EQUAL_STRING("Success", queue_strerror(QUEUE_SUCCESS));
   TEST_ASSERT_EQUAL_STRING("Null pointer parameter", queue_strerror(QUEUE_ERR_NULL));
@@ -1179,7 +1225,8 @@ void test_queue_strerror_returns_correct_messages(void)
 }
 
 // Test thread-local error handling
-void *thread_local_error_test(void *arg)
+void *
+thread_local_error_test(void *arg)
 {
   (void) arg;                   // Unused parameter
 
@@ -1194,7 +1241,8 @@ void *thread_local_error_test(void *arg)
   return NULL;
 }
 
-void test_queue_errno_is_thread_local(void)
+void
+test_queue_errno_is_thread_local(void)
 {
   queue_t *queue = queue_create(5);
 
@@ -1214,7 +1262,8 @@ void test_queue_errno_is_thread_local(void)
 }
 
 // New API tests
-void test_queue_create_with_zero_capacity(void)
+void
+test_queue_create_with_zero_capacity(void)
 {
   queue_clear_error();
   queue_t *queue = queue_create(0);
@@ -1222,7 +1271,8 @@ void test_queue_create_with_zero_capacity(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_INVALID, queue_get_error());
 }
 
-void test_queue_destroy_returns_success(void)
+void
+test_queue_destroy_returns_success(void)
 {
   queue_t *queue = queue_create(5);
   TEST_ASSERT_NOT_NULL(queue);
@@ -1233,7 +1283,8 @@ void test_queue_destroy_returns_success(void)
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, queue_get_error());
 }
 
-void test_queue_destroy_with_null_returns_error(void)
+void
+test_queue_destroy_with_null_returns_error(void)
 {
   queue_clear_error();
   int result = queue_destroy(NULL);
@@ -1241,7 +1292,8 @@ void test_queue_destroy_with_null_returns_error(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
-void test_queue_pop_with_output_parameter(void)
+void
+test_queue_pop_with_output_parameter(void)
 {
   queue_t *queue = queue_create(5);
   message_t *msg_in = create_test_message(MSG_ECHO, "test");
@@ -1262,7 +1314,8 @@ void test_queue_pop_with_output_parameter(void)
   queue_destroy(queue);
 }
 
-void test_queue_pop_with_null_parameters(void)
+void
+test_queue_pop_with_null_parameters(void)
 {
   queue_t *queue = queue_create(5);
   message_t *msg = NULL;
@@ -1282,7 +1335,8 @@ void test_queue_pop_with_null_parameters(void)
   queue_destroy(queue);
 }
 
-void test_queue_pop_timeout_with_new_api(void)
+void
+test_queue_pop_timeout_with_new_api(void)
 {
   queue_t *queue = queue_create(5);
   message_t *msg = NULL;
@@ -1300,7 +1354,8 @@ void test_queue_pop_timeout_with_new_api(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_pop_with_output_parameter(void)
+void
+test_queue_try_pop_with_output_parameter(void)
 {
   queue_t *queue = queue_create(5);
   message_t *msg_in = create_test_message(MSG_ECHO, "test");
@@ -1320,7 +1375,8 @@ void test_queue_try_pop_with_output_parameter(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_add_null_parameters(void)
+void
+test_queue_try_add_null_parameters(void)
 {
   queue_t *queue = queue_create(5);
 
@@ -1339,7 +1395,8 @@ void test_queue_try_add_null_parameters(void)
   queue_destroy(queue);
 }
 
-void test_queue_try_pop_null_parameters(void)
+void
+test_queue_try_pop_null_parameters(void)
 {
   queue_t *queue = queue_create(5);
   message_t *msg = NULL;
@@ -1359,7 +1416,8 @@ void test_queue_try_pop_null_parameters(void)
   queue_destroy(queue);
 }
 
-void test_queue_is_empty_with_null_queue(void)
+void
+test_queue_is_empty_with_null_queue(void)
 {
   queue_clear_error();
   bool result = queue_is_empty(NULL);
@@ -1368,7 +1426,8 @@ void test_queue_is_empty_with_null_queue(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
-void test_queue_is_full_with_null_queue(void)
+void
+test_queue_is_full_with_null_queue(void)
 {
   queue_clear_error();
   bool result = queue_is_full(NULL);
@@ -1377,7 +1436,8 @@ void test_queue_is_full_with_null_queue(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, queue_get_error());
 }
 
-void test_queue_get_size_with_null_queue(void)
+void
+test_queue_get_size_with_null_queue(void)
 {
   queue_clear_error();
   size_t size = queue_get_size(NULL);
@@ -1387,7 +1447,8 @@ void test_queue_get_size_with_null_queue(void)
 }
 
 // Test overflow detection in queue_create
-void test_queue_create_with_overflow_capacity(void)
+void
+test_queue_create_with_overflow_capacity(void)
 {
   queue_clear_error();
 
@@ -1399,7 +1460,8 @@ void test_queue_create_with_overflow_capacity(void)
   TEST_ASSERT_EQUAL(QUEUE_ERR_OVERFLOW, queue_get_error());
 }
 
-void test_queue_create_with_max_capacity(void)
+void
+test_queue_create_with_max_capacity(void)
 {
   queue_clear_error();
 
@@ -1414,7 +1476,8 @@ void test_queue_create_with_max_capacity(void)
   TEST_ASSERT_TRUE(error == QUEUE_ERR_OVERFLOW || error == QUEUE_ERR_MEMORY);
 }
 
-void test_queue_create_with_safe_large_capacity(void)
+void
+test_queue_create_with_safe_large_capacity(void)
 {
   queue_clear_error();
 
@@ -1444,7 +1507,8 @@ void test_queue_create_with_safe_large_capacity(void)
   }
 }
 
-void test_queue_create_memory_allocation_failure(void)
+void
+test_queue_create_memory_allocation_failure(void)
 {
   queue_clear_error();
 
@@ -1463,15 +1527,18 @@ void test_queue_create_memory_allocation_failure(void)
   }
 }
 
-void setUp(void)
+void
+setUp(void)
 {
 }
 
-void tearDown(void)
+void
+tearDown(void)
 {
 }
 
-int main(void)
+int
+main(void)
 {
   UnityBegin("tst/queue_tests.c");
   RUN_TEST(test_queue_add_and_pop_message);

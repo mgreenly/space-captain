@@ -7,7 +7,8 @@
 
 #include "game.h"
 
-int32_t network_loop()
+int32_t
+network_loop()
 {
 
   int32_t SERVER_PORT = 8877;

@@ -3,7 +3,8 @@
 #include "../src/config.h"
 #include "../src/config.c"
 
-void test_config_foo(void)
+void
+test_config_foo(void)
 {
   config *cfg = NULL;
 
@@ -15,15 +16,18 @@ void test_config_foo(void)
   config_free(&cfg);
 }
 
-void setUp(void)
+void
+setUp(void)
 {
 }
 
-void tearDown(void)
+void
+tearDown(void)
 {
 }
 
-int main(void)
+int
+main(void)
 {
   UnityBegin("tst/config_tests.c");
   RUN_TEST(test_config_foo);
