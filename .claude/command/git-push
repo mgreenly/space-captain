@@ -1,0 +1,5 @@
+#!/bin/bash
+# Push current branch to GitHub remote
+
+current_branch=$(git branch --show-current)
+git push github "$current_branch"
