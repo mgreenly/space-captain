@@ -61,7 +61,7 @@ release: bin
 	$(CC) -o bin/$(CLIENT)-$$FULL_VERSION src/client.c $(CFLAGS) -O2 -DVERSION=\"$$FULL_VERSION\" $(LDFLAGS); \
 	ln -sf $(SERVER)-$$FULL_VERSION bin/$(SERVER); \
 	ln -sf $(CLIENT)-$$FULL_VERSION bin/$(CLIENT); \
-	$(MAKE) bump
+	$(MAKE) bump-buildnumber
 
 PHONY: install
 install: $(PREFIX)
@@ -103,8 +103,8 @@ PHONY: fmt
 fmt:
 	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | xargs -0 -r clang-format -i
 
-PHONY: bump
-bump:
+PHONY: bump-buildnumber
+bump-buildnumber:
 	@echo $$(($$(cat .BUILDNUMBER) + 1)) > .BUILDNUMBER
 	@echo "Build number bumped to $$(cat .BUILDNUMBER)"
 
