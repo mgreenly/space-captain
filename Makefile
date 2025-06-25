@@ -16,12 +16,12 @@ all: bin/$(SERVER) bin/$(CLIENT)
 #
 bin/$(SERVER): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 bin/$(SERVER): LDFLAGS := $(LDFLAGS) -lpthread
-bin/$(SERVER): $(wildcard src/*) makefile | bin
+bin/$(SERVER): $(wildcard src/*) Makefile | bin
 	$(CC) -o bin/$(SERVER) src/server.c $(CFLAGS) $(LDFLAGS)
 
 bin/$(CLIENT): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
 bin/$(CLIENT): LDFLAGS := $(LDFLAGS)
-bin/$(CLIENT): $(wildcard src/*) makefile | bin
+bin/$(CLIENT): $(wildcard src/*) Makefile | bin
 	$(CC) -o bin/$(CLIENT) src/client.c $(CFLAGS) $(LDFLAGS)
 
 bin/%_tests: tst/%_tests.c | bin
@@ -30,8 +30,8 @@ bin/%_tests: tst/%_tests.c | bin
 tst/%_tests.c: src/%.c src/%.h
 	touch $@
 
-tags: $(wildcard src/*) makefile
-	ctags -R --languages=C --c-kinds=+p --fields=+l src makefile
+tags: $(wildcard src/*) Makefile
+	ctags -R --languages=C --c-kinds=+p --fields=+l src Makefile
 
 bin:
 	mkdir -p $@

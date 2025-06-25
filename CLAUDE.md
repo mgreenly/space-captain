@@ -8,13 +8,18 @@ Space Captain: A toy MMO written in "C" as a learning experiment.
 - `make clean` - Remove build artifacts
 - `make install` - Install to `$PREFIX` (default: `$HOME/.local/bin`)
 - `make test` - Build and run tests
+- `make tests` - Build test binaries
 - `make fmt` - Format all *.c/*.h files
 - `make run-server` / `make run-client` - Run binaries
 - `make debug-server` / `make debug-client` - Debug with GDB
+- `make bump-buildnumber` - Increment build number
+- `make bump-patch` - Increment patch version
+- `make bump-minor` - Increment minor version
+- `make bump-major` - Increment major version
 
 ## Architecture
 **Files:** Server includes all `.c` files directly in `server.c`. Client includes `queue.c`.
-**Components:** server.c, client.c, message.h, queue.h, state.h, game.h, network.h, config.h
+**Components:** server.c, client.c, message.h, queue.c/h, state.c/h, game.c/h, network.c/h, config.c/h, log.h
 **Storage:** State files in `dat/` directory
 **Testing:** Unity framework, tests in `tst/*_tests.c`
 
