@@ -38,6 +38,6 @@ Create a git commit with proper Claude co-authorship attribution.
    ```
 
 **Important notes:**
-- The commit message should follow the project's convention (seen in recent commits)
+- The commit message should NOT include type prefixes (like fix:, refactor:, add:, etc.)
 - The co-author line should use the current model's identifier (dynamically determined)
 - Don't include the 🤖 emoji or Claude Code link as per the updated convention
