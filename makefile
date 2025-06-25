@@ -51,7 +51,16 @@ tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
 
 PHONY: release
 release: CFLAGS := $(CFLAGS) -O2
-release: bin/$(SERVER) bin/$(CLIENT)
+release: bin
+	@VERSION=$$(cat .VERSION); \
+	BUILD=$$(cat .BUILDNUMBER); \
+	TAG=$${TAG:-build}; \
+	DATE=$$(date +%Y%m%d); \
+	$(CC) -o bin/$(SERVER)-$$VERSION-$$TAG.$$DATE.$$BUILD src/server.c $(CFLAGS) -O2 $(LDFLAGS) -lpthread; \
+	$(CC) -o bin/$(CLIENT)-$$VERSION-$$TAG.$$DATE.$$BUILD src/client.c $(CFLAGS) -O2 $(LDFLAGS); \
+	ln -sf $(SERVER)-$$VERSION-$$TAG.$$DATE.$$BUILD bin/$(SERVER); \
+	ln -sf $(CLIENT)-$$VERSION-$$TAG.$$DATE.$$BUILD bin/$(CLIENT); \
+	$(MAKE) bump
 
 PHONY: install
 install: $(PREFIX)
@@ -92,3 +101,35 @@ debug-client: bin/$(CLIENT)
 PHONY: fmt
 fmt:
 	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | xargs -0 -r clang-format -i
+
+PHONY: bump
+bump:
+	@echo $$(($$(cat .BUILDNUMBER) + 1)) > .BUILDNUMBER
+	@echo "Build number bumped to $$(cat .BUILDNUMBER)"
+
+PHONY: bump-patch
+bump-patch:
+	@VERSION=$$(cat .VERSION); \
+	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
+	MINOR=$$(echo $$VERSION | cut -d. -f2); \
+	PATCH=$$(echo $$VERSION | cut -d. -f3); \
+	NEW_PATCH=$$(($$PATCH + 1)); \
+	echo "$$MAJOR.$$MINOR.$$NEW_PATCH" > .VERSION; \
+	echo "Version bumped to $$(cat .VERSION)"
+
+PHONY: bump-minor
+bump-minor:
+	@VERSION=$$(cat .VERSION); \
+	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
+	MINOR=$$(echo $$VERSION | cut -d. -f2); \
+	NEW_MINOR=$$(($$MINOR + 1)); \
+	echo "$$MAJOR.$$NEW_MINOR.0" > .VERSION; \
+	echo "Version bumped to $$(cat .VERSION)"
+
+PHONY: bump-major
+bump-major:
+	@VERSION=$$(cat .VERSION); \
+	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
+	NEW_MAJOR=$$(($$MAJOR + 1)); \
+	echo "$$NEW_MAJOR.0.0" > .VERSION; \
+	echo "Version bumped to $$(cat .VERSION)"
