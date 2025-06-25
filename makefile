@@ -56,10 +56,11 @@ release: bin
 	BUILD=$$(cat .BUILDNUMBER); \
 	TAG=$${TAG:-build}; \
 	DATE=$$(date +%Y%m%d); \
-	$(CC) -o bin/$(SERVER)-$$VERSION-$$TAG.$$DATE.$$BUILD src/server.c $(CFLAGS) -O2 $(LDFLAGS) -lpthread; \
-	$(CC) -o bin/$(CLIENT)-$$VERSION-$$TAG.$$DATE.$$BUILD src/client.c $(CFLAGS) -O2 $(LDFLAGS); \
-	ln -sf $(SERVER)-$$VERSION-$$TAG.$$DATE.$$BUILD bin/$(SERVER); \
-	ln -sf $(CLIENT)-$$VERSION-$$TAG.$$DATE.$$BUILD bin/$(CLIENT); \
+	FULL_VERSION="$$VERSION-$$TAG.$$DATE.$$BUILD"; \
+	$(CC) -o bin/$(SERVER)-$$FULL_VERSION src/server.c $(CFLAGS) -O2 -DVERSION=\"$$FULL_VERSION\" $(LDFLAGS) -lpthread; \
+	$(CC) -o bin/$(CLIENT)-$$FULL_VERSION src/client.c $(CFLAGS) -O2 -DVERSION=\"$$FULL_VERSION\" $(LDFLAGS); \
+	ln -sf $(SERVER)-$$FULL_VERSION bin/$(SERVER); \
+	ln -sf $(CLIENT)-$$FULL_VERSION bin/$(CLIENT); \
 	$(MAKE) bump
 
 PHONY: install
