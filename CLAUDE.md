@@ -25,4 +25,4 @@ Space Captain: A toy MMO written in "C" as a learning experiment.
 - Run `clang-format -i` after modifications
 
 ## Git Commits
-Add co-author line: `Co-authored-by: Claude <noreply@anthropic.com>`
+Add co-author line: `Co-authored-by: Claude <claude-opus-4-20250514>`
