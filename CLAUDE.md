@@ -1,5 +1,4 @@
 # CLAUDE.md
-
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
@@ -61,12 +60,15 @@ Uses Unity testing framework. Test files follow naming convention `*_tests.c` in
 
 ## Code Style Guidelines
 
-- Always trim trailing whitespace from all lines when making code edits
+- Always trim trailing whitespace when modifying *.c files
 - Always generate function comments that describe the parameters and return values
+- Alawys use single line comments and never use block comments.
 
 ## Git Commit Guidelines
 
-When creating commits, use a single line co-author attribution:
-```
-Co-authored-by: Claude <noreply@anthropic.com>
-```
+- When creating commits, use a single line co-author attribution:
+    ```
+    Co-authored-by: Claude <noreply@anthropic.com>
+    ```
+
+
