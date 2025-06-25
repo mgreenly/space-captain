@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Space Captain: A C multiplayer game project blending Eve Online, Dwarf Fortress, and Factorio elements via text interface.
+Space Captain: A toy MMO written in "C" as a learning experiment.
 
 ## Build Commands
 - `make` / `make all` - Build with debug flags
