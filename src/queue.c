@@ -36,21 +36,17 @@ const char* queue_strerror(int err) {
   }
 }
 
-/**
- * Calculates an absolute timeout from a relative timeout in seconds.
- * @param abs_timeout Pointer to timespec structure to store the absolute timeout
- * @param timeout_seconds Number of seconds from now for the timeout
- */
+// Calculates an absolute timeout from a relative timeout in seconds.
+// @param abs_timeout Pointer to timespec structure to store the absolute timeout
+// @param timeout_seconds Number of seconds from now for the timeout
 static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_seconds) {
   clock_gettime(CLOCK_REALTIME, abs_timeout);
   abs_timeout->tv_sec += timeout_seconds;
 }
 
-/**
- * Creates a new thread-safe message queue with the specified capacity.
- * @param capacity Maximum number of messages the queue can hold (must be > 0)
- * @return Pointer to the newly created queue, or NULL on allocation failure
- */
+// Creates a new thread-safe message queue with the specified capacity.
+// @param capacity Maximum number of messages the queue can hold (must be > 0)
+// @return Pointer to the newly created queue, or NULL on allocation failure
 queue_t* queue_create(size_t capacity) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -133,12 +129,10 @@ queue_t* queue_create(size_t capacity) {
   return q;
 }
 
-/**
- * Destroys a queue and frees its resources.
- * Note: Does not free messages still in the queue - caller is responsible.
- * @param q Pointer to the queue to destroy
- * @return QUEUE_SUCCESS on success, or an error code on failure
- */
+// Destroys a queue and frees its resources.
+// Note: Does not free messages still in the queue - caller is responsible.
+// @param q Pointer to the queue to destroy
+// @return QUEUE_SUCCESS on success, or an error code on failure
 int queue_destroy(queue_t* q) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -166,12 +160,10 @@ int queue_destroy(queue_t* q) {
   return queue_errno;
 }
 
-/**
- * Destroys a queue and applies a cleanup function to all remaining messages.
- * @param q Pointer to the queue to destroy (must not be NULL)
- * @param cleanup_fn Optional callback to process each remaining message (can be NULL)
- * @param user_data Optional user data passed to the cleanup function
- */
+// Destroys a queue and applies a cleanup function to all remaining messages.
+// @param q Pointer to the queue to destroy (must not be NULL)
+// @param cleanup_fn Optional callback to process each remaining message (can be NULL)
+// @param user_data Optional user data passed to the cleanup function
 void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
   if (q == NULL) {
     queue_errno = QUEUE_ERR_NULL;
@@ -205,13 +197,11 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
   free(q);
 }
 
-/**
- * Adds a message to the queue, blocking if the queue is full.
- * Will timeout after QUEUE_ADD_TIMEOUT seconds if the queue remains full.
- * @param q Pointer to the queue (must not be NULL)
- * @param msg Pointer to the message to add (must not be NULL)
- * @return QUEUE_SUCCESS on success, or an error code on failure
- */
+// Adds a message to the queue, blocking if the queue is full.
+// Will timeout after QUEUE_ADD_TIMEOUT seconds if the queue remains full.
+// @param q Pointer to the queue (must not be NULL)
+// @param msg Pointer to the message to add (must not be NULL)
+// @return QUEUE_SUCCESS on success, or an error code on failure
 int queue_add(queue_t* q, message_t* msg) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -264,13 +254,11 @@ int queue_add(queue_t* q, message_t* msg) {
   return QUEUE_SUCCESS;
 }
 
-/**
- * Removes and returns a message from the queue, blocking if empty.
- * Will timeout after QUEUE_POP_TIMEOUT seconds if the queue remains empty.
- * @param q Pointer to the queue
- * @param msg Pointer to store the removed message
- * @return QUEUE_SUCCESS on success, or an error code on failure
- */
+// Removes and returns a message from the queue, blocking if empty.
+// Will timeout after QUEUE_POP_TIMEOUT seconds if the queue remains empty.
+// @param q Pointer to the queue
+// @param msg Pointer to store the removed message
+// @return QUEUE_SUCCESS on success, or an error code on failure
 int queue_pop(queue_t* q, message_t** msg) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -325,12 +313,10 @@ int queue_pop(queue_t* q, message_t** msg) {
   return QUEUE_SUCCESS;
 }
 
-/**
- * Attempts to add a message to the queue without blocking.
- * @param q Pointer to the queue
- * @param msg Pointer to the message to add
- * @return QUEUE_SUCCESS on success, or an error code on failure
- */
+// Attempts to add a message to the queue without blocking.
+// @param q Pointer to the queue
+// @param msg Pointer to the message to add
+// @return QUEUE_SUCCESS on success, or an error code on failure
 int queue_try_add(queue_t* q, message_t* msg) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -362,12 +348,10 @@ int queue_try_add(queue_t* q, message_t* msg) {
   return QUEUE_SUCCESS;
 }
 
-/**
- * Attempts to remove and return a message from the queue without blocking.
- * @param q Pointer to the queue
- * @param msg Pointer to store the removed message
- * @return QUEUE_SUCCESS on success, or an error code on failure
- */
+// Attempts to remove and return a message from the queue without blocking.
+// @param q Pointer to the queue
+// @param msg Pointer to store the removed message
+// @return QUEUE_SUCCESS on success, or an error code on failure
 int queue_try_pop(queue_t* q, message_t** msg) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -401,11 +385,9 @@ int queue_try_pop(queue_t* q, message_t** msg) {
   return QUEUE_SUCCESS;
 }
 
-/**
- * Checks if the queue is empty (thread-safe).
- * @param q Pointer to the queue
- * @return true if the queue is empty, false otherwise (including on error)
- */
+// Checks if the queue is empty (thread-safe).
+// @param q Pointer to the queue
+// @return true if the queue is empty, false otherwise (including on error)
 bool queue_is_empty(queue_t* q) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -420,11 +402,9 @@ bool queue_is_empty(queue_t* q) {
   return is_empty;
 }
 
-/**
- * Checks if the queue is full (thread-safe).
- * @param q Pointer to the queue
- * @return true if the queue is full, false otherwise (including on error)
- */
+// Checks if the queue is full (thread-safe).
+// @param q Pointer to the queue
+// @return true if the queue is full, false otherwise (including on error)
 bool queue_is_full(queue_t* q) {
   queue_errno = QUEUE_SUCCESS;
 
@@ -439,11 +419,9 @@ bool queue_is_full(queue_t* q) {
   return is_full;
 }
 
-/**
- * Gets the current number of messages in the queue (thread-safe).
- * @param q Pointer to the queue
- * @return Number of messages currently in the queue, 0 on error
- */
+// Gets the current number of messages in the queue (thread-safe).
+// @param q Pointer to the queue
+// @return Number of messages currently in the queue, 0 on error
 size_t queue_get_size(queue_t* q) {
   queue_errno = QUEUE_SUCCESS;
 
