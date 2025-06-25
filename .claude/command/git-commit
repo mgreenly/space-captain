@@ -1,0 +1,14 @@
+#!/bin/bash
+# Create a git commit with co-author attribution for Claude
+
+if [ -z "$1" ]; then
+    echo "Usage: git-commit \"commit message\""
+    exit 1
+fi
+
+# Get the model name from environment variable or use default
+MODEL_NAME="${CLAUDE_MODEL:-Claude}"
+
+git commit -m "$1
+
+Co-authored-by: $MODEL_NAME"
