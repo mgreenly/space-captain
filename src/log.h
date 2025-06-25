@@ -19,12 +19,13 @@
 #define KYEL  "\x1B[33m"
 #define KBLU  "\x1B[34m"
 
-static inline void log_timestamp(FILE* stream) {
-    char time_buf[LOG_TIME_BUFFER_SIZE];
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    strftime(time_buf, sizeof(time_buf), LOG_TIME_FORMAT, t);
-    fprintf(stream, "%s ", time_buf);
+static inline void log_timestamp(FILE * stream)
+{
+  char time_buf[LOG_TIME_BUFFER_SIZE];
+  time_t now = time(NULL);
+  struct tm *t = localtime(&now);
+  strftime(time_buf, sizeof(time_buf), LOG_TIME_FORMAT, t);
+  fprintf(stream, "%s ", time_buf);
 }
 
 #define log_base(level, color, stream, fmt, ...) do { \

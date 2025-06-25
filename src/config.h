@@ -14,6 +14,6 @@ typedef struct {
   char *path;
 } config;
 
-config_result config_load(config **cfg);
-config_result config_free(config **cfg);
+config_result config_load(config ** cfg);
+config_result config_free(config ** cfg);
 void config_print_error(config_result result, const char *filename, int32_t line);

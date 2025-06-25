@@ -3,7 +3,8 @@
 #include "../src/config.h"
 #include "../src/config.c"
 
-void test_config_foo(void) {
+void test_config_foo(void)
+{
   config *cfg = NULL;
 
   config_result retval = config_load(&cfg);
@@ -14,9 +15,13 @@ void test_config_foo(void) {
   config_free(&cfg);
 }
 
-void setUp(void) { }
+void setUp(void)
+{
+}
 
-void tearDown(void) { }
+void tearDown(void)
+{
+}
 
 int main(void)
 {

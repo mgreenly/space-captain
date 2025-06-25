@@ -3,13 +3,18 @@
 #include "../src/network.h"
 #include "../src/network.c"
 
-void test_network_foo(void) {
+void test_network_foo(void)
+{
   TEST_ASSERT_EQUAL(0, 0);
 }
 
-void setUp(void) { }
+void setUp(void)
+{
+}
 
-void tearDown(void) { }
+void tearDown(void)
+{
+}
 
 int main(void)
 {

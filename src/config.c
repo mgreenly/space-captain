@@ -3,8 +3,9 @@
 #include <inttypes.h>
 #include <assert.h>
 
-config_result config_load(config **cfg) {
-  (*cfg)= malloc(sizeof(config));
+config_result config_load(config ** cfg)
+{
+  (*cfg) = malloc(sizeof(config));
   if (*cfg == NULL) {
     return CONFIG_MALLOC_ERROR;
   }
@@ -14,7 +15,8 @@ config_result config_load(config **cfg) {
   return CONFIG_SUCCESS;
 }
 
-config_result config_free(config **cfg) {
+config_result config_free(config ** cfg)
+{
   assert(*cfg != NULL);
 
   free(*cfg);
@@ -22,6 +24,7 @@ config_result config_free(config **cfg) {
   return CONFIG_SUCCESS;
 }
 
-void config_print_error(config_result result, const char *filename, int32_t line) {
+void config_print_error(config_result result, const char *filename, int32_t line)
+{
   fprintf(stderr, "%s (%s:%" PRId32 ")\n", CONFIG_RESULT_STRINGS[result], filename, line);
 }

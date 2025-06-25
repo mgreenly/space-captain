@@ -6,13 +6,18 @@
 #include "../src/game.h"
 #include "../src/game.c"
 
-void test_game_foo(void) {
+void test_game_foo(void)
+{
   TEST_ASSERT_EQUAL(0, 0);
 }
 
-void setUp(void) { }
+void setUp(void)
+{
+}
 
-void tearDown(void) { }
+void tearDown(void)
+{
+}
 
 int main(void)
 {

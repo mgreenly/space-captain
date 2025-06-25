@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #include "log.h"
 
 #include "queue.c"
@@ -15,14 +14,14 @@
 //
 // main
 //
-int32_t main(void) {
+int32_t main(void)
+{
 
-  queue_t* msg_queue = queue_create(QUEUE_CAPACITY);
+  queue_t *msg_queue = queue_create(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue. Exiting.");
     return EXIT_FAILURE;
   }
-
   // message_header_t msg_header = { MSG_ECHO, strlen(greeting) + 1 };
 
   char *msg_body = "Hello from the client!";
@@ -30,7 +29,6 @@ int32_t main(void) {
   msg->header.type = MSG_ECHO;
   msg->header.length = strlen(msg_body) + 1;
   msg->body = msg_body;
-
 
   printf("%d\n", msg->header.type);
   printf("%d\n", msg->header.length);
@@ -53,12 +51,9 @@ int32_t main(void) {
 
   printf("%s\n", msg2->body);
 
-
   free(msg);
 
   queue_destroy(msg_queue);
 
-
   return EXIT_SUCCESS;
 }
-

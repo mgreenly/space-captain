@@ -3,13 +3,18 @@
 #include "../src/state.h"
 #include "../src/state.c"
 
-void test_state_foo(void) {
+void test_state_foo(void)
+{
   TEST_ASSERT_EQUAL(0, 0);
 }
 
-void setUp(void) { }
+void setUp(void)
+{
+}
 
-void tearDown(void) { }
+void tearDown(void)
+{
+}
 
 int main(void)
 {

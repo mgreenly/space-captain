@@ -11,35 +11,49 @@
 static __thread int queue_errno = QUEUE_SUCCESS;
 
 // Function to get last queue error
-int queue_get_error(void) {
+int queue_get_error(void)
+{
   return queue_errno;
 }
 
 // Function to clear queue error
-void queue_clear_error(void) {
+void queue_clear_error(void)
+{
   queue_errno = QUEUE_SUCCESS;
 }
 
 // Function to get error string
-const char* queue_strerror(int err) {
+const char *queue_strerror(int err)
+{
   switch (err) {
-    case QUEUE_SUCCESS:     return "Success";
-    case QUEUE_ERR_TIMEOUT: return "Operation timed out";
-    case QUEUE_ERR_THREAD:  return "Thread operation failed";
-    case QUEUE_ERR_NULL:    return "Null pointer parameter";
-    case QUEUE_ERR_MEMORY:  return "Memory allocation failed";
-    case QUEUE_ERR_FULL:    return "Queue is full";
-    case QUEUE_ERR_EMPTY:   return "Queue is empty";
-    case QUEUE_ERR_INVALID: return "Invalid parameter";
-    case QUEUE_ERR_OVERFLOW: return "Integer overflow in capacity calculation";
-    default:                return "Unknown error";
+    case QUEUE_SUCCESS:
+      return "Success";
+    case QUEUE_ERR_TIMEOUT:
+      return "Operation timed out";
+    case QUEUE_ERR_THREAD:
+      return "Thread operation failed";
+    case QUEUE_ERR_NULL:
+      return "Null pointer parameter";
+    case QUEUE_ERR_MEMORY:
+      return "Memory allocation failed";
+    case QUEUE_ERR_FULL:
+      return "Queue is full";
+    case QUEUE_ERR_EMPTY:
+      return "Queue is empty";
+    case QUEUE_ERR_INVALID:
+      return "Invalid parameter";
+    case QUEUE_ERR_OVERFLOW:
+      return "Integer overflow in capacity calculation";
+    default:
+      return "Unknown error";
   }
 }
 
 // Calculates an absolute timeout from a relative timeout in seconds.
 // @param abs_timeout Pointer to timespec structure to store the absolute timeout
 // @param timeout_seconds Number of seconds from now for the timeout
-static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_seconds) {
+static void get_absolute_timeout(struct timespec *abs_timeout, int timeout_seconds)
+{
   clock_gettime(CLOCK_REALTIME, abs_timeout);
   abs_timeout->tv_sec += timeout_seconds;
 }
@@ -47,7 +61,8 @@ static void get_absolute_timeout(struct timespec* abs_timeout, int timeout_secon
 // Creates a new thread-safe message queue with the specified capacity.
 // @param capacity Maximum number of messages the queue can hold (must be > 0)
 // @return Pointer to the newly created queue, or NULL on allocation failure
-queue_t* queue_create(size_t capacity) {
+queue_t *queue_create(size_t capacity)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (capacity == 0 || capacity > QUEUE_MAX_CAPACITY) {
@@ -56,23 +71,22 @@ queue_t* queue_create(size_t capacity) {
     return NULL;
   }
 
-  queue_t* q = calloc(1, sizeof(queue_t));
+  queue_t *q = calloc(1, sizeof(queue_t));
   if (!q) {
     queue_errno = QUEUE_ERR_MEMORY;
     log_error("%s", "Failed to allocate memory for queue");
     return NULL;
   }
-
   // Check for overflow before allocating buffer
   size_t buffer_size;
-  if (__builtin_mul_overflow(capacity, sizeof(message_t*), &buffer_size)) {
+  if (__builtin_mul_overflow(capacity, sizeof(message_t *), &buffer_size)) {
     queue_errno = QUEUE_ERR_OVERFLOW;
     log_error("Integer overflow calculating buffer size for capacity %zu", capacity);
     free(q);
     return NULL;
   }
 
-  q->buffer = calloc(capacity, sizeof(message_t*));
+  q->buffer = calloc(capacity, sizeof(message_t *));
   if (!q->buffer) {
     queue_errno = QUEUE_ERR_MEMORY;
     log_error("%s", "Failed to allocate memory for queue buffer");
@@ -93,7 +107,6 @@ queue_t* queue_create(size_t capacity) {
     free(q);
     return NULL;
   }
-
   // Initialize condition mutex with error checking
   if (pthread_mutex_init(&q->cond_mutex, NULL) != 0) {
     queue_errno = QUEUE_ERR_THREAD;
@@ -103,7 +116,6 @@ queue_t* queue_create(size_t capacity) {
     free(q);
     return NULL;
   }
-
   // Initialize condition variables with error checking
   if (pthread_cond_init(&q->cond_not_empty, NULL) != 0) {
     queue_errno = QUEUE_ERR_THREAD;
@@ -133,14 +145,14 @@ queue_t* queue_create(size_t capacity) {
 // Note: Does not free messages still in the queue - caller is responsible.
 // @param q Pointer to the queue to destroy
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_destroy(queue_t* q) {
+int queue_destroy(queue_t * q)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
     queue_errno = QUEUE_ERR_NULL;
     return QUEUE_ERR_NULL;
   }
-
   // Note: This does not free the messages themselves,
   // as ownership is transferred out of the queue on pop.
   // The caller is responsible for freeing messages.
@@ -164,18 +176,18 @@ int queue_destroy(queue_t* q) {
 // @param q Pointer to the queue to destroy (must not be NULL)
 // @param cleanup_fn Optional callback to process each remaining message (can be NULL)
 // @param user_data Optional user data passed to the cleanup function
-void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* user_data) {
+void queue_destroy_with_cleanup(queue_t * q, queue_cleanup_fn cleanup_fn, void *user_data)
+{
   if (q == NULL) {
     queue_errno = QUEUE_ERR_NULL;
     return;
   }
-
   // Lock the queue to prevent any new operations
   pthread_rwlock_wrlock(&q->rwlock);
 
   // Drain all remaining messages
   while (q->size > 0) {
-    message_t* msg = q->buffer[q->head];
+    message_t *msg = q->buffer[q->head];
     q->head = (q->head + 1) % q->capacity;
     q->size--;
 
@@ -202,7 +214,8 @@ void queue_destroy_with_cleanup(queue_t* q, queue_cleanup_fn cleanup_fn, void* u
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to the message to add (must not be NULL)
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_add(queue_t* q, message_t* msg) {
+int queue_add(queue_t * q, message_t * msg)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -235,7 +248,6 @@ int queue_add(queue_t* q, message_t* msg) {
       queue_errno = QUEUE_ERR_THREAD;
       return QUEUE_ERR_THREAD;
     }
-
     // Re-acquire write lock and check condition again
     pthread_rwlock_wrlock(&q->rwlock);
   }
@@ -259,7 +271,8 @@ int queue_add(queue_t* q, message_t* msg) {
 // @param q Pointer to the queue
 // @param msg Pointer to store the removed message
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_pop(queue_t* q, message_t** msg) {
+int queue_pop(queue_t * q, message_t ** msg)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -294,7 +307,6 @@ int queue_pop(queue_t* q, message_t** msg) {
       queue_errno = QUEUE_ERR_THREAD;
       return QUEUE_ERR_THREAD;
     }
-
     // Re-acquire write lock and check condition again
     pthread_rwlock_wrlock(&q->rwlock);
   }
@@ -317,7 +329,8 @@ int queue_pop(queue_t* q, message_t** msg) {
 // @param q Pointer to the queue
 // @param msg Pointer to the message to add
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_try_add(queue_t* q, message_t* msg) {
+int queue_try_add(queue_t * q, message_t * msg)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -352,7 +365,8 @@ int queue_try_add(queue_t* q, message_t* msg) {
 // @param q Pointer to the queue
 // @param msg Pointer to store the removed message
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_try_pop(queue_t* q, message_t** msg) {
+int queue_try_pop(queue_t * q, message_t ** msg)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -388,7 +402,8 @@ int queue_try_pop(queue_t* q, message_t** msg) {
 // Checks if the queue is empty (thread-safe).
 // @param q Pointer to the queue
 // @return true if the queue is empty, false otherwise (including on error)
-bool queue_is_empty(queue_t* q) {
+bool queue_is_empty(queue_t * q)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -405,7 +420,8 @@ bool queue_is_empty(queue_t* q) {
 // Checks if the queue is full (thread-safe).
 // @param q Pointer to the queue
 // @return true if the queue is full, false otherwise (including on error)
-bool queue_is_full(queue_t* q) {
+bool queue_is_full(queue_t * q)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -422,7 +438,8 @@ bool queue_is_full(queue_t* q) {
 // Gets the current number of messages in the queue (thread-safe).
 // @param q Pointer to the queue
 // @return Number of messages currently in the queue, 0 on error
-size_t queue_get_size(queue_t* q) {
+size_t queue_get_size(queue_t * q)
+{
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
