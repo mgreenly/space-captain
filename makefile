@@ -91,4 +91,4 @@ debug-client: bin/$(CLIENT)
 
 PHONY: fmt
 fmt:
-	@find . -path ./vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | VERSION_CONTROL=none xargs -0 -r indent
+	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | VERSION_CONTROL=none xargs -0 -r indent
