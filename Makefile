@@ -17,8 +17,8 @@ CFLAGS = $(CFLAGS_DEBUG)
 # Linker flags
 LDFLAGS =
 
-# Build tag (defaults to 'dev' if not specified)
-TAG ?= dev
+# Build tag (defaults to 'pre' if not specified)
+TAG ?= pre
 
 # Directories
 SRC_DIR = src
@@ -166,7 +166,10 @@ $(BIN_DIR) $(DAT_DIR) $(OBJ_DIR)/debug $(OBJ_DIR)/release $(OBJ_DIR):
 # Format code
 .PHONY: fmt
 fmt:
-	find $(SRC_DIR) -name "*.c" -o -name "*.h" | xargs clang-format -i
+	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print | while read file; do \
+		echo "Formatting: $$file"; \
+		clang-format -i "$$file"; \
+	done
 
 # Clean
 .PHONY: clean
