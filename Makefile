@@ -1,136 +1,181 @@
-# The executable's name
-SERVER = server
-CLIENT = client
+# Space Captain Makefile
+# Compiler
+CC = gcc
 
-# The default installation directory
-PREFIX ?= ${HOME}/.local/bin
+# Shared flags for all builds
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP
 
-# The common build flags
-CFLAGS = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g
+# Debug-specific flags
+CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0
+
+# Release-specific flags
+CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
+
+# Default to debug flags
+CFLAGS = $(CFLAGS_DEBUG)
+
+# Linker flags
 LDFLAGS =
 
-all: bin/$(SERVER) bin/$(CLIENT)
+# Directories
+SRC_DIR = src
+TST_DIR = tst
+OBJ_DIR = obj
+BIN_DIR = bin
+DAT_DIR = dat
+PREFIX ?= $(HOME)/.local
 
-#
-# All the actual file targets.
-#
-bin/$(SERVER): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
-bin/$(SERVER): LDFLAGS := $(LDFLAGS) -lpthread
-bin/$(SERVER): $(wildcard src/*) Makefile | bin
-	$(CC) -o bin/$(SERVER) src/server.c $(CFLAGS) $(LDFLAGS)
+# Main targets
+TARGETS = server client
 
-bin/$(CLIENT): CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
-bin/$(CLIENT): LDFLAGS := $(LDFLAGS)
-bin/$(CLIENT): $(wildcard src/*) Makefile | bin
-	$(CC) -o bin/$(CLIENT) src/client.c $(CFLAGS) $(LDFLAGS)
+# Source files for each target
+SERVER_MAIN = $(SRC_DIR)/server.c
+CLIENT_MAIN = $(SRC_DIR)/client.c
 
-bin/%_tests: tst/%_tests.c | bin
-	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
+# Test source files
+TEST_SRCS = $(wildcard $(TST_DIR)/*_tests.c)
+TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/%,$(TEST_SRCS))
 
-tst/%_tests.c: src/%.c src/%.h
-	touch $@
+# Object files - separate for debug and release
+SERVER_OBJ_DEBUG = $(OBJ_DIR)/debug/server.o
+CLIENT_OBJ_DEBUG = $(OBJ_DIR)/debug/client.o
+SERVER_OBJ_RELEASE = $(OBJ_DIR)/release/server.o
+CLIENT_OBJ_RELEASE = $(OBJ_DIR)/release/client.o
 
-tags: $(wildcard src/*) Makefile
-	ctags -R --languages=C --c-kinds=+p --fields=+l src Makefile
+# Test object files
+TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 
-bin:
+# Dependency files
+DEPS = $(SERVER_OBJ_DEBUG:.o=.d) $(CLIENT_OBJ_DEBUG:.o=.d) \
+       $(SERVER_OBJ_RELEASE:.o=.d) $(CLIENT_OBJ_RELEASE:.o=.d) \
+       $(TEST_OBJS:.o=.d)
+
+# Default target
+.PHONY: all
+all: server client
+
+# Help target
+.PHONY: help
+help:
+	@echo "Space Captain Makefile Targets:"
+	@echo ""
+	@echo "Building (Debug):"
+	@echo "  make              - Build debug versions (default)"
+	@echo "  make all          - Same as 'make'"
+	@echo "  make server       - Build debug server"
+	@echo "  make client       - Build debug client"
+	@echo ""
+	@echo "Building (Release):"
+	@echo "  make release      - Build all release versions"
+	@echo "  make server-release - Build release server"
+	@echo "  make client-release - Build release client"
+	@echo ""
+	@echo "Other:"
+	@echo "  make clean        - Remove build artifacts"
+	@echo "  make install      - Install release versions to \$$PREFIX (default: \$$HOME/.local/bin)"
+	@echo "  make run-server   - Build and run debug server"
+	@echo "  make run-client   - Build and run debug client"
+	@echo "  make debug-server - Debug server with GDB"
+	@echo "  make debug-client - Debug client with GDB"
+	@echo "  make fmt          - Format all *.c/*.h files with clang-format"
+	@echo "  make tests        - Build all test executables"
+	@echo "  make help         - Show this help message"
+
+# Debug targets
+.PHONY: server
+server: $(BIN_DIR)/server
+
+.PHONY: client
+client: $(BIN_DIR)/client
+
+# Release targets
+.PHONY: release
+release: server-release client-release
+
+.PHONY: server-release
+server-release: $(BIN_DIR)/server-release
+
+.PHONY: client-release
+client-release: $(BIN_DIR)/client-release
+
+# Debug executables
+$(BIN_DIR)/server: $(SERVER_OBJ_DEBUG) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(BIN_DIR)/client: $(CLIENT_OBJ_DEBUG) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+# Release executables
+$(BIN_DIR)/server-release: $(SERVER_OBJ_RELEASE) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+$(BIN_DIR)/client-release: $(CLIENT_OBJ_RELEASE) | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+# Debug object files
+$(OBJ_DIR)/debug/server.o: $(SERVER_MAIN) | $(OBJ_DIR)/debug
+	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
+
+$(OBJ_DIR)/debug/client.o: $(CLIENT_MAIN) | $(OBJ_DIR)/debug
+	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
+
+# Release object files
+$(OBJ_DIR)/release/server.o: $(SERVER_MAIN) | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -c -o $@ $<
+
+$(OBJ_DIR)/release/client.o: $(CLIENT_MAIN) | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -c -o $@ $<
+
+# Test targets
+.PHONY: tests
+tests: $(TEST_BINS)
+
+# Test executables
+$(BIN_DIR)/%_tests: $(OBJ_DIR)/%_tests.o | $(BIN_DIR)
+	$(CC) $(LDFLAGS) -o $@ $^
+
+# Test object files
+$(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
+
+# Create directories
+$(BIN_DIR) $(DAT_DIR) $(OBJ_DIR)/debug $(OBJ_DIR)/release $(OBJ_DIR):
 	mkdir -p $@
 
-$(PREFIX):
-	mkdir -p $@
-
-#
-# All the phony build targets.
-#
-PHONY: build
-build: all
-
-PHONY: tests
-tests: CFLAGS := $(CFLAGS) -fsanitize=address,undefined -O0
-tests: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
-
-PHONY: release
-release: CFLAGS := $(CFLAGS) -O2
-release: bin
-	@VERSION=$$(cat .VERSION); \
-	BUILD=$$(cat .BUILDNUMBER); \
-	TAG=$${TAG:-build}; \
-	DATE=$$(date +%Y%m%d); \
-	FULL_VERSION="$$VERSION-$$TAG.$$DATE.$$BUILD"; \
-	$(CC) -o bin/$(SERVER)-$$FULL_VERSION src/server.c $(CFLAGS) -O2 -DVERSION=\"$$FULL_VERSION\" $(LDFLAGS) -lpthread; \
-	$(CC) -o bin/$(CLIENT)-$$FULL_VERSION src/client.c $(CFLAGS) -O2 -DVERSION=\"$$FULL_VERSION\" $(LDFLAGS); \
-	ln -sf $(SERVER)-$$FULL_VERSION bin/$(SERVER); \
-	ln -sf $(CLIENT)-$$FULL_VERSION bin/$(CLIENT); \
-	$(MAKE) bump-buildnumber
-
-PHONY: install
-install: $(PREFIX)
-	install -m 0755 bin/$(SERVER) $(PREFIX)
-	install -m 0755 bin/$(CLIENT) $(PREFIX)
-
-#
-# All the task targets.
-#
-PHONY: clean
-clean:
-	rm -rf result
-	rm -rf bin
-	rm -f  tags
-
-PHONY: test
-test: $(patsubst tst/%.c, bin/%, $(wildcard tst/*_tests.c))
-	@for filename in $^; do \
-		./$$filename ; \
-	done
-
-PHONY: run-server
-run-server: bin/$(SERVER)
-	./bin/$(SERVER) dat/state.dat dat/dump.dat
-
-PHONY: run-client
-run-client: bin/$(CLIENT)
-	./bin/$(CLIENT)
-
-PHONY: debug-sever
-debug-server: bin/$(SERVER)
-	@gdb -ex run -q --tui --args ./bin/$(SERVER) dat/state.dat dat/dump.dat
-
-PHONY: debug-client
-debug-client: bin/$(CLIENT)
-	@gdb -q --tui --args ./bin/$(CLIENT)
-
-PHONY: fmt
+# Format code
+.PHONY: fmt
 fmt:
-	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print0 | xargs -0 -r clang-format -i
+	find $(SRC_DIR) -name "*.c" -o -name "*.h" | xargs clang-format -i
 
-PHONY: bump-buildnumber
-bump-buildnumber:
-	@echo $$(($$(cat .BUILDNUMBER) + 1)) > .BUILDNUMBER
-	@echo "Build number bumped to $$(cat .BUILDNUMBER)"
+# Clean
+.PHONY: clean
+clean:
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
-PHONY: bump-patch
-bump-patch:
-	@VERSION=$$(cat .VERSION); \
-	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
-	MINOR=$$(echo $$VERSION | cut -d. -f2); \
-	PATCH=$$(echo $$VERSION | cut -d. -f3); \
-	NEW_PATCH=$$(($$PATCH + 1)); \
-	echo "$$MAJOR.$$MINOR.$$NEW_PATCH" > .VERSION; \
-	echo "Version bumped to $$(cat .VERSION)"
+# Install
+.PHONY: install
+install: release
+	install -d $(PREFIX)/bin
+	install -m 755 $(BIN_DIR)/server-release $(PREFIX)/bin/space-captain-server
+	install -m 755 $(BIN_DIR)/client-release $(PREFIX)/bin/space-captain-client
 
-PHONY: bump-minor
-bump-minor:
-	@VERSION=$$(cat .VERSION); \
-	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
-	MINOR=$$(echo $$VERSION | cut -d. -f2); \
-	NEW_MINOR=$$(($$MINOR + 1)); \
-	echo "$$MAJOR.$$NEW_MINOR.0" > .VERSION; \
-	echo "Version bumped to $$(cat .VERSION)"
+# Run targets
+.PHONY: run-server
+run-server: server | $(DAT_DIR)
+	$(BIN_DIR)/server
 
-PHONY: bump-major
-bump-major:
-	@VERSION=$$(cat .VERSION); \
-	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
-	NEW_MAJOR=$$(($$MAJOR + 1)); \
-	echo "$$NEW_MAJOR.0.0" > .VERSION; \
-	echo "Version bumped to $$(cat .VERSION)"
+.PHONY: run-client
+run-client: client
+	$(BIN_DIR)/client
+
+# Debug targets
+.PHONY: debug-server
+debug-server: server
+	gdb $(BIN_DIR)/server
+
+.PHONY: debug-client
+debug-client: client
+	gdb $(BIN_DIR)/client
+
+# Include dependency files
+-include $(DEPS)
