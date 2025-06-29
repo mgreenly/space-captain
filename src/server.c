@@ -17,8 +17,23 @@
 #include "worker.h"
 #include "log.h"
 
+// Client buffer structure for handling partial reads
+typedef struct client_buffer {
+  int fd;
+  uint8_t *buffer;
+  size_t buffer_size;
+  size_t data_len;
+  enum { READING_HEADER, READING_BODY } state;
+  message_header_t header;
+  size_t header_bytes_read;
+  struct client_buffer *next;
+} client_buffer_t;
+
 // Global shutdown flag
 static volatile sig_atomic_t shutdown_flag = 0;
+
+// Client buffer management
+static client_buffer_t *client_buffers = NULL;
 
 // Signal handler
 static void signal_handler(int sig) {
@@ -120,84 +135,153 @@ static void handle_new_connection(int server_fd, int epoll_fd) {
   }
 }
 
+// Find or create client buffer
+static client_buffer_t *get_client_buffer(int client_fd) {
+  client_buffer_t *buf = client_buffers;
+  while (buf) {
+    if (buf->fd == client_fd) {
+      return buf;
+    }
+    buf = buf->next;
+  }
+  
+  // Create new buffer
+  buf = calloc(1, sizeof(client_buffer_t));
+  if (!buf) {
+    log_error("%s", "Failed to allocate client buffer");
+    return NULL;
+  }
+  
+  buf->fd = client_fd;
+  buf->state = READING_HEADER;
+  buf->next = client_buffers;
+  client_buffers = buf;
+  
+  return buf;
+}
+
+// Remove client buffer
+static void remove_client_buffer(int client_fd) {
+  client_buffer_t **prev = &client_buffers;
+  client_buffer_t *buf = client_buffers;
+  
+  while (buf) {
+    if (buf->fd == client_fd) {
+      *prev = buf->next;
+      free(buf->buffer);
+      free(buf);
+      return;
+    }
+    prev = &buf->next;
+    buf = buf->next;
+  }
+}
+
 // Read message from client
 // Returns: 1 on success, 0 if no data available, -1 on error/close
 static int read_message(int client_fd, message_t **msg) {
-  message_header_t header;
-  size_t total_read = 0;
-
-  // Read header - handle partial reads
-  while (total_read < sizeof(header)) {
-    ssize_t n = recv(client_fd, ((char *) &header) + total_read, sizeof(header) - total_read, 0);
+  client_buffer_t *buf = get_client_buffer(client_fd);
+  if (!buf) {
+    return -1;
+  }
+  
+  *msg = NULL;
+  
+  // Read header if needed
+  if (buf->state == READING_HEADER) {
+    size_t remaining = sizeof(message_header_t) - buf->header_bytes_read;
+    ssize_t n = recv(client_fd, ((char *) &buf->header) + buf->header_bytes_read, remaining, 0);
+    
     if (n == 0) {
       return -1; // Connection closed
     } else if (n < 0) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        if (total_read == 0) {
-          return 0; // No data available yet
-        }
-        // Partial header read, continue
-        usleep(READ_RETRY_DELAY_US); // Small delay before retry
-        continue;
-      } else {
-        log_error("Failed to read header: %s", strerror(errno));
+        return 0; // No data available yet
+      }
+      log_error("Failed to read header: %s", strerror(errno));
+      return -1;
+    }
+    
+    buf->header_bytes_read += n;
+    
+    if (buf->header_bytes_read == sizeof(message_header_t)) {
+      // Header complete, validate and prepare for body
+      if (buf->header.length == 0 || buf->header.length > MAX_MESSAGE_SIZE) {
+        log_error("Invalid message length: %u", buf->header.length);
         return -1;
       }
+      
+      // Allocate buffer for body
+      buf->buffer_size = buf->header.length;
+      buf->buffer = malloc(buf->buffer_size);
+      if (!buf->buffer) {
+        log_error("%s", "Failed to allocate buffer");
+        return -1;
+      }
+      
+      buf->data_len = 0;
+      buf->state = READING_BODY;
+    } else {
+      return 0; // Still reading header
     }
-    total_read += n;
   }
 
-  // Validate header
-  if (header.length == 0 || header.length > MAX_MESSAGE_SIZE) {
-    log_error("Invalid message length: %u", header.length);
-    return -1;
-  }
-
-  // Allocate message
-  *msg = malloc(sizeof(message_t));
-  if (!*msg) {
-    log_error("%s", "Failed to allocate message");
-    return -1;
-  }
-
-  // Allocate body with extra space for client_fd
-  (*msg)->body = malloc(CLIENT_FD_SIZE + header.length);
-  if (!(*msg)->body) {
-    log_error("%s", "Failed to allocate message body");
-    free(*msg);
-    return -1;
-  }
-
-  // Store client_fd at beginning of body
-  *(int32_t *) ((*msg)->body) = client_fd;
-
-  // Read body - handle partial reads
-  total_read = 0;
-  while (total_read < header.length) {
-    ssize_t n =
-      recv(client_fd, (*msg)->body + CLIENT_FD_SIZE + total_read, header.length - total_read, 0);
+  // Read body if in READING_BODY state
+  if (buf->state == READING_BODY) {
+    size_t remaining = buf->buffer_size - buf->data_len;
+    ssize_t n = recv(client_fd, buf->buffer + buf->data_len, remaining, 0);
+    
     if (n == 0) {
       log_error("%s", "Connection closed while reading body");
-      free((*msg)->body);
-      free(*msg);
       return -1;
     } else if (n < 0) {
       if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // Data not ready, continue
-        usleep(READ_RETRY_DELAY_US); // Small delay before retry
-        continue;
-      } else {
-        log_error("Failed to read body: %s", strerror(errno));
-        free((*msg)->body);
+        return 0; // No data available yet
+      }
+      log_error("Failed to read body: %s", strerror(errno));
+      return -1;
+    }
+    
+    buf->data_len += n;
+    
+    if (buf->data_len == buf->buffer_size) {
+      // Message complete, create message structure
+      *msg = malloc(sizeof(message_t));
+      if (!*msg) {
+        log_error("%s", "Failed to allocate message");
+        return -1;
+      }
+      
+      // Allocate body with extra space for client_fd
+      (*msg)->body = malloc(CLIENT_FD_SIZE + buf->header.length);
+      if (!(*msg)->body) {
+        log_error("%s", "Failed to allocate message body");
         free(*msg);
         return -1;
       }
+      
+      // Store client_fd at beginning of body
+      *(int32_t *) ((*msg)->body) = client_fd;
+      
+      // Copy message data
+      memcpy((*msg)->body + CLIENT_FD_SIZE, buf->buffer, buf->header.length);
+      
+      // Set message fields
+      (*msg)->header = buf->header;
+      
+      // Reset buffer for next message
+      free(buf->buffer);
+      buf->buffer = NULL;
+      buf->buffer_size = 0;
+      buf->data_len = 0;
+      buf->header_bytes_read = 0;
+      buf->state = READING_HEADER;
+      
+      return 1; // Message complete
     }
-    total_read += n;
   }
-
-  (*msg)->header = header;
-  return 1; // Success
+  
+  return 0; // Still reading
 }
 
 // Handle client data
@@ -231,8 +315,14 @@ static void handle_client_data(int client_fd, queue_t *msg_queue) {
         free(msg);
       }
       // Continue reading more messages
+    } else if (result == 0) {
+      // Partial read, will continue on next epoll event
+      break;
     } else {
-      // result == 0 means no more data available (EAGAIN)
+      // Error occurred
+      log_error("Error reading from client (fd=%d)", client_fd);
+      remove_client_buffer(client_fd);
+      close(client_fd);
       break;
     }
   }
@@ -364,6 +454,14 @@ int main(void) {
     free(msg);
   }
   queue_destroy(msg_queue);
+  
+  // Clean up all client buffers
+  while (client_buffers) {
+    client_buffer_t *next = client_buffers->next;
+    free(client_buffers->buffer);
+    free(client_buffers);
+    client_buffers = next;
+  }
 
   log_info("%s", "Server shutdown complete");
   return EXIT_SUCCESS;
