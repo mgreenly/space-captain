@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <netinet/tcp.h>
 
 #include "config.h"
 #include "message.h"
@@ -231,6 +232,13 @@ static void handle_new_connection(int server_fd, int epoll_fd) {
     if (set_nonblocking(client_fd) < 0) {
       close(client_fd);
       continue;
+    }
+
+    // Enable TCP_NODELAY to reduce latency for small messages
+    int flag = 1;
+    if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(int)) < 0) {
+      log_warn("Failed to set TCP_NODELAY: %s", strerror(errno));
+      // Non-fatal, continue anyway
     }
 
     // Add to epoll
