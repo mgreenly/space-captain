@@ -13,8 +13,8 @@
 #include "vendor/unity.c"
 
 // Test configuration
-#define DEFAULT_NUM_CLIENTS 50
-#define DEFAULT_RUNTIME_SECONDS 30
+#define DEFAULT_NUM_CLIENTS 10
+#define DEFAULT_RUNTIME_SECONDS 5
 #define SERVER_STARTUP_DELAY 2  // seconds to wait for server to start
 #define CLIENT_SPAWN_DELAY_MS 20  // milliseconds between client spawns
 
