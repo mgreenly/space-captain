@@ -40,9 +40,11 @@ static inline void log_timestamp(FILE *stream) {
 #endif
 
 #if LOG_LEVEL >= 2
-#define log_info(fmt, ...) log_base("INFO ", KYEL, stdout, fmt, ##__VA_ARGS__)
+#define log_info(fmt, ...) log_base("INFO ", KGRN, stdout, fmt, ##__VA_ARGS__)
+#define log_warn(fmt, ...) log_base("WARN ", KYEL, stdout, fmt, ##__VA_ARGS__)
 #else
 #define log_info(fmt, ...)
+#define log_warn(fmt, ...)
 #endif
 
 #if LOG_LEVEL >= 3

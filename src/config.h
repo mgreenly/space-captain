@@ -27,4 +27,8 @@
 // Network configuration
 #define CLIENT_FD_SIZE sizeof(int32_t) // Size of client fd stored in message body
 
+// Connection pool configuration
+#define CONNECTION_POOL_SIZE 5000    // Pre-allocated connections for 5k clients
+#define CONNECTION_POOL_GROW 100     // Additional connections to allocate if pool exhausted
+
 #endif // CONFIG_H

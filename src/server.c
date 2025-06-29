@@ -27,7 +27,16 @@ typedef struct client_buffer {
   message_header_t header;
   size_t header_bytes_read;
   struct client_buffer *next;
+  int in_use;  // Flag to indicate if this buffer is currently in use
 } client_buffer_t;
+
+// Connection pool structure
+typedef struct {
+  client_buffer_t *buffers;      // Array of pre-allocated buffers
+  client_buffer_t *free_list;    // Head of free list
+  size_t pool_size;              // Total size of the pool
+  size_t used_count;             // Number of buffers currently in use
+} connection_pool_t;
 
 // Global shutdown flag
 static volatile sig_atomic_t shutdown_flag = 0;
@@ -35,10 +44,115 @@ static volatile sig_atomic_t shutdown_flag = 0;
 // Client buffer management
 static client_buffer_t *client_buffers = NULL;
 
+// Connection pool
+static connection_pool_t conn_pool = {0};
+
 // Signal handler
 static void signal_handler(int sig) {
   log_info("Received signal %d", sig);
   shutdown_flag = 1;
+}
+
+// Initialize connection pool
+static int init_connection_pool(size_t size) {
+  conn_pool.buffers = calloc(size, sizeof(client_buffer_t));
+  if (!conn_pool.buffers) {
+    log_error("Failed to allocate connection pool of size %zu", size);
+    return -1;
+  }
+  
+  conn_pool.pool_size = size;
+  conn_pool.used_count = 0;
+  
+  // Initialize free list - link all buffers together
+  for (size_t i = 0; i < size - 1; i++) {
+    conn_pool.buffers[i].next = &conn_pool.buffers[i + 1];
+    conn_pool.buffers[i].fd = -1;
+    conn_pool.buffers[i].in_use = 0;
+  }
+  conn_pool.buffers[size - 1].next = NULL;
+  conn_pool.buffers[size - 1].fd = -1;
+  conn_pool.buffers[size - 1].in_use = 0;
+  
+  conn_pool.free_list = &conn_pool.buffers[0];
+  
+  log_info("Initialized connection pool with %zu pre-allocated buffers", size);
+  return 0;
+}
+
+// Get a buffer from the pool
+static client_buffer_t *pool_get_buffer(void) {
+  if (!conn_pool.free_list) {
+    // Pool exhausted - could implement dynamic growth here
+    log_warn("Connection pool exhausted (size: %zu)", conn_pool.pool_size);
+    
+    // Fallback to malloc for now
+    client_buffer_t *buf = calloc(1, sizeof(client_buffer_t));
+    if (buf) {
+      buf->fd = -1;
+      buf->in_use = 1;
+    }
+    return buf;
+  }
+  
+  // Get buffer from free list
+  client_buffer_t *buf = conn_pool.free_list;
+  conn_pool.free_list = buf->next;
+  
+  // Reset buffer state
+  buf->fd = -1;
+  buf->buffer = NULL;
+  buf->buffer_size = 0;
+  buf->data_len = 0;
+  buf->state = READING_HEADER;
+  buf->header_bytes_read = 0;
+  memset(&buf->header, 0, sizeof(buf->header));
+  buf->next = NULL;
+  buf->in_use = 1;
+  
+  conn_pool.used_count++;
+  return buf;
+}
+
+// Return a buffer to the pool
+static void pool_return_buffer(client_buffer_t *buf) {
+  if (!buf) return;
+  
+  // Free any allocated message buffer
+  if (buf->buffer) {
+    free(buf->buffer);
+    buf->buffer = NULL;
+  }
+  
+  // Check if this buffer is from the pool
+  if (buf >= conn_pool.buffers && buf < conn_pool.buffers + conn_pool.pool_size) {
+    // Return to free list
+    buf->in_use = 0;
+    buf->fd = -1;
+    buf->next = conn_pool.free_list;
+    conn_pool.free_list = buf;
+    conn_pool.used_count--;
+  } else {
+    // This was a dynamically allocated buffer
+    free(buf);
+  }
+}
+
+// Cleanup connection pool
+static void cleanup_connection_pool(void) {
+  if (conn_pool.buffers) {
+    // Free any remaining allocated message buffers
+    for (size_t i = 0; i < conn_pool.pool_size; i++) {
+      if (conn_pool.buffers[i].buffer) {
+        free(conn_pool.buffers[i].buffer);
+      }
+    }
+    free(conn_pool.buffers);
+    conn_pool.buffers = NULL;
+  }
+  conn_pool.pool_size = 0;
+  conn_pool.used_count = 0;
+  conn_pool.free_list = NULL;
 }
 
 // Set socket to non-blocking
@@ -145,10 +259,10 @@ static client_buffer_t *get_client_buffer(int client_fd) {
     buf = buf->next;
   }
   
-  // Create new buffer
-  buf = calloc(1, sizeof(client_buffer_t));
+  // Get new buffer from pool
+  buf = pool_get_buffer();
   if (!buf) {
-    log_error("%s", "Failed to allocate client buffer");
+    log_error("%s", "Failed to get client buffer from pool");
     return NULL;
   }
   
@@ -168,8 +282,7 @@ static void remove_client_buffer(int client_fd) {
   while (buf) {
     if (buf->fd == client_fd) {
       *prev = buf->next;
-      free(buf->buffer);
-      free(buf);
+      pool_return_buffer(buf);
       return;
     }
     prev = &buf->next;
@@ -342,10 +455,17 @@ int main(void) {
     return EXIT_FAILURE;
   }
 
+  // Initialize connection pool
+  if (init_connection_pool(CONNECTION_POOL_SIZE) < 0) {
+    log_error("%s", "Failed to initialize connection pool");
+    return EXIT_FAILURE;
+  }
+
   // Create message queue
   queue_t *msg_queue = queue_create(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue");
+    cleanup_connection_pool();
     return EXIT_FAILURE;
   }
 
@@ -354,6 +474,7 @@ int main(void) {
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
     queue_destroy(msg_queue);
+    cleanup_connection_pool();
     return EXIT_FAILURE;
   }
 
@@ -366,6 +487,7 @@ int main(void) {
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
     queue_destroy(msg_queue);
+    cleanup_connection_pool();
     return EXIT_FAILURE;
   }
 
@@ -375,6 +497,7 @@ int main(void) {
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
     queue_destroy(msg_queue);
+    cleanup_connection_pool();
     return EXIT_FAILURE;
   }
 
@@ -386,6 +509,7 @@ int main(void) {
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
     queue_destroy(msg_queue);
+    cleanup_connection_pool();
     return EXIT_FAILURE;
   }
 
@@ -475,10 +599,12 @@ int main(void) {
   // Clean up all client buffers
   while (client_buffers) {
     client_buffer_t *next = client_buffers->next;
-    free(client_buffers->buffer);
-    free(client_buffers);
+    pool_return_buffer(client_buffers);
     client_buffers = next;
   }
+  
+  // Clean up connection pool
+  cleanup_connection_pool();
 
   log_info("%s", "Server shutdown complete");
   return EXIT_SUCCESS;

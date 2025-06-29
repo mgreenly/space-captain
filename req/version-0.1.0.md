@@ -35,3 +35,8 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 ## Known Constraints
 - Hard delivery date: End of September
 - Must run on a single server (no distributed architecture)
+
+## Enhancment Considerations
+- Consider SO_REUSEPORT and multiple network threads
+- Consider io_uring
+- add functional tests for the client and server
