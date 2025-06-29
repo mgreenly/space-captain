@@ -2,6 +2,8 @@
 
 Space Captain: A toy MMO written in "C" as a learning experiment.
 
+**Requirements:** Project requirements are specified in the `req/` folder.
+
 ## Build Commands
 - `make` / `make all` - Build with debug flags
 - `make release` - Build optimized versions

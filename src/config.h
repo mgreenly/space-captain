@@ -25,6 +25,6 @@
 #define READ_RETRY_DELAY_US 1000 // Delay before retrying read on EAGAIN (microseconds)
 
 // Network configuration
-#define CLIENT_FD_SIZE sizeof(int32_t)  // Size of client fd stored in message body
+#define CLIENT_FD_SIZE sizeof(int32_t) // Size of client fd stored in message body
 
 #endif // CONFIG_H
