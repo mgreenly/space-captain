@@ -408,10 +408,14 @@ int main(void) {
 
   // Event buffer
   struct epoll_event events[MAX_EVENTS];
+  int consecutive_empty_polls = 0;
+  const int max_empty_polls = 10; // After 10 empty polls, use blocking timeout
 
   // Main event loop
   while (!shutdown_flag) {
-    int n = epoll_wait(epoll_fd, events, MAX_EVENTS, EPOLL_TIMEOUT_MS);
+    // Use adaptive timeout: 0 (non-blocking) when active, EPOLL_TIMEOUT_MS when idle
+    int timeout = (consecutive_empty_polls < max_empty_polls) ? 0 : EPOLL_TIMEOUT_MS;
+    int n = epoll_wait(epoll_fd, events, MAX_EVENTS, timeout);
 
     if (n < 0) {
       if (errno == EINTR) {
@@ -422,6 +426,13 @@ int main(void) {
       }
       log_error("epoll_wait failed: %s", strerror(errno));
       break;
+    }
+
+    // Update consecutive empty polls counter
+    if (n == 0) {
+      consecutive_empty_polls++;
+    } else {
+      consecutive_empty_polls = 0; // Reset on activity
     }
 
     for (int i = 0; i < n && !shutdown_flag; i++) {
