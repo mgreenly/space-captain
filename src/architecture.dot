@@ -1,0 +1,108 @@
+digraph SpaceCaptainArchitecture {
+    rankdir=TB;
+    node [shape=box, style=rounded];
+    
+    // Server components
+    subgraph cluster_server {
+        label="Server Process";
+        style=filled;
+        color=lightgrey;
+        
+        // Main thread
+        server_main [label="Main Thread\n(server.c)", shape=ellipse];
+        epoll [label="Epoll Loop\nEvent Handler"];
+        signal_handler [label="Signal Handler\nSIGINT/SIGTERM"];
+        
+        // Network components
+        server_socket [label="Server Socket\nPort 4242"];
+        client_connections [label="Client\nConnections"];
+        
+        // Queue
+        message_queue [label="Message Queue\n(queue.c)", shape=cylinder];
+        
+        // Worker pool
+        subgraph cluster_workers {
+            label="Worker Pool";
+            style=filled;
+            color=white;
+            
+            worker1 [label="Worker 1\n(worker.c)"];
+            worker2 [label="Worker 2\n(worker.c)"];
+            worker3 [label="Worker 3\n(worker.c)"];
+            worker4 [label="Worker 4\n(worker.c)"];
+        }
+        
+        // Message handlers
+        echo_handler [label="Echo\nHandler"];
+        reverse_handler [label="Reverse\nHandler"];
+        time_handler [label="Time\nHandler"];
+    }
+    
+    // Client components
+    subgraph cluster_client {
+        label="Client Process";
+        style=filled;
+        color=lightblue;
+        
+        client_main [label="Main Thread\n(client.c)", shape=ellipse];
+        client_signal [label="Signal Handler\nSIGINT/SIGTERM"];
+        client_socket [label="Client Socket"];
+        msg_generator [label="Message\nGenerator"];
+        delay_timer [label="Random Delay\n300-1000ms"];
+    }
+    
+    // External
+    network [label="TCP/IP Network", shape=cloud];
+    
+    // Server flow
+    server_main -> epoll;
+    server_main -> signal_handler;
+    epoll -> server_socket;
+    server_socket -> client_connections;
+    client_connections -> message_queue [label="Push messages"];
+    
+    // Worker flow
+    message_queue -> worker1 [label="Pop"];
+    message_queue -> worker2 [label="Pop"];
+    message_queue -> worker3 [label="Pop"];
+    message_queue -> worker4 [label="Pop"];
+    
+    worker1 -> echo_handler;
+    worker1 -> reverse_handler;
+    worker1 -> time_handler;
+    worker2 -> echo_handler;
+    worker2 -> reverse_handler;
+    worker2 -> time_handler;
+    worker3 -> echo_handler;
+    worker3 -> reverse_handler;
+    worker3 -> time_handler;
+    worker4 -> echo_handler;
+    worker4 -> reverse_handler;
+    worker4 -> time_handler;
+    
+    // Client flow
+    client_main -> client_signal;
+    client_main -> delay_timer;
+    delay_timer -> msg_generator;
+    msg_generator -> client_socket;
+    
+    // Network connections
+    client_socket -> network [label="Send request"];
+    network -> client_connections [label="TCP connection"];
+    echo_handler -> network [label="Send response"];
+    reverse_handler -> network [label="Send response"];
+    time_handler -> network [label="Send response"];
+    network -> client_socket [label="Receive response"];
+    
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        color=lightyellow;
+        
+        legend1 [label="Process/Thread", shape=ellipse];
+        legend2 [label="Component", shape=box];
+        legend3 [label="Data Store", shape=cylinder];
+        legend4 [label="Network", shape=cloud];
+    }
+}

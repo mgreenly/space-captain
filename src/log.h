@@ -6,7 +6,7 @@
 
 // LOG_LEVEL: 0=NONE, 1=ERROR, 2=INFO, 3=DEBUG
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 2
+#define LOG_LEVEL 3
 #endif
 
 #define LOG_TIME_FORMAT "%Y-%m-%d %H:%M:%S"

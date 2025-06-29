@@ -28,3 +28,4 @@ Space Captain: A toy MMO written in "C" as a learning experiment.
 - Document function parameters/returns
 - Use single-line comments only
 - Run `clang-format -i` after modifications
+- Always use format strings with log macros: `log_error("%s", "message")` not `log_error("message")`

@@ -15,7 +15,7 @@ CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
 CFLAGS = $(CFLAGS_DEBUG)
 
 # Linker flags
-LDFLAGS =
+LDFLAGS = -lpthread
 
 # Build tag (defaults to 'pre' if not specified)
 TAG ?= pre
@@ -35,15 +35,19 @@ TARGETS = server client
 SERVER_MAIN = $(SRC_DIR)/server.c
 CLIENT_MAIN = $(SRC_DIR)/client.c
 
+# Additional source files
+COMMON_SRCS = $(SRC_DIR)/queue.c
+SERVER_SRCS = $(SRC_DIR)/worker.c
+
 # Test source files
 TEST_SRCS = $(wildcard $(TST_DIR)/*_tests.c)
 TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/%,$(TEST_SRCS))
 
 # Object files - separate for debug and release
-SERVER_OBJ_DEBUG = $(OBJ_DIR)/debug/server.o
-CLIENT_OBJ_DEBUG = $(OBJ_DIR)/debug/client.o
-SERVER_OBJ_RELEASE = $(OBJ_DIR)/release/server.o
-CLIENT_OBJ_RELEASE = $(OBJ_DIR)/release/client.o
+SERVER_OBJ_DEBUG = $(OBJ_DIR)/debug/server.o $(OBJ_DIR)/debug/worker.o $(OBJ_DIR)/debug/queue.o
+CLIENT_OBJ_DEBUG = $(OBJ_DIR)/debug/client.o $(OBJ_DIR)/debug/queue.o
+SERVER_OBJ_RELEASE = $(OBJ_DIR)/release/server.o $(OBJ_DIR)/release/worker.o $(OBJ_DIR)/release/queue.o
+CLIENT_OBJ_RELEASE = $(OBJ_DIR)/release/client.o $(OBJ_DIR)/release/queue.o
 
 # Test object files
 TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/%.o,$(TEST_SRCS))
@@ -128,17 +132,29 @@ $(BIN_DIR)/client-release: $(CLIENT_OBJ_RELEASE) | $(BIN_DIR)
 
 # Debug object files
 $(OBJ_DIR)/debug/server.o: $(SERVER_MAIN) | $(OBJ_DIR)/debug
-	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
 
 $(OBJ_DIR)/debug/client.o: $(CLIENT_MAIN) | $(OBJ_DIR)/debug
-	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
+
+$(OBJ_DIR)/debug/worker.o: $(SRC_DIR)/worker.c | $(OBJ_DIR)/debug
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
+
+$(OBJ_DIR)/debug/queue.o: $(SRC_DIR)/queue.c | $(OBJ_DIR)/debug
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
 
 # Release object files
 $(OBJ_DIR)/release/server.o: $(SERVER_MAIN) | $(OBJ_DIR)/release
-	$(CC) $(CFLAGS_RELEASE) -c -o $@ $<
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
 
 $(OBJ_DIR)/release/client.o: $(CLIENT_MAIN) | $(OBJ_DIR)/release
-	$(CC) $(CFLAGS_RELEASE) -c -o $@ $<
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
+
+$(OBJ_DIR)/release/worker.o: $(SRC_DIR)/worker.c | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
+
+$(OBJ_DIR)/release/queue.o: $(SRC_DIR)/queue.c | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
 
 # Test targets
 .PHONY: tests
@@ -170,6 +186,13 @@ fmt:
 		echo "Formatting: $$file"; \
 		clang-format -i "$$file"; \
 	done
+
+# Graphviz targets
+.PHONY: dot
+dot: $(SRC_DIR)/architecture.png
+
+$(SRC_DIR)/architecture.png: $(SRC_DIR)/architecture.dot
+	dot -Tpng $< -o $@
 
 # Clean
 .PHONY: clean

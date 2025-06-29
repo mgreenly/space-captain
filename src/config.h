@@ -1,19 +1,30 @@
-typedef enum {
-  CONFIG_SUCCESS,
-  CONFIG_UNKNOWN_ERROR,
-  CONFIG_MALLOC_ERROR,
-} config_result;
+#ifndef CONFIG_H
+#define CONFIG_H
 
-const char *CONFIG_RESULT_STRINGS[] = {
-  "Success, no error occured.",
-  "Error, unknown error occurred.",
-  "Error, failed to allocate memory for configuration.",
-};
+#include <stdint.h>
 
-typedef struct {
-  char *path;
-} config;
+// Server configuration
+#define SERVER_PORT 4242
+#define SERVER_HOST "127.0.0.1"
+#define SERVER_BACKLOG 128
+#define MAX_EVENTS 1024
+#define WORKER_POOL_SIZE 4
+#define QUEUE_CAPACITY 1024
 
-config_result config_load(config **cfg);
-config_result config_free(config **cfg);
-void config_print_error(config_result result, const char *filename, int32_t line);
+// Client configuration
+#define MIN_DELAY_MS 300
+#define MAX_DELAY_MS 1000
+
+// Message configuration
+#define MAX_MESSAGE_SIZE 4096
+#define BUFFER_SIZE 4096
+
+// Timing configuration
+#define EPOLL_TIMEOUT_MS 10      // Epoll wait timeout in milliseconds
+#define WORKER_SLEEP_MS 10       // Worker sleep time when queue is empty (milliseconds)
+#define READ_RETRY_DELAY_US 1000 // Delay before retrying read on EAGAIN (microseconds)
+
+// Network configuration
+#define CLIENT_FD_SIZE sizeof(int32_t)  // Size of client fd stored in message body
+
+#endif // CONFIG_H
