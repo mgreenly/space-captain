@@ -31,3 +31,4 @@ Space Captain: A toy MMO written in "C" as a learning experiment.
 - Use single-line comments only
 - Run `clang-format -i` after modifications
 - Always use format strings with log macros: `log_error("%s", "message")` not `log_error("message")`
+- **No compiler warnings allowed** - All code must compile without warnings. Fix any warnings immediately.
