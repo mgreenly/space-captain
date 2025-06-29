@@ -530,51 +530,88 @@ int main(void) {
 
   log_info("Server listening on %s:%d", SERVER_HOST, SERVER_PORT);
 
-  // Event buffer
-  struct epoll_event events[MAX_EVENTS];
+  // Calculate event buffer size based on connection pool
+  int event_buffer_size = MIN_EVENTS;
+  if (CONNECTION_POOL_SIZE * MAX_EVENTS_PER_CONN > event_buffer_size) {
+    event_buffer_size = CONNECTION_POOL_SIZE * MAX_EVENTS_PER_CONN;
+    if (event_buffer_size > ABSOLUTE_MAX_EVENTS) {
+      event_buffer_size = ABSOLUTE_MAX_EVENTS;
+    }
+  }
+
+  // Allocate dynamic event buffer
+  struct epoll_event *events = malloc(sizeof(struct epoll_event) * event_buffer_size);
+  if (!events) {
+    log_error("Failed to allocate event buffer of size %d", event_buffer_size);
+    close(epoll_fd);
+    close(server_fd);
+    worker_pool_stop(worker_pool);
+    worker_pool_destroy(worker_pool);
+    queue_destroy(msg_queue);
+    cleanup_connection_pool();
+    return EXIT_FAILURE;
+  }
+  log_info("Allocated event buffer for %d events", event_buffer_size);
+
   int consecutive_empty_polls = 0;
   const int max_empty_polls = 10; // After 10 empty polls, use blocking timeout
 
   // Main event loop
   while (!shutdown_flag) {
-    // Use adaptive timeout: 0 (non-blocking) when active, EPOLL_TIMEOUT_MS when idle
-    int timeout = (consecutive_empty_polls < max_empty_polls) ? 0 : EPOLL_TIMEOUT_MS;
-    int n = epoll_wait(epoll_fd, events, MAX_EVENTS, timeout);
+    int total_events_processed = 0;
+    int events_in_batch = 0;
+    
+    // Keep processing events until no more are available
+    do {
+      // Use adaptive timeout: 0 (non-blocking) when active, EPOLL_TIMEOUT_MS when idle
+      int timeout = (consecutive_empty_polls < max_empty_polls) ? 0 : EPOLL_TIMEOUT_MS;
+      int n = epoll_wait(epoll_fd, events, event_buffer_size, timeout);
 
-    if (n < 0) {
-      if (errno == EINTR) {
-        // Check shutdown flag immediately on interrupt
-        if (shutdown_flag)
-          break;
-        continue;
+      if (n < 0) {
+        if (errno == EINTR) {
+          // Check shutdown flag immediately on interrupt
+          if (shutdown_flag)
+            break;
+          continue;
+        }
+        log_error("epoll_wait failed: %s", strerror(errno));
+        break;
       }
-      log_error("epoll_wait failed: %s", strerror(errno));
-      break;
-    }
 
-    // Update consecutive empty polls counter
-    if (n == 0) {
-      consecutive_empty_polls++;
-    } else {
-      consecutive_empty_polls = 0; // Reset on activity
-    }
-
-    for (int i = 0; i < n && !shutdown_flag; i++) {
-      if (events[i].data.fd == server_fd) {
-        // New connection
-        handle_new_connection(server_fd, epoll_fd);
+      // Update consecutive empty polls counter
+      if (n == 0) {
+        consecutive_empty_polls++;
       } else {
-        // Check for EPOLLRDHUP (peer shutdown)
-        if (events[i].events & EPOLLRDHUP) {
-          log_info("Client disconnected (EPOLLRDHUP) (fd=%d)", events[i].data.fd);
-          remove_client_buffer(events[i].data.fd);
-          close(events[i].data.fd);
-        } else if (events[i].events & EPOLLIN) {
-          // Client data available
-          handle_client_data(events[i].data.fd, msg_queue);
-          // Note: handle_client_data will close the fd if needed
+        consecutive_empty_polls = 0; // Reset on activity
+        total_events_processed += n;
+      }
+
+      events_in_batch = n;
+
+      for (int i = 0; i < n && !shutdown_flag; i++) {
+        if (events[i].data.fd == server_fd) {
+          // New connection
+          handle_new_connection(server_fd, epoll_fd);
+        } else {
+          // Check for EPOLLRDHUP (peer shutdown)
+          if (events[i].events & EPOLLRDHUP) {
+            log_info("Client disconnected (EPOLLRDHUP) (fd=%d)", events[i].data.fd);
+            remove_client_buffer(events[i].data.fd);
+            close(events[i].data.fd);
+          } else if (events[i].events & EPOLLIN) {
+            // Client data available
+            handle_client_data(events[i].data.fd, msg_queue);
+            // Note: handle_client_data will close the fd if needed
+          }
         }
       }
+      
+      // Continue if we filled the event buffer (might be more events)
+    } while (events_in_batch == event_buffer_size && !shutdown_flag);
+    
+    // Log if we're processing lots of events
+    if (total_events_processed > event_buffer_size * 2) {
+      log_info("Processed %d events in single loop iteration", total_events_processed);
     }
   }
 
@@ -605,6 +642,9 @@ int main(void) {
   
   // Clean up connection pool
   cleanup_connection_pool();
+
+  // Clean up event buffer
+  free(events);
 
   log_info("%s", "Server shutdown complete");
   return EXIT_SUCCESS;

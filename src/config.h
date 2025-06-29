@@ -7,9 +7,13 @@
 #define SERVER_PORT 4242
 #define SERVER_HOST "127.0.0.1"
 #define SERVER_BACKLOG 128
-#define MAX_EVENTS 1024
 #define WORKER_POOL_SIZE 4
 #define QUEUE_CAPACITY 1024
+
+// Event buffer configuration
+#define MIN_EVENTS 1024          // Minimum event buffer size
+#define MAX_EVENTS_PER_CONN 2    // Expected events per connection
+#define ABSOLUTE_MAX_EVENTS 65536 // Cap to prevent excessive memory use
 
 // Client configuration
 #define MIN_DELAY_MS 300
