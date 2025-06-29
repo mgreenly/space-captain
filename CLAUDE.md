@@ -9,8 +9,8 @@ Space Captain: A toy MMO written in "C" as a learning experiment.
 - `make release` - Build optimized versions
 - `make clean` - Remove build artifacts
 - `make install` - Install to `$PREFIX` (default: `$HOME/.local/bin`)
-- `make test` - Build and run tests
 - `make tests` - Build test binaries
+- `make run-tests` - Build and run all tests
 - `make fmt` - Format all *.c/*.h files
 - `make run-server` / `make run-client` - Run binaries
 - `make debug-server` / `make debug-client` - Debug with GDB

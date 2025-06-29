@@ -121,7 +121,7 @@ static void handle_new_connection(int server_fd, int epoll_fd) {
 
     // Add to epoll
     struct epoll_event event;
-    event.events = EPOLLIN | EPOLLET; // Edge-triggered mode
+    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
@@ -391,7 +391,7 @@ int main(void) {
 
   // Add server socket to epoll
   struct epoll_event event;
-  event.events = EPOLLIN | EPOLLET; // Edge-triggered mode
+  event.events = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
   event.data.fd = server_fd;
 
   if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event) < 0) {
@@ -429,10 +429,16 @@ int main(void) {
         // New connection
         handle_new_connection(server_fd, epoll_fd);
       } else {
-        // Client data
-        handle_client_data(events[i].data.fd, msg_queue);
-        // Note: handle_client_data will close the fd if needed
-        // We don't remove from epoll here to allow multiple messages
+        // Check for EPOLLRDHUP (peer shutdown)
+        if (events[i].events & EPOLLRDHUP) {
+          log_info("Client disconnected (EPOLLRDHUP) (fd=%d)", events[i].data.fd);
+          remove_client_buffer(events[i].data.fd);
+          close(events[i].data.fd);
+        } else if (events[i].events & EPOLLIN) {
+          // Client data available
+          handle_client_data(events[i].data.fd, msg_queue);
+          // Note: handle_client_data will close the fd if needed
+        }
       }
     }
   }
