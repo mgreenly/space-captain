@@ -69,6 +69,16 @@ TEST_NUM_CLIENTS=50 TEST_RUNTIME_SECONDS=30 bin/server_client_tests
 3. Run functional tests to verify stability
 4. Commit with descriptive message
 
+### Git Commit Template
+Always use this exact commit template:
+```
+<title>
+
+<body>
+
+co-author: <model>
+```
+
 ### Code Style Requirements
 - Single-line comments only (`//` not `/* */`)
 - Document all function parameters and return values

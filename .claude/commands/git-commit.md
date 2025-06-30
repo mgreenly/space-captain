@@ -24,10 +24,15 @@ Create a git commit with proper Claude co-authorship attribution.
 
 5. Create the commit with co-authorship:
    ```bash
+   # Get the current model ID dynamically
+   MODEL_ID="claude-opus-4-20250514"  # This will be dynamically determined by Claude
+   
    git commit -m "$(cat <<'EOF'
-   <commit message>
+   <title>
 
-   co-author: <current-model-id>
+   <body>
+
+   co-author: ${MODEL_ID}
    EOF
    )"
    ```
@@ -43,6 +48,7 @@ Create a git commit with proper Claude co-authorship attribution.
    ```
 
 **Important notes:**
+- The commit message should use the exact template format: `<title>` followed by blank line, then `<body>`, then co-author line
+- The model ID (claude-opus-4-20250514) will be dynamically inserted when creating the commit
 - The commit message should NOT include type prefixes (like fix:, refactor:, add:, etc.)
-- The co-author line should use the current model's identifier (dynamically determined)
 - Don't include the 🤖 emoji or Claude Code link as per the updated convention
