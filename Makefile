@@ -170,10 +170,13 @@ fmt:
 	done
 
 # Architecture diagram
+# Regenerate when any source files change
+SRC_FILES = $(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*.h)
+
 .PHONY: dot
 dot: architecture.png
 
-architecture.png: architecture.dot
+architecture.png: architecture.dot $(SRC_FILES)
 	dot -Tpng $< -o $@
 
 # ============================================================================
