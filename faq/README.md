@@ -4,6 +4,9 @@ This directory contains frequently asked questions and detailed explanations abo
 
 ## Table of Contents
 
+### Architecture
+- [Main Server Loop](main-loop.md) - High-level overview of the epoll loop, message queue, and worker threads
+
 ### Build System
 - [Unified C Project Structure](unified-c-project-structure.md) - Explains the unified build approach used in this project
 
