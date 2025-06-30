@@ -41,10 +41,19 @@ TEST_NUM_CLIENTS=50 TEST_RUNTIME_SECONDS=30 bin/server_client_tests
 - **Message Types**: MSG_ECHO (0), MSG_REVERSE (1), MSG_TIME (2)
 - **Optimizations**: TCP_NODELAY, connection pooling, adaptive timeouts, EPOLLRDHUP
 
+### Build Structure - Unified C Compilation
+The project uses a **unified build structure** where source files are included directly into the main compilation unit:
+
+- **Server (`server.c`)**: Includes `queue.c` and `worker.c` after headers but before implementation
+- **Client (`client.c`)**: Self-contained, no additional source includes needed
+- **Tests**: Each test file includes its dependencies directly (e.g., `queue_tests.c` includes `queue.c`)
+- **Benefits**: Faster compilation, better optimization, simpler dependency management
+- **Makefile**: Uses `-MMD -MP` flags for automatic dependency tracking
+- **Include Order**: System headers → Project headers → Implementation includes (.c files) → Main implementation
+
 ### File Organization
-- **Server compilation**: Includes all .c files directly in server.c (no separate compilation)
-- **Client compilation**: Only includes queue.c
 - **Headers**: message.h, queue.h, state.h, game.h, network.h, config.h, log.h
+- **Sources**: server.c, client.c, worker.c, queue.c
 - **Tests**: Unity framework in tst/*_tests.c
 - **Data**: State files in dat/ directory
 
@@ -99,6 +108,38 @@ co-author: <model>
 2. Add case to message_type_to_string()
 3. Add handler in worker.c
 4. Update client.c to send new type
+5. Note: Changes to worker.c will be picked up automatically by server.c
+
+### Add New Source File
+When adding a new source file that needs to be included:
+1. Create the .c and .h files
+2. Add `#include "newfile.h"` with other header includes
+3. Add `#include "newfile.c"` after all headers but before the main implementation
+4. Follow this order: system headers → project headers → implementation includes → main code
+5. Update the Makefile only if creating a new executable target
+6. The build system will automatically track dependencies via -MMD -MP flags
+
+Example for server.c:
+```c
+// System headers
+#include <stdio.h>
+#include <stdlib.h>
+// ... other system headers
+
+// Project headers
+#include "config.h"
+#include "message.h"
+#include "queue.h"
+#include "worker.h"
+#include "newfile.h"  // Add new header here
+
+// Include implementation files
+#include "queue.c"
+#include "worker.c"
+#include "newfile.c"  // Add new implementation here
+
+// Main server implementation starts here
+```
 
 ### Debug Issues
 ```bash

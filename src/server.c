@@ -18,6 +18,11 @@
 #include "worker.h"
 #include "log.h"
 
+// Include implementation files
+#include "queue.c"
+#include "worker.c"
+
+
 // Client buffer structure for handling partial reads
 typedef struct client_buffer {
   int fd;
@@ -61,10 +66,10 @@ static int init_connection_pool(size_t size) {
     log_error("Failed to allocate connection pool of size %zu", size);
     return -1;
   }
-  
+
   conn_pool.pool_size = size;
   conn_pool.used_count = 0;
-  
+
   // Initialize free list - link all buffers together
   for (size_t i = 0; i < size - 1; i++) {
     conn_pool.buffers[i].next = &conn_pool.buffers[i + 1];
@@ -74,9 +79,9 @@ static int init_connection_pool(size_t size) {
   conn_pool.buffers[size - 1].next = NULL;
   conn_pool.buffers[size - 1].fd = -1;
   conn_pool.buffers[size - 1].in_use = 0;
-  
+
   conn_pool.free_list = &conn_pool.buffers[0];
-  
+
   log_info("Initialized connection pool with %zu pre-allocated buffers", size);
   return 0;
 }
@@ -86,7 +91,7 @@ static client_buffer_t *pool_get_buffer(void) {
   if (!conn_pool.free_list) {
     // Pool exhausted - could implement dynamic growth here
     log_warn("Connection pool exhausted (size: %zu)", conn_pool.pool_size);
-    
+
     // Fallback to malloc for now
     client_buffer_t *buf = calloc(1, sizeof(client_buffer_t));
     if (buf) {
@@ -95,11 +100,11 @@ static client_buffer_t *pool_get_buffer(void) {
     }
     return buf;
   }
-  
+
   // Get buffer from free list
   client_buffer_t *buf = conn_pool.free_list;
   conn_pool.free_list = buf->next;
-  
+
   // Reset buffer state
   buf->fd = -1;
   buf->buffer = NULL;
@@ -110,7 +115,7 @@ static client_buffer_t *pool_get_buffer(void) {
   memset(&buf->header, 0, sizeof(buf->header));
   buf->next = NULL;
   buf->in_use = 1;
-  
+
   conn_pool.used_count++;
   return buf;
 }
@@ -118,13 +123,13 @@ static client_buffer_t *pool_get_buffer(void) {
 // Return a buffer to the pool
 static void pool_return_buffer(client_buffer_t *buf) {
   if (!buf) return;
-  
+
   // Free any allocated message buffer
   if (buf->buffer) {
     free(buf->buffer);
     buf->buffer = NULL;
   }
-  
+
   // Check if this buffer is from the pool
   if (buf >= conn_pool.buffers && buf < conn_pool.buffers + conn_pool.pool_size) {
     // Return to free list
@@ -266,19 +271,19 @@ static client_buffer_t *get_client_buffer(int client_fd) {
     }
     buf = buf->next;
   }
-  
+
   // Get new buffer from pool
   buf = pool_get_buffer();
   if (!buf) {
     log_error("%s", "Failed to get client buffer from pool");
     return NULL;
   }
-  
+
   buf->fd = client_fd;
   buf->state = READING_HEADER;
   buf->next = client_buffers;
   client_buffers = buf;
-  
+
   return buf;
 }
 
@@ -286,7 +291,7 @@ static client_buffer_t *get_client_buffer(int client_fd) {
 static void remove_client_buffer(int client_fd) {
   client_buffer_t **prev = &client_buffers;
   client_buffer_t *buf = client_buffers;
-  
+
   while (buf) {
     if (buf->fd == client_fd) {
       *prev = buf->next;
@@ -305,14 +310,14 @@ static int read_message(int client_fd, message_t **msg) {
   if (!buf) {
     return -1;
   }
-  
+
   *msg = NULL;
-  
+
   // Read header if needed
   if (buf->state == READING_HEADER) {
     size_t remaining = sizeof(message_header_t) - buf->header_bytes_read;
     ssize_t n = recv(client_fd, ((char *) &buf->header) + buf->header_bytes_read, remaining, 0);
-    
+
     if (n == 0) {
       return -1; // Connection closed
     } else if (n < 0) {
@@ -322,16 +327,16 @@ static int read_message(int client_fd, message_t **msg) {
       log_error("Failed to read header: %s", strerror(errno));
       return -1;
     }
-    
+
     buf->header_bytes_read += n;
-    
+
     if (buf->header_bytes_read == sizeof(message_header_t)) {
       // Header complete, validate and prepare for body
       if (buf->header.length == 0 || buf->header.length > MAX_MESSAGE_SIZE) {
         log_error("Invalid message length: %u", buf->header.length);
         return -1;
       }
-      
+
       // Allocate buffer for body
       buf->buffer_size = buf->header.length;
       buf->buffer = malloc(buf->buffer_size);
@@ -339,7 +344,7 @@ static int read_message(int client_fd, message_t **msg) {
         log_error("%s", "Failed to allocate buffer");
         return -1;
       }
-      
+
       buf->data_len = 0;
       buf->state = READING_BODY;
     } else {
@@ -351,7 +356,7 @@ static int read_message(int client_fd, message_t **msg) {
   if (buf->state == READING_BODY) {
     size_t remaining = buf->buffer_size - buf->data_len;
     ssize_t n = recv(client_fd, buf->buffer + buf->data_len, remaining, 0);
-    
+
     if (n == 0) {
       log_error("%s", "Connection closed while reading body");
       return -1;
@@ -362,9 +367,9 @@ static int read_message(int client_fd, message_t **msg) {
       log_error("Failed to read body: %s", strerror(errno));
       return -1;
     }
-    
+
     buf->data_len += n;
-    
+
     if (buf->data_len == buf->buffer_size) {
       // Message complete, create message structure
       *msg = malloc(sizeof(message_t));
@@ -372,7 +377,7 @@ static int read_message(int client_fd, message_t **msg) {
         log_error("%s", "Failed to allocate message");
         return -1;
       }
-      
+
       // Allocate body with extra space for client_fd
       (*msg)->body = malloc(CLIENT_FD_SIZE + buf->header.length);
       if (!(*msg)->body) {
@@ -380,16 +385,16 @@ static int read_message(int client_fd, message_t **msg) {
         free(*msg);
         return -1;
       }
-      
+
       // Store client_fd at beginning of body
       *(int32_t *) ((*msg)->body) = client_fd;
-      
+
       // Copy message data
       memcpy((*msg)->body + CLIENT_FD_SIZE, buf->buffer, buf->header.length);
-      
+
       // Set message fields
       (*msg)->header = buf->header;
-      
+
       // Reset buffer for next message
       free(buf->buffer);
       buf->buffer = NULL;
@@ -397,11 +402,11 @@ static int read_message(int client_fd, message_t **msg) {
       buf->data_len = 0;
       buf->header_bytes_read = 0;
       buf->state = READING_HEADER;
-      
+
       return 1; // Message complete
     }
   }
-  
+
   return 0; // Still reading
 }
 
@@ -568,7 +573,7 @@ int main(void) {
   while (!shutdown_flag) {
     int total_events_processed = 0;
     int events_in_batch = 0;
-    
+
     // Keep processing events until no more are available
     do {
       // Use adaptive timeout: 0 (non-blocking) when active, EPOLL_TIMEOUT_MS when idle
@@ -613,10 +618,10 @@ int main(void) {
           }
         }
       }
-      
+
       // Continue if we filled the event buffer (might be more events)
     } while (events_in_batch == event_buffer_size && !shutdown_flag);
-    
+
     // Log if we're processing lots of events
     if (total_events_processed > event_buffer_size * 2) {
       log_info("Processed %d events in single loop iteration", total_events_processed);
@@ -640,14 +645,14 @@ int main(void) {
     free(msg);
   }
   queue_destroy(msg_queue);
-  
+
   // Clean up all client buffers
   while (client_buffers) {
     client_buffer_t *next = client_buffers->next;
     pool_return_buffer(client_buffers);
     client_buffers = next;
   }
-  
+
   // Clean up connection pool
   cleanup_connection_pool();
 
@@ -657,3 +662,4 @@ int main(void) {
   log_info("%s", "Server shutdown complete");
   return EXIT_SUCCESS;
 }
+
