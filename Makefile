@@ -161,7 +161,7 @@ $(OBJ_DIR)/release/queue.o: $(SRC_DIR)/queue.c | $(OBJ_DIR)/release
 tests: $(TEST_BINS)
 
 .PHONY: run-tests
-run-tests: tests
+run-tests: tests server client
 	@for test in $(TEST_BINS); do \
 		echo "Running $$test..."; \
 		$$test || exit 1; \
