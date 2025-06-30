@@ -43,3 +43,7 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 ## Testing
 - Functional test suite validates server stability with 50 concurrent clients over 30 seconds
 - Tests monitor for error messages and ensure all processes remain running
+
+## Thread Safety Improvements
+- Add memory barriers or atomic operations where appropriate in queue.c
+- Review and document thread safety guarantees for concurrent data structures

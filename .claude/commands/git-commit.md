@@ -26,7 +26,7 @@ Create a git commit with proper Claude co-authorship attribution.
    ```bash
    # Get the current model ID dynamically
    MODEL_ID="claude-opus-4-20250514"  # This will be dynamically determined by Claude
-   
+
    git commit -m "$(cat <<'EOF'
    <title>
 
