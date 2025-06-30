@@ -1,3 +1,6 @@
+#ifndef STATE_H
+#define STATE_H
+
 typedef struct {
   int32_t count;
 } state;
@@ -24,3 +27,5 @@ state_result state_write(char *filename, state **st);
 state_result state_load(char *filename, state **st);
 state_result state_free(state **st);
 void state_print_error(state_result result, const char *filename, int32_t line);
+
+#endif // STATE_H
