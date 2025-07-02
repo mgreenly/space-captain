@@ -1,4 +1,4 @@
-# Project Requirements
+# Version 0.1.0 Requirements
 
 ## Overview
 Space Captain is a client-server MMO project built in C to explore Linux network programming and systems optimization. Version 0.1.0 focuses exclusively on establishing the core infrastructure: efficient networking protocols, concurrent connection handling, message processing, and state management. This release prioritizes building a solid technical foundation over gameplay mechanics and creates a robust platform for future development and optimization experiments.
@@ -63,10 +63,10 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 - Zero memory leaks over 24-hour test
 
 ## Known Constraints
-- Hard delivery date: End of September
+- Target delivery: 2025 Q3 (July - September 2025)
 - Must run on a single server (no distributed architecture)
 
-## Enhancment Considerations
+## Enhancement Considerations
 - Consider SO_REUSEPORT and multiple network threads
 - Consider io_uring
 
