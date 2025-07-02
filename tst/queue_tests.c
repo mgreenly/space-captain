@@ -67,8 +67,8 @@ typedef struct {
   queue_t *queue;
   long long start_time;
   long long end_time;
-  int operation_result; // 0 = success, -1 = timeout/error
-  message_t *message;   // For pop operations
+  sc_queue_ret_val_t operation_result; // QUEUE_SUCCESS or error code
+  message_t *message;                  // For pop operations
 } timeout_thread_data_t;
 
 // Thread function for testing queue_pop timeout
@@ -86,7 +86,7 @@ void *timeout_add_thread(void *arg) {
   timeout_thread_data_t *data = (timeout_thread_data_t *) arg;
 
   data->start_time = get_time_ms();
-  int result = sc_queue_add(data->queue, data->message);
+  sc_queue_ret_val_t result = sc_queue_add(data->queue, data->message);
   data->end_time = get_time_ms();
 
   data->operation_result = result;
@@ -100,11 +100,11 @@ void test_queue_add_and_pop_message(void) {
   // Always use dynamic allocation for messages
   message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_SIMPLE);
 
-  int result = sc_queue_add(queue, msg);
+  sc_queue_ret_val_t result = sc_queue_add(queue, msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
   message_t *popped_msg = NULL;
-  int pop_result = sc_queue_pop(queue, &popped_msg);
+  sc_queue_ret_val_t pop_result = sc_queue_pop(queue, &popped_msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, pop_result);
   TEST_ASSERT_NOT_NULL(popped_msg);
   TEST_ASSERT_EQUAL(MSG_ECHO, popped_msg->header.type);
@@ -143,7 +143,7 @@ void *consumer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
   message_t *msg = NULL;
-  int result = sc_queue_pop(data->queue, &msg);
+  sc_queue_ret_val_t result = sc_queue_pop(data->queue, &msg);
 
   data->test_value = (result == QUEUE_SUCCESS && msg != NULL) ? 1 : 0;
 
@@ -184,7 +184,7 @@ void *blocking_producer_thread(void *arg) {
   message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_BLOCKED);
 
   // This should block since queue is full
-  int result = sc_queue_add(data->queue, msg);
+  sc_queue_ret_val_t result = sc_queue_add(data->queue, msg);
 
   // Set test_value based on success
   data->test_value = (result == QUEUE_SUCCESS) ? 1 : 0;
@@ -274,7 +274,7 @@ void test_queue_try_add_returns_error_on_full(void) {
 
   // Queue is now full, try_add should return QUEUE_ERR_FULL
   message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
-  int result = sc_queue_try_add(queue, msg3);
+  sc_queue_ret_val_t result = sc_queue_try_add(queue, msg3);
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, result);
 
   // Clean up msg3 since it wasn't added
@@ -301,7 +301,7 @@ void test_queue_try_add_succeeds_with_space(void) {
   message_t *msg = create_test_message(MSG_ECHO, "test message");
 
   // Try to add to empty queue, should succeed
-  int result = sc_queue_try_add(queue, msg);
+  sc_queue_ret_val_t result = sc_queue_try_add(queue, msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
   // Verify message was added
@@ -322,7 +322,7 @@ void test_queue_try_pop_returns_null_on_empty(void) {
 
   // Try to pop from empty queue
   message_t *msg = NULL;
-  int result = sc_queue_try_pop(queue, &msg);
+  sc_queue_ret_val_t result = sc_queue_try_pop(queue, &msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_EMPTY, result);
   TEST_ASSERT_NULL(msg);
 
@@ -338,7 +338,7 @@ void test_queue_try_pop_returns_message(void) {
 
   // Try to pop, should get the message
   message_t *popped = NULL;
-  int result = sc_queue_try_pop(queue, &popped);
+  sc_queue_ret_val_t result = sc_queue_try_pop(queue, &popped);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(popped);
   TEST_ASSERT_EQUAL_STRING("pop test", popped->body);
@@ -1024,7 +1024,7 @@ void test_queue_timeout_error_conditions(void) {
 
   // Add should succeed immediately on empty queue
   long long start = get_time_ms();
-  int result = sc_queue_add(queue, msg);
+  sc_queue_ret_val_t result = sc_queue_add(queue, msg);
   long long elapsed = get_time_ms() - start;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
@@ -1047,7 +1047,7 @@ void test_queue_timeout_error_conditions(void) {
 
 void test_queue_add_returns_error_on_null_queue(void) {
   message_t *msg = create_test_message(MSG_ECHO, "test");
-  int result = sc_queue_add(NULL, msg);
+  sc_queue_ret_val_t result = sc_queue_add(NULL, msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   free(msg->body);
   free(msg);
@@ -1057,7 +1057,7 @@ void test_queue_add_returns_error_on_null_message(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
-  int result = sc_queue_add(queue, NULL);
+  sc_queue_ret_val_t result = sc_queue_add(queue, NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
 
   sc_queue_exit(queue);
@@ -1076,7 +1076,7 @@ void test_queue_add_timeout_returns_error_code(void) {
   // Try to add another - should timeout
   message_t *timeout_msg = create_test_message(MSG_ECHO, "timeout");
   long long start = get_time_ms();
-  int result = sc_queue_add(queue, timeout_msg);
+  sc_queue_ret_val_t result = sc_queue_add(queue, timeout_msg);
   long long elapsed = get_time_ms() - start;
 
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, result);
@@ -1103,7 +1103,7 @@ void test_queue_get_error_initial_state(void) {
 
 void test_queue_get_error_after_null_parameter(void) {
   sc_queue_clear_error();
-  int result = sc_queue_add(NULL, NULL);
+  sc_queue_ret_val_t result = sc_queue_add(NULL, NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 }
@@ -1178,14 +1178,14 @@ void test_queue_exit_returns_success(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   sc_queue_clear_error();
-  int result = sc_queue_exit(queue);
+  sc_queue_ret_val_t result = sc_queue_exit(queue);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 }
 
 void test_queue_exit_with_null_returns_error(void) {
   sc_queue_clear_error();
-  int result = sc_queue_exit(NULL);
+  sc_queue_ret_val_t result = sc_queue_exit(NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 }
@@ -1198,7 +1198,7 @@ void test_queue_pop_with_output_parameter(void) {
 
   message_t *msg_out = NULL;
   sc_queue_clear_error();
-  int result = sc_queue_pop(queue, &msg_out);
+  sc_queue_ret_val_t result = sc_queue_pop(queue, &msg_out);
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(msg_out);
@@ -1216,7 +1216,7 @@ void test_queue_pop_with_null_parameters(void) {
 
   // Test NULL queue
   sc_queue_clear_error();
-  int result = sc_queue_pop(NULL, &msg);
+  sc_queue_ret_val_t result = sc_queue_pop(NULL, &msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 
@@ -1235,7 +1235,7 @@ void test_queue_pop_timeout_with_new_api(void) {
 
   sc_queue_clear_error();
   long long start = get_time_ms();
-  int result = sc_queue_pop(queue, &msg);
+  sc_queue_ret_val_t result = sc_queue_pop(queue, &msg);
   long long elapsed = get_time_ms() - start;
 
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, result);
@@ -1253,7 +1253,7 @@ void test_queue_try_pop_with_output_parameter(void) {
 
   message_t *msg_out = NULL;
   sc_queue_clear_error();
-  int result = sc_queue_try_pop(queue, &msg_out);
+  sc_queue_ret_val_t result = sc_queue_try_pop(queue, &msg_out);
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(msg_out);
@@ -1270,7 +1270,7 @@ void test_queue_try_add_null_parameters(void) {
 
   // Test NULL queue
   sc_queue_clear_error();
-  int result = sc_queue_try_add(NULL, NULL);
+  sc_queue_ret_val_t result = sc_queue_try_add(NULL, NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 
@@ -1289,7 +1289,7 @@ void test_queue_try_pop_null_parameters(void) {
 
   // Test NULL queue
   sc_queue_clear_error();
-  int result = sc_queue_try_pop(NULL, &msg);
+  sc_queue_ret_val_t result = sc_queue_try_pop(NULL, &msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 

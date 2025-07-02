@@ -86,7 +86,7 @@ void *sc_worker_thread(void *arg) {
 
   while (!*ctx->shutdown_flag) {
     message_t *msg = NULL;
-    int32_t result = sc_queue_try_pop(ctx->msg_queue, &msg);
+    sc_queue_ret_val_t result = sc_queue_try_pop(ctx->msg_queue, &msg);
 
     if (result == QUEUE_SUCCESS && msg != NULL) {
       log_debug("Worker %d processing message type %d", ctx->id, msg->header.type);

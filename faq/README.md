@@ -7,6 +7,7 @@ This directory contains frequently asked questions and detailed explanations abo
 ### Architecture
 - [Architecture Diagram](arch.png) - Visual overview of the system architecture
 - [Main Server Loop](main-loop.md) - High-level overview of the epoll loop, message queue, and worker threads
+- [MPMC Queue Implementation](mpmc-queue.md) - Detailed explanation of the multi-producer multi-consumer queue
 
 ### Build System
 - [Unified C Project Structure](unified-c-project-structure.md) - Explains the unified build approach used in this project

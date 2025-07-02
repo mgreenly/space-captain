@@ -435,7 +435,8 @@ static void handle_client_data(int client_fd, queue_t *msg_queue) {
                 msg->header.type, type_str, msg->header.length, client_fd);
 
       // Queue message for processing
-      if (sc_queue_add(msg_queue, msg) != QUEUE_SUCCESS) {
+      sc_queue_ret_val_t result = sc_queue_add(msg_queue, msg);
+      if (result != QUEUE_SUCCESS) {
         log_error("%s", "Failed to queue message");
         free(msg->body);
         free(msg);
@@ -640,7 +641,8 @@ int main(void) {
 
   // Clean up remaining messages
   message_t *msg;
-  while (sc_queue_try_pop(msg_queue, &msg) == QUEUE_SUCCESS) {
+  sc_queue_ret_val_t pop_result;
+  while ((pop_result = sc_queue_try_pop(msg_queue, &msg)) == QUEUE_SUCCESS) {
     free(msg->body);
     free(msg);
   }

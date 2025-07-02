@@ -63,7 +63,7 @@ Two destruction methods are provided:
 
 #### Basic Destruction
 ```c
-int sc_queue_exit(queue_t *q)
+sc_queue_ret_val_t sc_queue_exit(queue_t *q)
 ```
 - Destroys synchronization primitives
 - Frees the buffer and queue structure
@@ -84,7 +84,7 @@ void sc_queue_exit_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *u
 
 #### Blocking Add
 ```c
-int sc_queue_add(queue_t *q, message_t *msg)
+sc_queue_ret_val_t sc_queue_add(queue_t *q, message_t *msg)
 ```
 
 1. Acquires write lock on the queue
@@ -99,7 +99,7 @@ int sc_queue_add(queue_t *q, message_t *msg)
 
 #### Non-blocking Add
 ```c
-int sc_queue_try_add(queue_t *q, message_t *msg)
+sc_queue_ret_val_t sc_queue_try_add(queue_t *q, message_t *msg)
 ```
 
 - Same as blocking add but returns `QUEUE_ERR_FULL` immediately if full
@@ -109,7 +109,7 @@ int sc_queue_try_add(queue_t *q, message_t *msg)
 
 #### Blocking Pop
 ```c
-int sc_queue_pop(queue_t *q, message_t **msg)
+sc_queue_ret_val_t sc_queue_pop(queue_t *q, message_t **msg)
 ```
 
 1. Acquires write lock on the queue
@@ -124,7 +124,7 @@ int sc_queue_pop(queue_t *q, message_t **msg)
 
 #### Non-blocking Pop
 ```c
-int sc_queue_try_pop(queue_t *q, message_t **msg)
+sc_queue_ret_val_t sc_queue_try_pop(queue_t *q, message_t **msg)
 ```
 
 - Same as blocking pop but returns `QUEUE_ERR_EMPTY` immediately if empty
@@ -207,7 +207,7 @@ The two-lock design minimizes contention:
 ### Producer Thread
 ```c
 message_t *msg = create_message(...);
-int result = sc_queue_add(queue, msg);
+sc_queue_ret_val_t result = sc_queue_add(queue, msg);
 if (result != QUEUE_SUCCESS) {
     // Handle error - timeout or other failure
     message_destroy(msg);
@@ -217,7 +217,7 @@ if (result != QUEUE_SUCCESS) {
 ### Consumer Thread
 ```c
 message_t *msg = NULL;
-int result = sc_queue_pop(queue, &msg);
+sc_queue_ret_val_t result = sc_queue_pop(queue, &msg);
 if (result == QUEUE_SUCCESS) {
     // Process message
     process_message(msg);

@@ -12,11 +12,11 @@
 // ============================================================================
 
 // Thread-local error variable for queue operations
-static __thread int queue_errno = QUEUE_SUCCESS;
+static __thread sc_queue_ret_val_t queue_errno = QUEUE_SUCCESS;
 
 // Gets the last error code for the current thread
 // @return The last error code set by a queue operation
-int sc_queue_get_error(void) {
+sc_queue_ret_val_t sc_queue_get_error(void) {
   return queue_errno;
 }
 
@@ -28,7 +28,7 @@ void sc_queue_clear_error(void) {
 // Gets a human-readable error message for the given error code
 // @param err The error code to get a message for
 // @return A string describing the error
-const char *sc_queue_strerror(int err) {
+const char *sc_queue_strerror(sc_queue_ret_val_t err) {
   switch (err) {
   case QUEUE_SUCCESS:
     return "Success";
@@ -155,7 +155,7 @@ queue_t *sc_queue_init(size_t capacity) {
 // Note: Does not free messages still in the queue - caller is responsible
 // @param q Pointer to the queue to destroy
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int sc_queue_exit(queue_t *q) {
+sc_queue_ret_val_t sc_queue_exit(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -226,7 +226,7 @@ void sc_queue_exit_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *u
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to the message to add (must not be NULL)
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int sc_queue_add(queue_t *q, message_t *msg) {
+sc_queue_ret_val_t sc_queue_add(queue_t *q, message_t *msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -282,7 +282,7 @@ int sc_queue_add(queue_t *q, message_t *msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to store the removed message (must not be NULL)
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int sc_queue_pop(queue_t *q, message_t **msg) {
+sc_queue_ret_val_t sc_queue_pop(queue_t *q, message_t **msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -343,7 +343,7 @@ int sc_queue_pop(queue_t *q, message_t **msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to the message to add (must not be NULL)
 // @return QUEUE_SUCCESS on success, QUEUE_ERR_FULL if full, or error code
-int sc_queue_try_add(queue_t *q, message_t *msg) {
+sc_queue_ret_val_t sc_queue_try_add(queue_t *q, message_t *msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -378,7 +378,7 @@ int sc_queue_try_add(queue_t *q, message_t *msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to store the removed message (must not be NULL)
 // @return QUEUE_SUCCESS on success, QUEUE_ERR_EMPTY if empty, or error code
-int sc_queue_try_pop(queue_t *q, message_t **msg) {
+sc_queue_ret_val_t sc_queue_try_pop(queue_t *q, message_t **msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
