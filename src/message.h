@@ -3,7 +3,12 @@
 
 #include <stdint.h>
 
-typedef enum { MSG_ECHO = 0, MSG_REVERSE = 1, MSG_TIME = 2, MSG_INVALID = -1 } message_type_t;
+typedef enum {
+  MSG_ECHO = 0,    // Echo message back to sender
+  MSG_REVERSE = 1, // Reverse the message content
+  MSG_TIME = 2,    // Return current server time
+  MSG_INVALID = -1 // Invalid message type
+} message_type_t;
 
 typedef struct __attribute__((packed)) {
   uint32_t type;

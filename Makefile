@@ -18,7 +18,8 @@ LDFLAGS = -lpthread
 
 # Build settings
 TAG ?= pre
-PREFIX ?= $(HOME)/.local  # Installation prefix
+HOME := $(shell echo $$HOME)
+PREFIX ?= $(HOME)/.local
 
 # Directory structure
 SRC_DIR = src
@@ -184,9 +185,18 @@ docs/arch.png: arch.dot $(SRC_FILES)
 
 .PHONY: install
 install: release
-	install -d $(PREFIX)/bin
-	install -m 755 $(BIN_DIR)/server-release $(PREFIX)/bin/space-captain-server
-	install -m 755 $(BIN_DIR)/client-release $(PREFIX)/bin/space-captain-client
+	@echo "Installing Space Captain to $(PREFIX)/bin"
+	@install -d $(PREFIX)/bin
+	@SERVER_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/server-release)) && \
+	CLIENT_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/client-release)) && \
+	echo "Installing server: $$SERVER_VERSIONED" && \
+	install -m 755 $(BIN_DIR)/$$SERVER_VERSIONED $(PREFIX)/bin/$$SERVER_VERSIONED && \
+	echo "Installing client: $$CLIENT_VERSIONED" && \
+	install -m 755 $(BIN_DIR)/$$CLIENT_VERSIONED $(PREFIX)/bin/$$CLIENT_VERSIONED && \
+	echo "Creating symlinks..." && \
+	ln -sf $$SERVER_VERSIONED $(PREFIX)/bin/space-captain-server && \
+	ln -sf $$CLIENT_VERSIONED $(PREFIX)/bin/space-captain-client && \
+	echo "Installation complete!"
 
 .PHONY: clean
 clean:
