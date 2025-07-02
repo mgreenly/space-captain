@@ -7,6 +7,7 @@ Space Captain: A toy MMO written in C as a learning experiment for Linux network
 2. **NO CUSTOM TEST SCRIPTS** - Use `bin/server_client_tests` for functional testing
 3. **ALWAYS USE FORMAT STRINGS** - `log_error("%s", msg)` not `log_error(msg)`
 4. **ALWAYS RUN AFTER CHANGES** - `make` to verify builds, `make fmt` for formatting
+5. **NEVER COMMIT WITHOUT EXPLICIT REQUEST** - Do not create git commits unless the user explicitly asks you to commit changes
 
 ## Quick Reference
 
