@@ -8,18 +8,6 @@ of Eve Online and Dwarf Fortress with a sprinkling of Factorio presented.
 
 You can follow along at https://www.youtube.com/@LinuxProgrammingandStuff
 
-
-Dependencies
-============
-
-  **Required**
-  * gcc or clang
-  * pkg-config
-
-  **Optional**
-  * valgrind
-  * ctags
-
 Installing
 ==========
 
