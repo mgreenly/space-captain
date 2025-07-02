@@ -149,3 +149,32 @@ double sc_speed_from_dial(int dial) {
 - **Speeds 801-1000**: Emergency/strategic repositioning
 
 Note: 'c' denotes the speed of light (3 × 10⁸ m/s). Many speeds exceed this physical limit, representing game mechanics rather than realistic physics.
+
+## Warp Speed Comparison
+
+For reference, here's how Space Captain speeds compare to Star Trek warp factors (using TNG scale):
+
+| Warp Factor | Speed (× c) | Space Captain Equivalent |
+|-------------|-------------|-------------------------|
+| Warp 1 | 1c | Speed ~611 |
+| Warp 2 | 10c | Speed ~711 |
+| Warp 3 | 39c | Speed ~757 |
+| Warp 4 | 102c | Speed ~807 |
+| Warp 5 | 214c | Speed ~841 |
+| Warp 6 | 392c | Speed ~869 |
+| Warp 7 | 656c | Speed ~893 |
+| Warp 8 | 1,024c | Speed ~911 |
+| Warp 9 | 1,516c | Speed ~927 |
+| Warp 9.9 | 3,053c | Speed ~951 |
+| Warp 9.99 | 7,912c | Speed ~976 |
+
+Space Captain's maximum speed (Speed 1000 at ~5,556c) falls between Warp 9.9 and Warp 9.99, making our fastest ships comparable to the most advanced vessels in Star Trek.
+
+## Interstellar Travel Example
+
+At maximum speed (Speed 1000), the journey from Sol to Alpha Centauri would take:
+- Distance: 4.37 light-years
+- Speed: 1.67 × 10¹² m/s (~5,556c)
+- **Travel time: ~6.9 hours**
+
+For comparison, at the speed of light this journey would take 4.37 years.
