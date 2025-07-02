@@ -105,9 +105,9 @@ queue_t *sc_queue_init(size_t capacity) {
   }
 
   q->capacity = capacity;
-  q->size = 0;
-  q->head = 0;
-  q->tail = 0;
+  q->size     = 0;
+  q->head     = 0;
+  q->tail     = 0;
 
   // Initialize synchronization primitives
   if (pthread_rwlock_init(&q->rwlock, NULL) != 0) {
@@ -196,7 +196,7 @@ void sc_queue_nuke_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *u
   // Drain all remaining messages
   while (q->size > 0) {
     message_t *msg = q->buffer[q->head];
-    q->head = (q->head + 1) % q->capacity;
+    q->head        = (q->head + 1) % q->capacity;
     q->size--;
 
     // Apply cleanup callback if provided
@@ -264,7 +264,7 @@ sc_queue_ret_val_t sc_queue_add(queue_t *q, message_t *msg) {
   }
 
   q->buffer[q->tail] = msg;
-  q->tail = (q->tail + 1) % q->capacity;
+  q->tail            = (q->tail + 1) % q->capacity;
   q->size++;
 
   pthread_rwlock_unlock(&q->rwlock);
@@ -321,7 +321,7 @@ sc_queue_ret_val_t sc_queue_pop(queue_t *q, message_t **msg) {
     pthread_rwlock_wrlock(&q->rwlock);
   }
 
-  *msg = q->buffer[q->head];
+  *msg    = q->buffer[q->head];
   q->head = (q->head + 1) % q->capacity;
   q->size--;
 
@@ -361,7 +361,7 @@ sc_queue_ret_val_t sc_queue_try_add(queue_t *q, message_t *msg) {
   }
 
   q->buffer[q->tail] = msg;
-  q->tail = (q->tail + 1) % q->capacity;
+  q->tail            = (q->tail + 1) % q->capacity;
   q->size++;
 
   pthread_rwlock_unlock(&q->rwlock);
@@ -397,7 +397,7 @@ sc_queue_ret_val_t sc_queue_try_pop(queue_t *q, message_t **msg) {
     return QUEUE_ERR_EMPTY;
   }
 
-  *msg = q->buffer[q->head];
+  *msg    = q->buffer[q->head];
   q->head = (q->head + 1) % q->capacity;
   q->size--;
 

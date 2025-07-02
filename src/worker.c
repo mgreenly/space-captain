@@ -27,14 +27,14 @@ sc_worker_pool_t *sc_worker_pool_init(int32_t pool_size, queue_t *msg_queue) {
     return NULL;
   }
 
-  pool->pool_size = pool_size;
-  pool->msg_queue = msg_queue;
+  pool->pool_size     = pool_size;
+  pool->msg_queue     = msg_queue;
   pool->shutdown_flag = false;
 
   // Initialize worker contexts
   for (int32_t i = 0; i < pool_size; i++) {
-    pool->workers[i].id = i;
-    pool->workers[i].msg_queue = msg_queue;
+    pool->workers[i].id            = i;
+    pool->workers[i].msg_queue     = msg_queue;
     pool->workers[i].shutdown_flag = &pool->shutdown_flag;
   }
 
@@ -85,7 +85,7 @@ void *sc_worker_thread(void *arg) {
   log_info("Worker %d started", ctx->id);
 
   while (!*ctx->shutdown_flag) {
-    message_t *msg = NULL;
+    message_t *msg            = NULL;
     sc_queue_ret_val_t result = sc_queue_try_pop(ctx->msg_queue, &msg);
 
     if (result == QUEUE_SUCCESS && msg != NULL) {
@@ -96,7 +96,7 @@ void *sc_worker_thread(void *arg) {
 
       // Adjust body pointer to actual message content
       message_t actual_msg = *msg;
-      actual_msg.body = msg->body + CLIENT_FD_SIZE;
+      actual_msg.body      = msg->body + CLIENT_FD_SIZE;
 
       switch (msg->header.type) {
       case MSG_ECHO:
@@ -160,7 +160,7 @@ void sc_worker_handle_echo_message(int32_t client_fd, message_t *msg) {
 void sc_worker_handle_reverse_message(int32_t client_fd, message_t *msg) {
   log_debug("Worker handling REVERSE request from fd=%d: %s", client_fd, msg->body);
 
-  int32_t len = strlen(msg->body);
+  int32_t len    = strlen(msg->body);
   char *reversed = malloc(len + 1);
   if (!reversed) {
     log_error("%s", "Failed to allocate reverse buffer");

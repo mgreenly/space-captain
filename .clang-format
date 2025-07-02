@@ -62,6 +62,12 @@ PointerAlignment: Right
 DerivePointerAlignment: false
 SortIncludes: Never              # Preserve include order
 
+# Alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AlignConsecutiveDeclarations: false
+AlignConsecutiveBitFields: true
+
 # Comments
 AlignTrailingComments: true
 ReflowComments: true

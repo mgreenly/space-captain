@@ -4,14 +4,14 @@
 #include <stdint.h>
 
 // Server configuration
-#define SERVER_PORT 4242
-#define SERVER_HOST "127.0.0.1"
-#define SERVER_BACKLOG 128
+#define SERVER_PORT      4242
+#define SERVER_HOST      "127.0.0.1"
+#define SERVER_BACKLOG   128
 #define WORKER_POOL_SIZE 4
-#define QUEUE_CAPACITY 1024
+#define QUEUE_CAPACITY   1024
 
 // Event buffer configuration
-#define MIN_EVENTS 1024           // Minimum event buffer size
+#define MIN_EVENTS          1024  // Minimum event buffer size
 #define MAX_EVENTS_PER_CONN 2     // Expected events per connection
 #define ABSOLUTE_MAX_EVENTS 65536 // Cap to prevent excessive memory use
 
@@ -21,11 +21,11 @@
 
 // Message configuration
 #define MAX_MESSAGE_SIZE 4096
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE      4096
 
 // Timing configuration
-#define EPOLL_TIMEOUT_MS 10      // Epoll wait timeout in milliseconds
-#define WORKER_SLEEP_MS 10       // Worker sleep time when queue is empty (milliseconds)
+#define EPOLL_TIMEOUT_MS    10   // Epoll wait timeout in milliseconds
+#define WORKER_SLEEP_MS     10   // Worker sleep time when queue is empty (milliseconds)
 #define READ_RETRY_DELAY_US 1000 // Delay before retrying read on EAGAIN (microseconds)
 
 // Network configuration

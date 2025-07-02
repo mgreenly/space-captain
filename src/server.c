@@ -66,17 +66,17 @@ static int init_connection_pool(size_t size) {
     return -1;
   }
 
-  conn_pool.pool_size = size;
+  conn_pool.pool_size  = size;
   conn_pool.used_count = 0;
 
   // Initialize free list - link all buffers together
   for (size_t i = 0; i < size - 1; i++) {
-    conn_pool.buffers[i].next = &conn_pool.buffers[i + 1];
-    conn_pool.buffers[i].fd = -1;
+    conn_pool.buffers[i].next   = &conn_pool.buffers[i + 1];
+    conn_pool.buffers[i].fd     = -1;
     conn_pool.buffers[i].in_use = 0;
   }
-  conn_pool.buffers[size - 1].next = NULL;
-  conn_pool.buffers[size - 1].fd = -1;
+  conn_pool.buffers[size - 1].next   = NULL;
+  conn_pool.buffers[size - 1].fd     = -1;
   conn_pool.buffers[size - 1].in_use = 0;
 
   conn_pool.free_list = &conn_pool.buffers[0];
@@ -94,7 +94,7 @@ static client_buffer_t *pool_get_buffer(void) {
     // Fallback to malloc for now
     client_buffer_t *buf = calloc(1, sizeof(client_buffer_t));
     if (buf) {
-      buf->fd = -1;
+      buf->fd     = -1;
       buf->in_use = 1;
     }
     return buf;
@@ -102,17 +102,17 @@ static client_buffer_t *pool_get_buffer(void) {
 
   // Get buffer from free list
   client_buffer_t *buf = conn_pool.free_list;
-  conn_pool.free_list = buf->next;
+  conn_pool.free_list  = buf->next;
 
   // Reset buffer state
-  buf->fd = -1;
-  buf->buffer = NULL;
-  buf->buffer_size = 0;
-  buf->data_len = 0;
-  buf->state = READING_HEADER;
+  buf->fd                = -1;
+  buf->buffer            = NULL;
+  buf->buffer_size       = 0;
+  buf->data_len          = 0;
+  buf->state             = READING_HEADER;
   buf->header_bytes_read = 0;
   memset(&buf->header, 0, sizeof(buf->header));
-  buf->next = NULL;
+  buf->next   = NULL;
   buf->in_use = 1;
 
   conn_pool.used_count++;
@@ -133,9 +133,9 @@ static void pool_return_buffer(client_buffer_t *buf) {
   // Check if this buffer is from the pool
   if (buf >= conn_pool.buffers && buf < conn_pool.buffers + conn_pool.pool_size) {
     // Return to free list
-    buf->in_use = 0;
-    buf->fd = -1;
-    buf->next = conn_pool.free_list;
+    buf->in_use         = 0;
+    buf->fd             = -1;
+    buf->next           = conn_pool.free_list;
     conn_pool.free_list = buf;
     conn_pool.used_count--;
   } else {
@@ -156,9 +156,9 @@ static void cleanup_connection_pool(void) {
     free(conn_pool.buffers);
     conn_pool.buffers = NULL;
   }
-  conn_pool.pool_size = 0;
+  conn_pool.pool_size  = 0;
   conn_pool.used_count = 0;
-  conn_pool.free_list = NULL;
+  conn_pool.free_list  = NULL;
 }
 
 // Set socket to non-blocking
@@ -196,8 +196,8 @@ static int create_server_socket(void) {
 
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(SERVER_PORT);
+  addr.sin_family      = AF_INET;
+  addr.sin_port        = htons(SERVER_PORT);
   addr.sin_addr.s_addr = INADDR_ANY;
 
   if (bind(server_fd, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
@@ -248,7 +248,7 @@ static void handle_new_connection(int server_fd, int epoll_fd) {
 
     // Add to epoll
     struct epoll_event event;
-    event.events = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
+    event.events  = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
     event.data.fd = client_fd;
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
@@ -279,9 +279,9 @@ static client_buffer_t *get_client_buffer(int client_fd) {
     return NULL;
   }
 
-  buf->fd = client_fd;
-  buf->state = READING_HEADER;
-  buf->next = client_buffers;
+  buf->fd        = client_fd;
+  buf->state     = READING_HEADER;
+  buf->next      = client_buffers;
   client_buffers = buf;
 
   return buf;
@@ -290,7 +290,7 @@ static client_buffer_t *get_client_buffer(int client_fd) {
 // Remove client buffer
 static void remove_client_buffer(int client_fd) {
   client_buffer_t **prev = &client_buffers;
-  client_buffer_t *buf = client_buffers;
+  client_buffer_t *buf   = client_buffers;
 
   while (buf) {
     if (buf->fd == client_fd) {
@@ -299,7 +299,7 @@ static void remove_client_buffer(int client_fd) {
       return;
     }
     prev = &buf->next;
-    buf = buf->next;
+    buf  = buf->next;
   }
 }
 
@@ -339,14 +339,14 @@ static int read_message(int client_fd, message_t **msg) {
 
       // Allocate buffer for body
       buf->buffer_size = buf->header.length;
-      buf->buffer = malloc(buf->buffer_size);
+      buf->buffer      = malloc(buf->buffer_size);
       if (!buf->buffer) {
         log_error("%s", "Failed to allocate buffer");
         return -1;
       }
 
       buf->data_len = 0;
-      buf->state = READING_BODY;
+      buf->state    = READING_BODY;
     } else {
       return 0; // Still reading header
     }
@@ -355,7 +355,7 @@ static int read_message(int client_fd, message_t **msg) {
   // Read body if in READING_BODY state
   if (buf->state == READING_BODY) {
     size_t remaining = buf->buffer_size - buf->data_len;
-    ssize_t n = recv(client_fd, buf->buffer + buf->data_len, remaining, 0);
+    ssize_t n        = recv(client_fd, buf->buffer + buf->data_len, remaining, 0);
 
     if (n == 0) {
       log_error("%s", "Connection closed while reading body");
@@ -397,11 +397,11 @@ static int read_message(int client_fd, message_t **msg) {
 
       // Reset buffer for next message
       free(buf->buffer);
-      buf->buffer = NULL;
-      buf->buffer_size = 0;
-      buf->data_len = 0;
+      buf->buffer            = NULL;
+      buf->buffer_size       = 0;
+      buf->data_len          = 0;
       buf->header_bytes_read = 0;
-      buf->state = READING_HEADER;
+      buf->state             = READING_HEADER;
 
       return 1; // Message complete
     }
@@ -415,7 +415,7 @@ static void handle_client_data(int client_fd, queue_t *msg_queue) {
   // With edge-triggered mode, we must read all available data
   while (1) {
     message_t *msg = NULL;
-    int result = read_message(client_fd, &msg);
+    int result     = read_message(client_fd, &msg);
 
     if (result < 0) {
       // Error or connection closed
@@ -529,7 +529,7 @@ int main(void) {
 
   // Add server socket to epoll
   struct epoll_event event;
-  event.events = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
+  event.events  = EPOLLIN | EPOLLET | EPOLLRDHUP; // Edge-triggered mode with RDHUP
   event.data.fd = server_fd;
 
   if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, server_fd, &event) < 0) {
@@ -568,18 +568,18 @@ int main(void) {
   log_info("Allocated event buffer for %d events", event_buffer_size);
 
   int consecutive_empty_polls = 0;
-  const int max_empty_polls = 10; // After 10 empty polls, use blocking timeout
+  const int max_empty_polls   = 10; // After 10 empty polls, use blocking timeout
 
   // Main event loop
   while (!shutdown_flag) {
     int total_events_processed = 0;
-    int events_in_batch = 0;
+    int events_in_batch        = 0;
 
     // Keep processing events until no more are available
     do {
       // Use adaptive timeout: 0 (non-blocking) when active, EPOLL_TIMEOUT_MS when idle
       int timeout = (consecutive_empty_polls < max_empty_polls) ? 0 : EPOLL_TIMEOUT_MS;
-      int n = epoll_wait(epoll_fd, events, event_buffer_size, timeout);
+      int n       = epoll_wait(epoll_fd, events, event_buffer_size, timeout);
 
       if (n < 0) {
         if (errno == EINTR) {

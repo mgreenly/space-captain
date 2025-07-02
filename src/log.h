@@ -9,7 +9,7 @@
 #define LOG_LEVEL 3
 #endif
 
-#define LOG_TIME_FORMAT "%Y-%m-%d %H:%M:%S"
+#define LOG_TIME_FORMAT      "%Y-%m-%d %H:%M:%S"
 #define LOG_TIME_BUFFER_SIZE 20
 
 // ANSI color codes
@@ -21,7 +21,7 @@
 
 static inline void log_timestamp(FILE *stream) {
   char time_buf[LOG_TIME_BUFFER_SIZE];
-  time_t now = time(NULL);
+  time_t now   = time(NULL);
   struct tm *t = localtime(&now);
   strftime(time_buf, sizeof(time_buf), LOG_TIME_FORMAT, t);
   fprintf(stream, "%s ", time_buf);

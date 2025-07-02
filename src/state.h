@@ -6,11 +6,11 @@ typedef struct {
 } state;
 
 typedef enum {
-  STATE_SUCCESS = 0,              // Operation completed successfully
-  STATE_UNKNOWN_ERROR = 1,        // Unknown error occurred
-  STATE_MALLOC_ERROR = 2,         // Memory allocation failed
-  STATE_UNABLE_TO_OPEN_FILE = 3,  // Failed to open state file
-  STATE_UNABLE_TO_READ_FILE = 4,  // Failed to read state file
+  STATE_SUCCESS              = 0, // Operation completed successfully
+  STATE_UNKNOWN_ERROR        = 1, // Unknown error occurred
+  STATE_MALLOC_ERROR         = 2, // Memory allocation failed
+  STATE_UNABLE_TO_OPEN_FILE  = 3, // Failed to open state file
+  STATE_UNABLE_TO_READ_FILE  = 4, // Failed to read state file
   STATE_UNABLE_TO_WRITE_FILE = 5, // Failed to write state file
 } state_result;
 

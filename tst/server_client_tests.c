@@ -13,10 +13,10 @@
 #include "vendor/unity.c"
 
 // Test configuration
-#define DEFAULT_NUM_CLIENTS 10
+#define DEFAULT_NUM_CLIENTS     10
 #define DEFAULT_RUNTIME_SECONDS 5
-#define SERVER_STARTUP_DELAY 2   // seconds to wait for server to start
-#define CLIENT_SPAWN_DELAY_MS 20 // milliseconds between client spawns
+#define SERVER_STARTUP_DELAY    2  // seconds to wait for server to start
+#define CLIENT_SPAWN_DELAY_MS   20 // milliseconds between client spawns
 
 // Process tracking
 typedef struct {
@@ -25,10 +25,10 @@ typedef struct {
   char *name;
 } process_info_t;
 
-static process_info_t server_proc = {0};
+static process_info_t server_proc   = {0};
 static process_info_t *client_procs = NULL;
-static int num_clients = DEFAULT_NUM_CLIENTS;
-static int runtime_seconds = DEFAULT_RUNTIME_SECONDS;
+static int num_clients              = DEFAULT_NUM_CLIENTS;
+static int runtime_seconds          = DEFAULT_RUNTIME_SECONDS;
 
 // Helper function to check for error messages in output
 static bool check_for_errors(int pipe_fd, const char *process_name) {
@@ -117,9 +117,9 @@ static bool start_server(void) {
   // Parent process
   close(pipefd[1]); // Close write end
 
-  server_proc.pid = pid;
+  server_proc.pid     = pid;
   server_proc.pipe_fd = pipefd[0];
-  server_proc.name = "server";
+  server_proc.name    = "server";
 
   // Wait for server to start
   sleep(SERVER_STARTUP_DELAY);
@@ -172,7 +172,7 @@ static bool start_clients(void) {
     // Parent process
     close(pipefd[1]); // Close write end
 
-    client_procs[i].pid = pid;
+    client_procs[i].pid     = pid;
     client_procs[i].pipe_fd = pipefd[0];
 
     // Allocate name for this client
@@ -190,7 +190,7 @@ static bool start_clients(void) {
 // Monitor all processes
 static bool monitor_processes(void) {
   time_t start_time = time(NULL);
-  bool all_running = true;
+  bool all_running  = true;
   bool errors_found = false;
 
   printf("Monitoring %d clients for %d seconds...\n", num_clients, runtime_seconds);
@@ -294,13 +294,13 @@ void test_server_client_interaction(void) {
 // Test with custom parameters
 void test_server_client_custom_params(void) {
   // Test with fewer clients and shorter runtime
-  num_clients = 10;
+  num_clients     = 10;
   runtime_seconds = 10;
 
   test_server_client_interaction();
 
   // Reset to defaults
-  num_clients = DEFAULT_NUM_CLIENTS;
+  num_clients     = DEFAULT_NUM_CLIENTS;
   runtime_seconds = DEFAULT_RUNTIME_SECONDS;
 }
 

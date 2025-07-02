@@ -13,22 +13,22 @@
 #include "../src/queue.c"
 
 // Define all test strings at the top
-#define TEST_MSG_SIMPLE "This is the test message"
-#define TEST_MSG_FORMAT "Test message %d"
+#define TEST_MSG_SIMPLE  "This is the test message"
+#define TEST_MSG_FORMAT  "Test message %d"
 #define TEST_MSG_BLOCKED "Blocked msg"
-#define TEST_MSG_FILL_1 "msg1"
-#define TEST_MSG_FILL_2 "msg2"
+#define TEST_MSG_FILL_1  "msg1"
+#define TEST_MSG_FILL_2  "msg2"
 
 // Timeout test constants
-#define TIMEOUT_TEST_SECONDS 2 // Shorter timeout for faster testing
-#define TIMEOUT_MARGIN_MS 500  // Allow 500ms margin for timing variations
+#define TIMEOUT_TEST_SECONDS 2   // Shorter timeout for faster testing
+#define TIMEOUT_MARGIN_MS    500 // Allow 500ms margin for timing variations
 
 // Helper function to create a dynamically allocated message
 static message_t *create_test_message(message_type_t type, const char *body) {
-  message_t *msg = malloc(sizeof(message_t));
-  msg->header.type = type;
+  message_t *msg     = malloc(sizeof(message_t));
+  msg->header.type   = type;
   msg->header.length = strlen(body);
-  msg->body = strdup(body);
+  msg->body          = strdup(body);
   return msg;
 }
 
@@ -75,9 +75,9 @@ typedef struct {
 void *timeout_pop_thread(void *arg) {
   timeout_thread_data_t *data = (timeout_thread_data_t *) arg;
 
-  data->start_time = get_time_ms();
+  data->start_time       = get_time_ms();
   data->operation_result = sc_queue_pop(data->queue, &data->message);
-  data->end_time = get_time_ms();
+  data->end_time         = get_time_ms();
   return NULL;
 }
 
@@ -85,9 +85,9 @@ void *timeout_pop_thread(void *arg) {
 void *timeout_add_thread(void *arg) {
   timeout_thread_data_t *data = (timeout_thread_data_t *) arg;
 
-  data->start_time = get_time_ms();
+  data->start_time          = get_time_ms();
   sc_queue_ret_val_t result = sc_queue_add(data->queue, data->message);
-  data->end_time = get_time_ms();
+  data->end_time            = get_time_ms();
 
   data->operation_result = result;
   return NULL;
@@ -103,7 +103,7 @@ void test_queue_add_and_pop_message(void) {
   sc_queue_ret_val_t result = sc_queue_add(queue, msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
-  message_t *popped_msg = NULL;
+  message_t *popped_msg         = NULL;
   sc_queue_ret_val_t pop_result = sc_queue_pop(queue, &popped_msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, pop_result);
   TEST_ASSERT_NOT_NULL(popped_msg);
@@ -142,7 +142,7 @@ void *producer_thread(void *arg) {
 void *consumer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
-  message_t *msg = NULL;
+  message_t *msg            = NULL;
   sc_queue_ret_val_t result = sc_queue_pop(data->queue, &msg);
 
   data->test_value = (result == QUEUE_SUCCESS && msg != NULL) ? 1 : 0;
@@ -273,7 +273,7 @@ void test_queue_try_add_returns_error_on_full(void) {
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
   // Queue is now full, try_add should return QUEUE_ERR_FULL
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg3           = create_test_message(MSG_ECHO, "msg3");
   sc_queue_ret_val_t result = sc_queue_try_add(queue, msg3);
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, result);
 
@@ -321,7 +321,7 @@ void test_queue_try_pop_returns_null_on_empty(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Try to pop from empty queue
-  message_t *msg = NULL;
+  message_t *msg            = NULL;
   sc_queue_ret_val_t result = sc_queue_try_pop(queue, &msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_EMPTY, result);
   TEST_ASSERT_NULL(msg);
@@ -337,7 +337,7 @@ void test_queue_try_pop_returns_message(void) {
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg));
 
   // Try to pop, should get the message
-  message_t *popped = NULL;
+  message_t *popped         = NULL;
   sc_queue_ret_val_t result = sc_queue_try_pop(queue, &popped);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(popped);
@@ -682,7 +682,7 @@ void test_queue_nuke_with_cleanup_empty_queue(void) {
 
   cleanup_tracker_t tracker = {0};
   message_t *cleaned[10];
-  tracker.cleaned_messages = cleaned;
+  tracker.cleaned_messages  = cleaned;
   tracker.messages_capacity = 10;
 
   // Destroy empty queue with cleanup callback
@@ -701,7 +701,7 @@ void test_queue_nuke_with_cleanup_single_message(void) {
 
   cleanup_tracker_t tracker = {0};
   message_t *cleaned[10];
-  tracker.cleaned_messages = cleaned;
+  tracker.cleaned_messages  = cleaned;
   tracker.messages_capacity = 10;
 
   sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
@@ -726,7 +726,7 @@ void test_queue_nuke_with_cleanup_multiple_messages(void) {
 
   cleanup_tracker_t tracker = {0};
   message_t *cleaned[10];
-  tracker.cleaned_messages = cleaned;
+  tracker.cleaned_messages  = cleaned;
   tracker.messages_capacity = 10;
 
   sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
@@ -792,7 +792,7 @@ void test_queue_nuke_with_cleanup_partial_queue(void) {
   // Destroy with remaining messages
   cleanup_tracker_t tracker = {0};
   message_t *cleaned[10];
-  tracker.cleaned_messages = cleaned;
+  tracker.cleaned_messages  = cleaned;
   tracker.messages_capacity = 10;
 
   sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
@@ -810,8 +810,8 @@ void test_queue_nuke_with_cleanup_thread_safety(void) {
   thread_data_t producer_data[3];
 
   for (int i = 0; i < 3; i++) {
-    producer_data[i].queue = queue;
-    producer_data[i].delay_ms = 10;
+    producer_data[i].queue      = queue;
+    producer_data[i].delay_ms   = 10;
     producer_data[i].test_value = i;
     pthread_create(&producers[i], NULL, producer_thread, &producer_data[i]);
   }
@@ -824,7 +824,7 @@ void test_queue_nuke_with_cleanup_thread_safety(void) {
   // Now destroy with cleanup - should handle all messages safely
   cleanup_tracker_t tracker = {0};
   message_t *cleaned[10];
-  tracker.cleaned_messages = cleaned;
+  tracker.cleaned_messages  = cleaned;
   tracker.messages_capacity = 10;
 
   sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
@@ -839,7 +839,7 @@ void test_queue_pop_timeout_on_empty_queue(void) {
 
   pthread_t thread;
   timeout_thread_data_t thread_data = {0};
-  thread_data.queue = queue;
+  thread_data.queue                 = queue;
 
   // Start thread that will try to pop from empty queue
   pthread_create(&thread, NULL, timeout_pop_thread, &thread_data);
@@ -852,7 +852,7 @@ void test_queue_pop_timeout_on_empty_queue(void) {
   TEST_ASSERT_NULL(thread_data.message);
 
   // Verify timing (should be around 2 seconds timeout)
-  long long elapsed_ms = thread_data.end_time - thread_data.start_time;
+  long long elapsed_ms          = thread_data.end_time - thread_data.start_time;
   long long expected_timeout_ms = 2 * 1000;
 
   // Allow some margin for timing variations
@@ -875,8 +875,8 @@ void test_queue_add_timeout_on_full_queue(void) {
   // Try to add another message - should timeout
   pthread_t thread;
   timeout_thread_data_t thread_data = {0};
-  thread_data.queue = queue;
-  thread_data.message = create_test_message(MSG_ECHO, "timeout_msg");
+  thread_data.queue                 = queue;
+  thread_data.message               = create_test_message(MSG_ECHO, "timeout_msg");
 
   pthread_create(&thread, NULL, timeout_add_thread, &thread_data);
   pthread_join(thread, NULL);
@@ -885,7 +885,7 @@ void test_queue_add_timeout_on_full_queue(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, thread_data.operation_result);
 
   // Verify timing (should timeout after 2 seconds)
-  long long elapsed_ms = thread_data.end_time - thread_data.start_time;
+  long long elapsed_ms          = thread_data.end_time - thread_data.start_time;
   long long expected_timeout_ms = 2 * 1000;
 
   TEST_ASSERT_GREATER_OR_EQUAL(expected_timeout_ms - TIMEOUT_MARGIN_MS, elapsed_ms);
@@ -915,7 +915,7 @@ void test_queue_pop_succeeds_before_timeout(void) {
 
   pthread_t pop_thread, add_thread;
   timeout_thread_data_t pop_data = {0};
-  thread_data_t add_data = {queue, 1000, 42}; // Add message after 1 second
+  thread_data_t add_data         = {queue, 1000, 42}; // Add message after 1 second
 
   pop_data.queue = queue;
 
@@ -956,9 +956,9 @@ void test_queue_add_succeeds_before_timeout(void) {
 
   pthread_t add_thread, pop_thread;
   timeout_thread_data_t add_data = {0};
-  thread_data_t pop_data = {queue, 1000, 0}; // Pop after 1 second
+  thread_data_t pop_data         = {queue, 1000, 0}; // Pop after 1 second
 
-  add_data.queue = queue;
+  add_data.queue   = queue;
   add_data.message = create_test_message(MSG_ECHO, "add_test");
 
   // Start add thread (will block on full queue)
@@ -995,8 +995,8 @@ void test_queue_timeout_thread_safety(void) {
   timeout_thread_data_t pop_data[3];
 
   for (int i = 0; i < 3; i++) {
-    pop_data[i].queue = queue;
-    pop_data[i].message = NULL;
+    pop_data[i].queue            = queue;
+    pop_data[i].message          = NULL;
     pop_data[i].operation_result = 0;
     pthread_create(&pop_threads[i], NULL, timeout_pop_thread, &pop_data[i]);
   }
@@ -1023,16 +1023,16 @@ void test_queue_timeout_error_conditions(void) {
   message_t *msg = create_test_message(MSG_ECHO, "normal_op");
 
   // Add should succeed immediately on empty queue
-  long long start = get_time_ms();
+  long long start           = get_time_ms();
   sc_queue_ret_val_t result = sc_queue_add(queue, msg);
-  long long elapsed = get_time_ms() - start;
+  long long elapsed         = get_time_ms() - start;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
 
   // Should complete very quickly, not wait for timeout
   TEST_ASSERT_LESS_THAN(1000, elapsed); // Less than 1 second
 
   // Pop should succeed immediately on non-empty queue
-  start = get_time_ms();
+  start             = get_time_ms();
   message_t *popped = NULL;
   sc_queue_pop(queue, &popped);
   elapsed = get_time_ms() - start;
@@ -1046,7 +1046,7 @@ void test_queue_timeout_error_conditions(void) {
 }
 
 void test_queue_add_returns_error_on_null_queue(void) {
-  message_t *msg = create_test_message(MSG_ECHO, "test");
+  message_t *msg            = create_test_message(MSG_ECHO, "test");
   sc_queue_ret_val_t result = sc_queue_add(NULL, msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   free(msg->body);
@@ -1074,10 +1074,10 @@ void test_queue_add_timeout_returns_error_code(void) {
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
   // Try to add another - should timeout
-  message_t *timeout_msg = create_test_message(MSG_ECHO, "timeout");
-  long long start = get_time_ms();
+  message_t *timeout_msg    = create_test_message(MSG_ECHO, "timeout");
+  long long start           = get_time_ms();
   sc_queue_ret_val_t result = sc_queue_add(queue, timeout_msg);
-  long long elapsed = get_time_ms() - start;
+  long long elapsed         = get_time_ms() - start;
 
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, result);
   TEST_ASSERT_GREATER_OR_EQUAL(2000 - TIMEOUT_MARGIN_MS, elapsed);
@@ -1191,7 +1191,7 @@ void test_queue_nuke_with_null_returns_error(void) {
 }
 
 void test_queue_pop_with_output_parameter(void) {
-  queue_t *queue = sc_queue_init(5);
+  queue_t *queue    = sc_queue_init(5);
   message_t *msg_in = create_test_message(MSG_ECHO, "test");
 
   sc_queue_add(queue, msg_in);
@@ -1234,9 +1234,9 @@ void test_queue_pop_timeout_with_new_api(void) {
   message_t *msg = NULL;
 
   sc_queue_clear_error();
-  long long start = get_time_ms();
+  long long start           = get_time_ms();
   sc_queue_ret_val_t result = sc_queue_pop(queue, &msg);
-  long long elapsed = get_time_ms() - start;
+  long long elapsed         = get_time_ms() - start;
 
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, result);
   TEST_ASSERT_NULL(msg);
@@ -1247,7 +1247,7 @@ void test_queue_pop_timeout_with_new_api(void) {
 }
 
 void test_queue_try_pop_with_output_parameter(void) {
-  queue_t *queue = sc_queue_init(5);
+  queue_t *queue    = sc_queue_init(5);
   message_t *msg_in = create_test_message(MSG_ECHO, "test");
   sc_queue_add(queue, msg_in);
 
@@ -1332,7 +1332,7 @@ void test_queue_init_with_overflow_capacity(void) {
 
   // Try to create queue with capacity that would overflow
   size_t huge_capacity = SIZE_MAX / sizeof(message_t *) + 1;
-  queue_t *queue = sc_queue_init(huge_capacity);
+  queue_t *queue       = sc_queue_init(huge_capacity);
 
   TEST_ASSERT_NULL(queue);
   TEST_ASSERT_EQUAL(QUEUE_ERR_OVERFLOW, sc_queue_get_error());
@@ -1343,7 +1343,7 @@ void test_queue_init_with_max_capacity(void) {
 
   // Try to create queue with exactly max allowed capacity
   size_t max_capacity = SIZE_MAX / sizeof(message_t *) / 2;
-  queue_t *queue = sc_queue_init(max_capacity);
+  queue_t *queue      = sc_queue_init(max_capacity);
 
   // This should fail - either due to safety limit or memory allocation
   TEST_ASSERT_NULL(queue);
@@ -1357,7 +1357,7 @@ void test_queue_init_with_safe_large_capacity(void) {
 
   // Create queue with large but safe capacity
   size_t large_capacity = 1000000; // 1 million
-  queue_t *queue = sc_queue_init(large_capacity);
+  queue_t *queue        = sc_queue_init(large_capacity);
 
   // This should succeed if we have enough memory
   if (queue != NULL) {
@@ -1387,7 +1387,7 @@ void test_queue_init_memory_allocation_failure(void) {
   // Try to create queue with very large capacity that might fail allocation
   // but not due to overflow
   size_t huge_capacity = SIZE_MAX / sizeof(message_t *) / 4;
-  queue_t *queue = sc_queue_init(huge_capacity);
+  queue_t *queue       = sc_queue_init(huge_capacity);
 
   if (queue == NULL) {
     // Should fail with either overflow (due to safety limit) or memory error

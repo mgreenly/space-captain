@@ -35,7 +35,7 @@ static int connect_to_server(void) {
   struct sockaddr_in server_addr;
   memset(&server_addr, 0, sizeof(server_addr));
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(SERVER_PORT);
+  server_addr.sin_port   = htons(SERVER_PORT);
 
   if (inet_pton(AF_INET, SERVER_HOST, &server_addr.sin_addr) <= 0) {
     log_error("Invalid address: %s", SERVER_HOST);
@@ -74,19 +74,19 @@ static char *generate_random_message(message_type_t type) {
                                         "Requesting timestamp", "Time query"};
 
   const char *message = NULL;
-  int count = 0;
+  int count           = 0;
 
   switch (type) {
   case MSG_ECHO:
-    count = sizeof(echo_messages) / sizeof(echo_messages[0]);
+    count   = sizeof(echo_messages) / sizeof(echo_messages[0]);
     message = echo_messages[rand() % count];
     break;
   case MSG_REVERSE:
-    count = sizeof(reverse_messages) / sizeof(reverse_messages[0]);
+    count   = sizeof(reverse_messages) / sizeof(reverse_messages[0]);
     message = reverse_messages[rand() % count];
     break;
   case MSG_TIME:
-    count = sizeof(time_messages) / sizeof(time_messages[0]);
+    count   = sizeof(time_messages) / sizeof(time_messages[0]);
     message = time_messages[rand() % count];
     break;
   default:
@@ -197,7 +197,7 @@ int main(void) {
 
   // Message types
   message_type_t message_types[] = {MSG_ECHO, MSG_REVERSE, MSG_TIME};
-  int num_types = sizeof(message_types) / sizeof(message_types[0]);
+  int num_types                  = sizeof(message_types) / sizeof(message_types[0]);
 
   // Main loop
   while (!shutdown_flag) {
