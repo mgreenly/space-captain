@@ -8,7 +8,7 @@ Space Captain: A toy MMO written in C as a learning experiment for Linux network
 3. **ALWAYS USE FORMAT STRINGS** - `log_error("%s", msg)` not `log_error(msg)`
 4. **ALWAYS RUN AFTER CHANGES** - `make` to verify builds, `make fmt` for formatting
 5. **NEVER COMMIT WITHOUT EXPLICIT REQUEST** - Do not create git commits unless the user explicitly asks you to commit changes. When commits are requested and approved, automatically push to remote.
-6. **ALWAYS USE ls -a** - When using the `ls` command, always include the `-a` flag to show hidden files and directories
+6. **ALWAYS INCLUDE HIDDEN FILES** - When using any file operation commands (`ls`, `find`, `glob`, etc.), always include hidden files and directories (those starting with `.`). For `ls`, always use the `-a` flag
 
 ## Quick Reference
 
@@ -78,7 +78,8 @@ The project uses a **unified build structure** where source files are included d
 1. Run `make` to check for warnings
 2. Run `make fmt` to format code
 3. Run functional tests to verify stability
-4. Commit with descriptive message
+4. Review commit message before approval
+5. Commit with descriptive message
 
 ### Git Commit Template
 Always use this exact commit template:
@@ -90,7 +91,10 @@ Always use this exact commit template:
 co-author: <model>
 ```
 
-**Important**: After creating a commit with user approval, automatically run `git push` to push the changes to the remote repository.
+**Important**: 
+1. Always show the exact commit message to the user BEFORE running `git commit`
+2. Wait for user approval of the commit message
+3. After creating a commit with user approval, automatically run `git push` to push the changes to the remote repository
 
 ## Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)
