@@ -44,7 +44,7 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 - New ships spawn at random position on circular orbit
 - Spawn orbit radius: 1.5 × 10¹¹ meters (150 million km) from star
 
-## MVP (Minimum Viable Product)
+## Tech Demo
 - Each client controls a spacecraft in 2D space
 - Basic flight mechanics with logarithmic speed control
 - Combat system: shooting at other players
