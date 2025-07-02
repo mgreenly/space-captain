@@ -13,6 +13,28 @@ The speed at any dial setting n (1-100) is calculated as:
 speed(n) = 500 × 10^((n-1) × log₁₀(3.33×10⁹) / 99)
 ```
 
+## C Implementation
+
+```c
+#include <math.h>
+
+// Calculate speed in meters/second for a given speed dial setting (1-100)
+double sc_speed_from_dial(int dial) {
+    if (dial < 1) dial = 1;
+    if (dial > 100) dial = 100;
+    
+    // Base values
+    const double min_speed = 500.0;                    // Speed at dial 1
+    const double max_speed = 1.666666666666667e12;     // Speed at dial 100
+    const double ratio = max_speed / min_speed;        // 3.333333333333334e9
+    
+    // Logarithmic interpolation
+    // speed = min_speed * 10^((dial-1) * log10(ratio) / 99)
+    double exponent = (dial - 1) * log10(ratio) / 99.0;
+    return min_speed * pow(10.0, exponent);
+}
+```
+
 ## Speed Table (Every 5th Value)
 
 | Speed Dial | Meters/Second | Scientific Notation | Travel Time to Edge | Notes |
