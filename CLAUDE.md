@@ -57,7 +57,7 @@ The project uses a **unified build structure** where source files are included d
 - **Headers**: message.h, queue.h, state.h, game.h, network.h, config.h, log.h
 - **Sources**: server.c, client.c, worker.c, queue.c
 - **Tests**: Unity framework in tst/*_tests.c
-- **Data**: State files in dat/ directory
+- **Data**: State files in data/ directory
 
 ### Key Components
 - `server.c` - Main server with epoll event loop
@@ -70,7 +70,7 @@ The project uses a **unified build structure** where source files are included d
 ## Development Workflow
 
 ### Before Making Changes
-1. Check requirements in `req/` folder
+1. Check requirements in `requirements/` folder
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 

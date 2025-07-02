@@ -26,7 +26,7 @@ SRC_DIR = src
 TST_DIR = tst
 OBJ_DIR = obj
 BIN_DIR = bin
-DAT_DIR = dat
+DAT_DIR = data
 
 # ============================================================================
 # File Definitions
