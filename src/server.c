@@ -483,7 +483,7 @@ int main(void) {
   }
 
   // Create worker pool
-  worker_pool_t *worker_pool = worker_pool_create(WORKER_POOL_SIZE, msg_queue);
+  worker_pool_t *worker_pool = sc_worker_pool_create(WORKER_POOL_SIZE, msg_queue);
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
     sc_queue_destroy(msg_queue);
@@ -492,13 +492,13 @@ int main(void) {
   }
 
   // Start workers
-  worker_pool_start(worker_pool);
+  sc_worker_pool_start(worker_pool);
 
   // Create server socket
   int server_fd = create_server_socket();
   if (server_fd < 0) {
-    worker_pool_stop(worker_pool);
-    worker_pool_destroy(worker_pool);
+    sc_worker_pool_stop(worker_pool);
+    sc_worker_pool_destroy(worker_pool);
     sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
@@ -507,8 +507,8 @@ int main(void) {
   // Set non-blocking
   if (set_nonblocking(server_fd) < 0) {
     close(server_fd);
-    worker_pool_stop(worker_pool);
-    worker_pool_destroy(worker_pool);
+    sc_worker_pool_stop(worker_pool);
+    sc_worker_pool_destroy(worker_pool);
     sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
@@ -519,8 +519,8 @@ int main(void) {
   if (epoll_fd < 0) {
     log_error("epoll_create1 failed: %s", strerror(errno));
     close(server_fd);
-    worker_pool_stop(worker_pool);
-    worker_pool_destroy(worker_pool);
+    sc_worker_pool_stop(worker_pool);
+    sc_worker_pool_destroy(worker_pool);
     sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
@@ -535,8 +535,8 @@ int main(void) {
     log_error("epoll_ctl failed: %s", strerror(errno));
     close(epoll_fd);
     close(server_fd);
-    worker_pool_stop(worker_pool);
-    worker_pool_destroy(worker_pool);
+    sc_worker_pool_stop(worker_pool);
+    sc_worker_pool_destroy(worker_pool);
     sc_queue_destroy(msg_queue);
     return EXIT_FAILURE;
   }
@@ -558,8 +558,8 @@ int main(void) {
     log_error("Failed to allocate event buffer of size %d", event_buffer_size);
     close(epoll_fd);
     close(server_fd);
-    worker_pool_stop(worker_pool);
-    worker_pool_destroy(worker_pool);
+    sc_worker_pool_stop(worker_pool);
+    sc_worker_pool_destroy(worker_pool);
     sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
@@ -635,8 +635,8 @@ int main(void) {
   close(server_fd);
 
   // Stop workers
-  worker_pool_stop(worker_pool);
-  worker_pool_destroy(worker_pool);
+  sc_worker_pool_stop(worker_pool);
+  sc_worker_pool_destroy(worker_pool);
 
   // Clean up remaining messages
   message_t *msg;

@@ -56,7 +56,7 @@ Multiple worker threads process messages concurrently:
 ```
 Worker Threads (worker.c)
 ├── Created at startup (default: 4 threads)
-├── Each thread runs worker_thread()
+├── Each thread runs sc_worker_thread()
 └── Processing loop
     ├── sc_queue_pop() - Block waiting for message
     ├── Process message based on type
@@ -155,7 +155,7 @@ Graceful shutdown on SIGINT/SIGTERM:
 1. Set `shutdown_flag` in signal handler
 2. Main loop exits on next iteration
 3. Stop accepting new connections
-4. Call `worker_pool_stop()` - signals workers
+4. Call `sc_worker_pool_stop()` - signals workers
 5. Workers drain queue and exit
 6. Clean up remaining messages
 7. Free all resources
@@ -176,7 +176,7 @@ The server logs key events:
 1. Add to `message_type_t` enum in `message.h`
 2. Update `message_type_to_string()`
 3. Add handler function in `worker.c`
-4. Add case in `worker_thread()` switch statement
+4. Add case in `sc_worker_thread()` switch statement
 
 ### Scaling Considerations
 

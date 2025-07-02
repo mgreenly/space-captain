@@ -10,7 +10,7 @@
 #include "config.h"
 
 // Create worker pool
-worker_pool_t *worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
+worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
   assert(pool_size > 0);
   assert(msg_queue != NULL);
 
@@ -43,7 +43,7 @@ worker_pool_t *worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
 }
 
 // Destroy worker pool
-void worker_pool_destroy(worker_pool_t *pool) {
+void sc_worker_pool_destroy(worker_pool_t *pool) {
   if (!pool)
     return;
 
@@ -53,11 +53,11 @@ void worker_pool_destroy(worker_pool_t *pool) {
 }
 
 // Start all workers
-void worker_pool_start(worker_pool_t *pool) {
+void sc_worker_pool_start(worker_pool_t *pool) {
   assert(pool != NULL);
 
   for (int32_t i = 0; i < pool->pool_size; i++) {
-    if (pthread_create(&pool->workers[i].thread, NULL, worker_thread, &pool->workers[i]) != 0) {
+    if (pthread_create(&pool->workers[i].thread, NULL, sc_worker_thread, &pool->workers[i]) != 0) {
       log_error("Failed to create worker thread %d", i);
     } else {
       log_info("Started worker thread %d", i);
@@ -66,7 +66,7 @@ void worker_pool_start(worker_pool_t *pool) {
 }
 
 // Stop all workers
-void worker_pool_stop(worker_pool_t *pool) {
+void sc_worker_pool_stop(worker_pool_t *pool) {
   assert(pool != NULL);
 
   pool->shutdown_flag = true;
@@ -80,7 +80,7 @@ void worker_pool_stop(worker_pool_t *pool) {
 }
 
 // Worker thread function
-void *worker_thread(void *arg) {
+void *sc_worker_thread(void *arg) {
   worker_context_t *ctx = (worker_context_t *) arg;
   log_info("Worker %d started", ctx->id);
 
@@ -100,13 +100,13 @@ void *worker_thread(void *arg) {
 
       switch (msg->header.type) {
       case MSG_ECHO:
-        handle_echo_message(client_fd, &actual_msg);
+        sc_worker_handle_echo_message(client_fd, &actual_msg);
         break;
       case MSG_REVERSE:
-        handle_reverse_message(client_fd, &actual_msg);
+        sc_worker_handle_reverse_message(client_fd, &actual_msg);
         break;
       case MSG_TIME:
-        handle_time_message(client_fd, &actual_msg);
+        sc_worker_handle_time_message(client_fd, &actual_msg);
         break;
       default:
         log_error("Worker %d: Unknown message type %d", ctx->id, msg->header.type);
@@ -151,13 +151,13 @@ static void send_response(int32_t client_fd, message_type_t type, const char *re
 }
 
 // Handle echo message - sends back the same message
-void handle_echo_message(int32_t client_fd, message_t *msg) {
+void sc_worker_handle_echo_message(int32_t client_fd, message_t *msg) {
   log_debug("Worker handling ECHO request from fd=%d: %s", client_fd, msg->body);
   send_response(client_fd, MSG_ECHO, msg->body);
 }
 
 // Handle reverse message - sends back the reversed string
-void handle_reverse_message(int32_t client_fd, message_t *msg) {
+void sc_worker_handle_reverse_message(int32_t client_fd, message_t *msg) {
   log_debug("Worker handling REVERSE request from fd=%d: %s", client_fd, msg->body);
 
   int32_t len = strlen(msg->body);
@@ -179,7 +179,7 @@ void handle_reverse_message(int32_t client_fd, message_t *msg) {
 }
 
 // Handle time message - sends back current UTC time in ISO8601 format
-void handle_time_message(int32_t client_fd, message_t *msg) {
+void sc_worker_handle_time_message(int32_t client_fd, message_t *msg) {
   (void) msg; // Unused parameter
   log_debug("Worker handling TIME request from fd=%d", client_fd);
 
