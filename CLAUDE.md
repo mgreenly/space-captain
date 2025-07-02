@@ -89,12 +89,6 @@ Always use this exact commit template:
 co-author: <model>
 ```
 
-### Code Style Requirements
-
-```markdown
-{{docs/code-style.md}}
-```
-
 ## Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)
 - **Functional tests**: Full system testing (server_client_tests.c)
@@ -160,3 +154,6 @@ make bump-major    # Increment major version
 - Error handling is critical - check all return values
 - Memory management - no leaks allowed (test with valgrind)
 - State persistence not yet implemented (v0.1.0 scope)
+
+
+@docs/code-style.md
