@@ -10,7 +10,7 @@
 #include "config.h"
 
 // Create worker pool
-sc_worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
+sc_worker_pool_t *sc_worker_pool_init(int32_t pool_size, queue_t *msg_queue) {
   assert(pool_size > 0);
   assert(msg_queue != NULL);
 
@@ -43,7 +43,7 @@ sc_worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
 }
 
 // Destroy worker pool
-void sc_worker_pool_destroy(sc_worker_pool_t *pool) {
+void sc_worker_pool_exit(sc_worker_pool_t *pool) {
   if (!pool)
     return;
 

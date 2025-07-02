@@ -24,8 +24,8 @@ typedef struct {
 } sc_worker_pool_t;
 
 // Worker pool functions
-sc_worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue);
-void sc_worker_pool_destroy(sc_worker_pool_t *pool);
+sc_worker_pool_t *sc_worker_pool_init(int32_t pool_size, queue_t *msg_queue);
+void sc_worker_pool_exit(sc_worker_pool_t *pool);
 void sc_worker_pool_start(sc_worker_pool_t *pool);
 void sc_worker_pool_stop(sc_worker_pool_t *pool);
 
