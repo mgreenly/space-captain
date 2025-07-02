@@ -49,7 +49,7 @@ typedef struct {
   pthread_cond_t cond_not_full;  // Signaled when queue becomes non-full
 } queue_t;
 
-// Cleanup callback function type for sc_queue_exit_with_cleanup
+// Cleanup callback function type for sc_queue_nuke_with_cleanup
 typedef void (*queue_cleanup_fn)(message_t *msg, void *user_data);
 
 // ============================================================================
@@ -57,8 +57,8 @@ typedef void (*queue_cleanup_fn)(message_t *msg, void *user_data);
 // ============================================================================
 
 queue_t *sc_queue_init(size_t capacity);
-sc_queue_ret_val_t sc_queue_exit(queue_t *q);
-void sc_queue_exit_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data);
+sc_queue_ret_val_t sc_queue_nuke(queue_t *q);
+void sc_queue_nuke_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data);
 
 // ============================================================================
 // Queue Operations

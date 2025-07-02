@@ -98,8 +98,8 @@ co-author: <model>
   - `<project>` is the project prefix `sc` for (Space Captain)
   - `<module>` matches the source filename (e.g., `queue` for queue.c)
   - `<function>` is the descriptive function name
-  - **Lifecycle Functions**: Module creation/destruction functions must use `*_init` and `*_exit` (not `*_create`/`*_destroy`)
-  - Examples: `sc_queue_init()`, `sc_queue_exit()`, `sc_worker_pool_init()`, `sc_worker_pool_exit()`
+  - **Lifecycle Functions**: Module creation/destruction functions must use `*_init` and `*_nuke` (not `*_create`/`*_destroy`)
+  - Examples: `sc_queue_init()`, `sc_queue_nuke()`, `sc_worker_pool_init()`, `sc_worker_pool_nuke()`
 
 ## Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)

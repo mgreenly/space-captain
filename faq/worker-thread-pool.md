@@ -63,7 +63,7 @@ The initialization process:
 ### How is a worker pool destroyed?
 
 ```c
-void sc_worker_pool_exit(sc_worker_pool_t *pool)
+void sc_worker_pool_nuke(sc_worker_pool_t *pool)
 ```
 
 - Frees the worker contexts array
@@ -222,8 +222,8 @@ sc_worker_pool_start(pool);
 
 // Shutdown sequence
 sc_worker_pool_stop(pool);
-sc_worker_pool_exit(pool);
-sc_queue_exit(msg_queue);
+sc_worker_pool_nuke(pool);
+sc_queue_nuke(msg_queue);
 ```
 
 ### Adding New Message Types

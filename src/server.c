@@ -487,7 +487,7 @@ int main(void) {
   sc_worker_pool_t *worker_pool = sc_worker_pool_init(WORKER_POOL_SIZE, msg_queue);
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
-    sc_queue_exit(msg_queue);
+    sc_queue_nuke(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -499,8 +499,8 @@ int main(void) {
   int server_fd = create_server_socket();
   if (server_fd < 0) {
     sc_worker_pool_stop(worker_pool);
-    sc_worker_pool_exit(worker_pool);
-    sc_queue_exit(msg_queue);
+    sc_worker_pool_nuke(worker_pool);
+    sc_queue_nuke(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -509,8 +509,8 @@ int main(void) {
   if (set_nonblocking(server_fd) < 0) {
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
-    sc_worker_pool_exit(worker_pool);
-    sc_queue_exit(msg_queue);
+    sc_worker_pool_nuke(worker_pool);
+    sc_queue_nuke(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -521,8 +521,8 @@ int main(void) {
     log_error("epoll_create1 failed: %s", strerror(errno));
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
-    sc_worker_pool_exit(worker_pool);
-    sc_queue_exit(msg_queue);
+    sc_worker_pool_nuke(worker_pool);
+    sc_queue_nuke(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -537,8 +537,8 @@ int main(void) {
     close(epoll_fd);
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
-    sc_worker_pool_exit(worker_pool);
-    sc_queue_exit(msg_queue);
+    sc_worker_pool_nuke(worker_pool);
+    sc_queue_nuke(msg_queue);
     return EXIT_FAILURE;
   }
 
@@ -560,8 +560,8 @@ int main(void) {
     close(epoll_fd);
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
-    sc_worker_pool_exit(worker_pool);
-    sc_queue_exit(msg_queue);
+    sc_worker_pool_nuke(worker_pool);
+    sc_queue_nuke(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -637,7 +637,7 @@ int main(void) {
 
   // Stop workers
   sc_worker_pool_stop(worker_pool);
-  sc_worker_pool_exit(worker_pool);
+  sc_worker_pool_nuke(worker_pool);
 
   // Clean up remaining messages
   message_t *msg;
@@ -646,7 +646,7 @@ int main(void) {
     free(msg->body);
     free(msg);
   }
-  sc_queue_exit(msg_queue);
+  sc_queue_nuke(msg_queue);
 
   // Clean up all client buffers
   while (client_buffers) {

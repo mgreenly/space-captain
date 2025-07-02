@@ -114,7 +114,7 @@ void test_queue_add_and_pop_message(void) {
   free(popped_msg->body);
   free(popped_msg);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 typedef struct {
@@ -174,7 +174,7 @@ void test_queue_pop_blocks_until_push(void) {
 
   TEST_ASSERT_EQUAL(1, consumer_data.test_value);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void *blocking_producer_thread(void *arg) {
@@ -258,7 +258,7 @@ void test_queue_add_blocks_on_full_queue(void) {
     }
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_add_returns_error_on_full(void) {
@@ -291,7 +291,7 @@ void test_queue_try_add_returns_error_on_full(void) {
     }
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_add_succeeds_with_space(void) {
@@ -313,7 +313,7 @@ void test_queue_try_add_succeeds_with_space(void) {
   free(popped->body);
   free(popped);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_pop_returns_null_on_empty(void) {
@@ -326,7 +326,7 @@ void test_queue_try_pop_returns_null_on_empty(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_EMPTY, result);
   TEST_ASSERT_NULL(msg);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_pop_returns_message(void) {
@@ -346,7 +346,7 @@ void test_queue_try_pop_returns_message(void) {
   free(popped->body);
   free(popped);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_operations_mixed(void) {
@@ -395,7 +395,7 @@ void test_queue_try_operations_mixed(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_EMPTY, sc_queue_try_pop(queue, &empty));
   TEST_ASSERT_NULL(empty);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_empty_on_new_queue(void) {
@@ -405,7 +405,7 @@ void test_queue_is_empty_on_new_queue(void) {
   // New queue should be empty
   TEST_ASSERT_TRUE(sc_queue_is_empty(queue));
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_empty_after_add_and_pop(void) {
@@ -428,7 +428,7 @@ void test_queue_is_empty_after_add_and_pop(void) {
   // Clean up
   free(popped->body);
   free(popped);
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_empty_thread_safety(void) {
@@ -455,7 +455,7 @@ void test_queue_is_empty_thread_safety(void) {
   // Queue should be empty after consumer got the message
   TEST_ASSERT_TRUE(sc_queue_is_empty(queue));
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_full_on_new_queue(void) {
@@ -465,7 +465,7 @@ void test_queue_is_full_on_new_queue(void) {
   // New queue should not be full
   TEST_ASSERT_FALSE(sc_queue_is_full(queue));
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_full_after_filling_queue(void) {
@@ -500,7 +500,7 @@ void test_queue_is_full_after_filling_queue(void) {
   free(remaining->body);
   free(remaining);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_full_with_try_operations(void) {
@@ -540,7 +540,7 @@ void test_queue_is_full_with_try_operations(void) {
     }
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_get_size_on_new_queue(void) {
@@ -550,7 +550,7 @@ void test_queue_get_size_on_new_queue(void) {
   // New queue should have size 0
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_get_size_with_add_and_pop(void) {
@@ -592,7 +592,7 @@ void test_queue_get_size_with_add_and_pop(void) {
   free(popped3->body);
   free(popped3);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_get_size_at_capacity(void) {
@@ -627,7 +627,7 @@ void test_queue_get_size_at_capacity(void) {
     }
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_get_size_with_try_operations(void) {
@@ -673,10 +673,10 @@ void test_queue_get_size_with_try_operations(void) {
   TEST_ASSERT_NULL(empty);
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
-void test_queue_exit_with_cleanup_empty_queue(void) {
+void test_queue_nuke_with_cleanup_empty_queue(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -686,13 +686,13 @@ void test_queue_exit_with_cleanup_empty_queue(void) {
   tracker.messages_capacity = 10;
 
   // Destroy empty queue with cleanup callback
-  sc_queue_exit_with_cleanup(queue, test_cleanup_callback, &tracker);
+  sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
 
   // Should not call cleanup for empty queue
   TEST_ASSERT_EQUAL(0, tracker.cleanup_call_count);
 }
 
-void test_queue_exit_with_cleanup_single_message(void) {
+void test_queue_nuke_with_cleanup_single_message(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -704,14 +704,14 @@ void test_queue_exit_with_cleanup_single_message(void) {
   tracker.cleaned_messages = cleaned;
   tracker.messages_capacity = 10;
 
-  sc_queue_exit_with_cleanup(queue, test_cleanup_callback, &tracker);
+  sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
 
   // Should call cleanup once
   TEST_ASSERT_EQUAL(1, tracker.cleanup_call_count);
   TEST_ASSERT_EQUAL(msg, tracker.cleaned_messages[0]);
 }
 
-void test_queue_exit_with_cleanup_multiple_messages(void) {
+void test_queue_nuke_with_cleanup_multiple_messages(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -729,7 +729,7 @@ void test_queue_exit_with_cleanup_multiple_messages(void) {
   tracker.cleaned_messages = cleaned;
   tracker.messages_capacity = 10;
 
-  sc_queue_exit_with_cleanup(queue, test_cleanup_callback, &tracker);
+  sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
 
   // Should call cleanup for all 3 messages
   TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
@@ -749,7 +749,7 @@ void test_queue_exit_with_cleanup_multiple_messages(void) {
   TEST_ASSERT_EQUAL(1, found_msg3);
 }
 
-void test_queue_exit_with_cleanup_null_callback(void) {
+void test_queue_nuke_with_cleanup_null_callback(void) {
   queue_t *queue = sc_queue_init(3);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -762,14 +762,14 @@ void test_queue_exit_with_cleanup_null_callback(void) {
 
   // Destroy with NULL cleanup callback - messages will be drained but not freed
   // This simulates the case where caller wants to handle cleanup elsewhere
-  sc_queue_exit_with_cleanup(queue, NULL, NULL);
+  sc_queue_nuke_with_cleanup(queue, NULL, NULL);
 
   // Note: In real usage this would leak memory, but for testing we just
   // verify the function handles NULL callback gracefully
   // In practice, the caller would be responsible for message cleanup
 }
 
-void test_queue_exit_with_cleanup_partial_queue(void) {
+void test_queue_nuke_with_cleanup_partial_queue(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -795,13 +795,13 @@ void test_queue_exit_with_cleanup_partial_queue(void) {
   tracker.cleaned_messages = cleaned;
   tracker.messages_capacity = 10;
 
-  sc_queue_exit_with_cleanup(queue, test_cleanup_callback, &tracker);
+  sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
 
   // Should cleanup the 2 remaining messages
   TEST_ASSERT_EQUAL(2, tracker.cleanup_call_count);
 }
 
-void test_queue_exit_with_cleanup_thread_safety(void) {
+void test_queue_nuke_with_cleanup_thread_safety(void) {
   queue_t *queue = sc_queue_init(10);
   TEST_ASSERT_NOT_NULL(queue);
 
@@ -827,7 +827,7 @@ void test_queue_exit_with_cleanup_thread_safety(void) {
   tracker.cleaned_messages = cleaned;
   tracker.messages_capacity = 10;
 
-  sc_queue_exit_with_cleanup(queue, test_cleanup_callback, &tracker);
+  sc_queue_nuke_with_cleanup(queue, test_cleanup_callback, &tracker);
 
   // Should have cleaned up exactly 3 messages
   TEST_ASSERT_EQUAL(3, tracker.cleanup_call_count);
@@ -859,7 +859,7 @@ void test_queue_pop_timeout_on_empty_queue(void) {
   TEST_ASSERT_GREATER_OR_EQUAL(expected_timeout_ms - TIMEOUT_MARGIN_MS, elapsed_ms);
   TEST_ASSERT_LESS_OR_EQUAL(expected_timeout_ms + TIMEOUT_MARGIN_MS, elapsed_ms);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_add_timeout_on_full_queue(void) {
@@ -906,7 +906,7 @@ void test_queue_add_timeout_on_full_queue(void) {
     free(thread_data.message);
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_pop_succeeds_before_timeout(void) {
@@ -941,7 +941,7 @@ void test_queue_pop_succeeds_before_timeout(void) {
   free(pop_data.message->body);
   free(pop_data.message);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_add_succeeds_before_timeout(void) {
@@ -983,7 +983,7 @@ void test_queue_add_succeeds_before_timeout(void) {
     remaining = NULL;
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_timeout_thread_safety(void) {
@@ -1012,7 +1012,7 @@ void test_queue_timeout_thread_safety(void) {
     TEST_ASSERT_NULL(pop_data[i].message);
   }
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_timeout_error_conditions(void) {
@@ -1042,7 +1042,7 @@ void test_queue_timeout_error_conditions(void) {
 
   free(popped->body);
   free(popped);
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_add_returns_error_on_null_queue(void) {
@@ -1060,7 +1060,7 @@ void test_queue_add_returns_error_on_null_message(void) {
   sc_queue_ret_val_t result = sc_queue_add(queue, NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_add_timeout_returns_error_code(void) {
@@ -1091,7 +1091,7 @@ void test_queue_add_timeout_returns_error_code(void) {
     free(remaining);
     remaining = NULL;
   }
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 // Test errno functions
@@ -1162,7 +1162,7 @@ void test_queue_errno_is_thread_local(void) {
   // Main thread error should still be SUCCESS
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 // New API tests
@@ -1173,19 +1173,19 @@ void test_queue_init_with_zero_capacity(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_INVALID, sc_queue_get_error());
 }
 
-void test_queue_exit_returns_success(void) {
+void test_queue_nuke_returns_success(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
   sc_queue_clear_error();
-  sc_queue_ret_val_t result = sc_queue_exit(queue);
+  sc_queue_ret_val_t result = sc_queue_nuke(queue);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 }
 
-void test_queue_exit_with_null_returns_error(void) {
+void test_queue_nuke_with_null_returns_error(void) {
   sc_queue_clear_error();
-  sc_queue_ret_val_t result = sc_queue_exit(NULL);
+  sc_queue_ret_val_t result = sc_queue_nuke(NULL);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 }
@@ -1207,7 +1207,7 @@ void test_queue_pop_with_output_parameter(void) {
 
   free(msg_out->body);
   free(msg_out);
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_pop_with_null_parameters(void) {
@@ -1226,7 +1226,7 @@ void test_queue_pop_with_null_parameters(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_pop_timeout_with_new_api(void) {
@@ -1243,7 +1243,7 @@ void test_queue_pop_timeout_with_new_api(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_TIMEOUT, sc_queue_get_error());
   TEST_ASSERT_GREATER_OR_EQUAL(2000 - TIMEOUT_MARGIN_MS, elapsed);
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_pop_with_output_parameter(void) {
@@ -1262,7 +1262,7 @@ void test_queue_try_pop_with_output_parameter(void) {
 
   free(msg_out->body);
   free(msg_out);
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_add_null_parameters(void) {
@@ -1280,7 +1280,7 @@ void test_queue_try_add_null_parameters(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_try_pop_null_parameters(void) {
@@ -1299,7 +1299,7 @@ void test_queue_try_pop_null_parameters(void) {
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, sc_queue_get_error());
 
-  sc_queue_exit(queue);
+  sc_queue_nuke(queue);
 }
 
 void test_queue_is_empty_with_null_queue(void) {
@@ -1374,7 +1374,7 @@ void test_queue_init_with_safe_large_capacity(void) {
 
     free(popped->body);
     free(popped);
-    sc_queue_exit(queue);
+    sc_queue_nuke(queue);
   } else {
     // If allocation failed, it should be due to memory limits, not overflow
     TEST_ASSERT_EQUAL(QUEUE_ERR_MEMORY, sc_queue_get_error());
@@ -1395,7 +1395,7 @@ void test_queue_init_memory_allocation_failure(void) {
     TEST_ASSERT_TRUE(error == QUEUE_ERR_OVERFLOW || error == QUEUE_ERR_MEMORY);
   } else {
     // If it succeeded, clean up
-    sc_queue_exit(queue);
+    sc_queue_nuke(queue);
   }
 }
 
@@ -1425,12 +1425,12 @@ int main(void) {
   RUN_TEST(test_queue_get_size_with_add_and_pop);
   RUN_TEST(test_queue_get_size_at_capacity);
   RUN_TEST(test_queue_get_size_with_try_operations);
-  RUN_TEST(test_queue_exit_with_cleanup_empty_queue);
-  RUN_TEST(test_queue_exit_with_cleanup_single_message);
-  RUN_TEST(test_queue_exit_with_cleanup_multiple_messages);
-  RUN_TEST(test_queue_exit_with_cleanup_null_callback);
-  RUN_TEST(test_queue_exit_with_cleanup_partial_queue);
-  RUN_TEST(test_queue_exit_with_cleanup_thread_safety);
+  RUN_TEST(test_queue_nuke_with_cleanup_empty_queue);
+  RUN_TEST(test_queue_nuke_with_cleanup_single_message);
+  RUN_TEST(test_queue_nuke_with_cleanup_multiple_messages);
+  RUN_TEST(test_queue_nuke_with_cleanup_null_callback);
+  RUN_TEST(test_queue_nuke_with_cleanup_partial_queue);
+  RUN_TEST(test_queue_nuke_with_cleanup_thread_safety);
   RUN_TEST(test_queue_pop_timeout_on_empty_queue);
   RUN_TEST(test_queue_add_timeout_on_full_queue);
   RUN_TEST(test_queue_pop_succeeds_before_timeout);
@@ -1450,8 +1450,8 @@ int main(void) {
 
   // New API tests
   RUN_TEST(test_queue_init_with_zero_capacity);
-  RUN_TEST(test_queue_exit_returns_success);
-  RUN_TEST(test_queue_exit_with_null_returns_error);
+  RUN_TEST(test_queue_nuke_returns_success);
+  RUN_TEST(test_queue_nuke_with_null_returns_error);
   RUN_TEST(test_queue_pop_with_output_parameter);
   RUN_TEST(test_queue_pop_with_null_parameters);
   RUN_TEST(test_queue_pop_timeout_with_new_api);

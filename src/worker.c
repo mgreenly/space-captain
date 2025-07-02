@@ -43,7 +43,7 @@ sc_worker_pool_t *sc_worker_pool_init(int32_t pool_size, queue_t *msg_queue) {
 }
 
 // Destroy worker pool
-void sc_worker_pool_exit(sc_worker_pool_t *pool) {
+void sc_worker_pool_nuke(sc_worker_pool_t *pool) {
   if (!pool)
     return;
 
