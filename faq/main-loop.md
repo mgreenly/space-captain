@@ -38,10 +38,10 @@ Message Queue (queue.c)
 ├── Read-write lock for thread safety
 ├── Condition variables for blocking operations
 └── Operations
-    ├── queue_add() - Blocks if full
-    ├── queue_pop() - Blocks if empty
-    ├── queue_try_add() - Non-blocking
-    └── queue_try_pop() - Non-blocking
+    ├── sc_queue_add() - Blocks if full
+    ├── sc_queue_pop() - Blocks if empty
+    ├── sc_queue_try_add() - Non-blocking
+    └── sc_queue_try_pop() - Non-blocking
 ```
 
 **Design features:**
@@ -58,7 +58,7 @@ Worker Threads (worker.c)
 ├── Created at startup (default: 4 threads)
 ├── Each thread runs worker_thread()
 └── Processing loop
-    ├── queue_pop() - Block waiting for message
+    ├── sc_queue_pop() - Block waiting for message
     ├── Process message based on type
     ├── Send response back to client
     └── Free message memory
@@ -83,10 +83,10 @@ Here's how a client request flows through the system:
 4. When complete message received:
    - Allocate message_t structure
    - Copy data and add client_fd
-   - queue_add() to message queue
+   - sc_queue_add() to message queue
    ↓
 5. Worker thread wakes up
-   - queue_pop() gets message
+   - sc_queue_pop() gets message
    - Process based on message type
    - send() response directly to client_fd
    - Free message memory
@@ -129,7 +129,7 @@ if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
 ```
 
 ### Queue Full
-- Main thread uses blocking `queue_add()`
+- Main thread uses blocking `sc_queue_add()`
 - Naturally provides backpressure
 - Prevents accepting data faster than processing
 

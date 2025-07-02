@@ -94,6 +94,11 @@ co-author: <model>
 - Trim trailing whitespace
 - Use consistent indentation (clang-format handles this)
 - Descriptive variable and function names
+- **Function Naming Convention**: All public functions must use the pattern `<project>_<module>_<function>` where:
+  - `<project>` is the project prefix `sc` for (Space Captain)
+  - `<module>` matches the source filename (e.g., `queue` for queue.c)
+  - `<function>` is the descriptive function name
+  - Examples: `sc_queue_create()`, `sc_worker_init()`, `sc_message_destroy()`
 
 ## Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)

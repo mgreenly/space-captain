@@ -54,36 +54,36 @@ typedef void (*queue_cleanup_fn)(message_t *msg, void *user_data);
 // Queue Lifecycle Functions
 // ============================================================================
 
-queue_t *queue_create(size_t capacity);
-int queue_destroy(queue_t *q);
-void queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data);
+queue_t *sc_queue_create(size_t capacity);
+int sc_queue_destroy(queue_t *q);
+void sc_queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data);
 
 // ============================================================================
 // Queue Operations
 // ============================================================================
 
 // Blocking operations (with timeout)
-int queue_add(queue_t *q, message_t *msg);
-int queue_pop(queue_t *q, message_t **msg);
+int sc_queue_add(queue_t *q, message_t *msg);
+int sc_queue_pop(queue_t *q, message_t **msg);
 
 // Non-blocking operations
-int queue_try_add(queue_t *q, message_t *msg);
-int queue_try_pop(queue_t *q, message_t **msg);
+int sc_queue_try_add(queue_t *q, message_t *msg);
+int sc_queue_try_pop(queue_t *q, message_t **msg);
 
 // ============================================================================
 // Queue Status Functions
 // ============================================================================
 
-bool queue_is_empty(queue_t *q);
-bool queue_is_full(queue_t *q);
-size_t queue_get_size(queue_t *q);
+bool sc_queue_is_empty(queue_t *q);
+bool sc_queue_is_full(queue_t *q);
+size_t sc_queue_get_size(queue_t *q);
 
 // ============================================================================
 // Error Handling Functions
 // ============================================================================
 
-int queue_get_error(void);
-void queue_clear_error(void);
-const char *queue_strerror(int err);
+int sc_queue_get_error(void);
+void sc_queue_clear_error(void);
+const char *sc_queue_strerror(int err);
 
 #endif // QUEUE_H

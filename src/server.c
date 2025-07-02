@@ -22,7 +22,6 @@
 #include "queue.c"
 #include "worker.c"
 
-
 // Client buffer structure for handling partial reads
 typedef struct client_buffer {
   int fd;
@@ -33,15 +32,15 @@ typedef struct client_buffer {
   message_header_t header;
   size_t header_bytes_read;
   struct client_buffer *next;
-  int in_use;  // Flag to indicate if this buffer is currently in use
+  int in_use; // Flag to indicate if this buffer is currently in use
 } client_buffer_t;
 
 // Connection pool structure
 typedef struct {
-  client_buffer_t *buffers;      // Array of pre-allocated buffers
-  client_buffer_t *free_list;    // Head of free list
-  size_t pool_size;              // Total size of the pool
-  size_t used_count;             // Number of buffers currently in use
+  client_buffer_t *buffers;   // Array of pre-allocated buffers
+  client_buffer_t *free_list; // Head of free list
+  size_t pool_size;           // Total size of the pool
+  size_t used_count;          // Number of buffers currently in use
 } connection_pool_t;
 
 // Global shutdown flag
@@ -122,7 +121,8 @@ static client_buffer_t *pool_get_buffer(void) {
 
 // Return a buffer to the pool
 static void pool_return_buffer(client_buffer_t *buf) {
-  if (!buf) return;
+  if (!buf)
+    return;
 
   // Free any allocated message buffer
   if (buf->buffer) {
@@ -435,7 +435,7 @@ static void handle_client_data(int client_fd, queue_t *msg_queue) {
                 msg->header.type, type_str, msg->header.length, client_fd);
 
       // Queue message for processing
-      if (queue_add(msg_queue, msg) != QUEUE_SUCCESS) {
+      if (sc_queue_add(msg_queue, msg) != QUEUE_SUCCESS) {
         log_error("%s", "Failed to queue message");
         free(msg->body);
         free(msg);
@@ -475,7 +475,7 @@ int main(void) {
   }
 
   // Create message queue
-  queue_t *msg_queue = queue_create(QUEUE_CAPACITY);
+  queue_t *msg_queue = sc_queue_create(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue");
     cleanup_connection_pool();
@@ -486,7 +486,7 @@ int main(void) {
   worker_pool_t *worker_pool = worker_pool_create(WORKER_POOL_SIZE, msg_queue);
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -499,7 +499,7 @@ int main(void) {
   if (server_fd < 0) {
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -509,7 +509,7 @@ int main(void) {
     close(server_fd);
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -521,7 +521,7 @@ int main(void) {
     close(server_fd);
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -537,7 +537,7 @@ int main(void) {
     close(server_fd);
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     return EXIT_FAILURE;
   }
 
@@ -560,7 +560,7 @@ int main(void) {
     close(server_fd);
     worker_pool_stop(worker_pool);
     worker_pool_destroy(worker_pool);
-    queue_destroy(msg_queue);
+    sc_queue_destroy(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -640,11 +640,11 @@ int main(void) {
 
   // Clean up remaining messages
   message_t *msg;
-  while (queue_try_pop(msg_queue, &msg) == QUEUE_SUCCESS) {
+  while (sc_queue_try_pop(msg_queue, &msg) == QUEUE_SUCCESS) {
     free(msg->body);
     free(msg);
   }
-  queue_destroy(msg_queue);
+  sc_queue_destroy(msg_queue);
 
   // Clean up all client buffers
   while (client_buffers) {
@@ -662,4 +662,3 @@ int main(void) {
   log_info("%s", "Server shutdown complete");
   return EXIT_SUCCESS;
 }
-

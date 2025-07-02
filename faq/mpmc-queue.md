@@ -42,7 +42,7 @@ This design prevents deadlocks that could occur if a single lock was used for bo
 ### How is a queue created?
 
 ```c
-queue_t *queue_create(size_t capacity)
+queue_t *sc_queue_create(size_t capacity)
 ```
 
 The creation process:
@@ -63,7 +63,7 @@ Two destruction methods are provided:
 
 #### Basic Destruction
 ```c
-int queue_destroy(queue_t *q)
+int sc_queue_destroy(queue_t *q)
 ```
 - Destroys synchronization primitives
 - Frees the buffer and queue structure
@@ -71,7 +71,7 @@ int queue_destroy(queue_t *q)
 
 #### Destruction with Cleanup
 ```c
-void queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data)
+void sc_queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data)
 ```
 - Locks the queue to prevent new operations
 - Drains all remaining messages
@@ -84,7 +84,7 @@ void queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *u
 
 #### Blocking Add
 ```c
-int queue_add(queue_t *q, message_t *msg)
+int sc_queue_add(queue_t *q, message_t *msg)
 ```
 
 1. Acquires write lock on the queue
@@ -99,7 +99,7 @@ int queue_add(queue_t *q, message_t *msg)
 
 #### Non-blocking Add
 ```c
-int queue_try_add(queue_t *q, message_t *msg)
+int sc_queue_try_add(queue_t *q, message_t *msg)
 ```
 
 - Same as blocking add but returns `QUEUE_ERR_FULL` immediately if full
@@ -109,7 +109,7 @@ int queue_try_add(queue_t *q, message_t *msg)
 
 #### Blocking Pop
 ```c
-int queue_pop(queue_t *q, message_t **msg)
+int sc_queue_pop(queue_t *q, message_t **msg)
 ```
 
 1. Acquires write lock on the queue
@@ -124,7 +124,7 @@ int queue_pop(queue_t *q, message_t **msg)
 
 #### Non-blocking Pop
 ```c
-int queue_try_pop(queue_t *q, message_t **msg)
+int sc_queue_try_pop(queue_t *q, message_t **msg)
 ```
 
 - Same as blocking pop but returns `QUEUE_ERR_EMPTY` immediately if empty
@@ -136,9 +136,9 @@ int queue_try_pop(queue_t *q, message_t **msg)
 
 All status functions use read locks for thread-safety:
 
-- `queue_is_empty(queue_t *q)`: Returns true if size == 0
-- `queue_is_full(queue_t *q)`: Returns true if size == capacity
-- `queue_get_size(queue_t *q)`: Returns current number of messages
+- `sc_queue_is_empty(queue_t *q)`: Returns true if size == 0
+- `sc_queue_is_full(queue_t *q)`: Returns true if size == capacity
+- `sc_queue_get_size(queue_t *q)`: Returns current number of messages
 
 ## Error Handling
 
@@ -166,9 +166,9 @@ This allows each thread to have its own error state without interference.
 
 ### Error Functions
 
-- `queue_get_error()`: Get last error for current thread
-- `queue_clear_error()`: Clear error state
-- `queue_strerror(int err)`: Get human-readable error message
+- `sc_queue_get_error()`: Get last error for current thread
+- `sc_queue_clear_error()`: Clear error state
+- `sc_queue_strerror(int err)`: Get human-readable error message
 
 ## Configuration
 
@@ -207,7 +207,7 @@ The two-lock design minimizes contention:
 ### Producer Thread
 ```c
 message_t *msg = create_message(...);
-int result = queue_add(queue, msg);
+int result = sc_queue_add(queue, msg);
 if (result != QUEUE_SUCCESS) {
     // Handle error - timeout or other failure
     message_destroy(msg);
@@ -217,7 +217,7 @@ if (result != QUEUE_SUCCESS) {
 ### Consumer Thread
 ```c
 message_t *msg = NULL;
-int result = queue_pop(queue, &msg);
+int result = sc_queue_pop(queue, &msg);
 if (result == QUEUE_SUCCESS) {
     // Process message
     process_message(msg);
@@ -234,7 +234,7 @@ void cleanup_message(message_t *msg, void *user_data) {
 }
 
 // Destroy queue with cleanup
-queue_destroy_with_cleanup(queue, cleanup_message, NULL);
+sc_queue_destroy_with_cleanup(queue, cleanup_message, NULL);
 ```
 
 ## Design Decisions & Trade-offs

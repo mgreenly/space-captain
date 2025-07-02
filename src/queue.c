@@ -16,19 +16,19 @@ static __thread int queue_errno = QUEUE_SUCCESS;
 
 // Gets the last error code for the current thread
 // @return The last error code set by a queue operation
-int queue_get_error(void) {
+int sc_queue_get_error(void) {
   return queue_errno;
 }
 
 // Clears the error code for the current thread
-void queue_clear_error(void) {
+void sc_queue_clear_error(void) {
   queue_errno = QUEUE_SUCCESS;
 }
 
 // Gets a human-readable error message for the given error code
 // @param err The error code to get a message for
 // @return A string describing the error
-const char *queue_strerror(int err) {
+const char *sc_queue_strerror(int err) {
   switch (err) {
   case QUEUE_SUCCESS:
     return "Success";
@@ -72,7 +72,7 @@ static void get_absolute_timeout(struct timespec *abs_timeout, int timeout_secon
 // Creates a new thread-safe message queue with the specified capacity
 // @param capacity Maximum number of messages the queue can hold (must be > 0)
 // @return Pointer to the newly created queue, or NULL on failure
-queue_t *queue_create(size_t capacity) {
+queue_t *sc_queue_create(size_t capacity) {
   queue_errno = QUEUE_SUCCESS;
 
   if (capacity == 0 || capacity > QUEUE_MAX_CAPACITY) {
@@ -155,7 +155,7 @@ queue_t *queue_create(size_t capacity) {
 // Note: Does not free messages still in the queue - caller is responsible
 // @param q Pointer to the queue to destroy
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_destroy(queue_t *q) {
+int sc_queue_destroy(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -185,7 +185,7 @@ int queue_destroy(queue_t *q) {
 // @param q Pointer to the queue to destroy (must not be NULL)
 // @param cleanup_fn Optional callback to process each remaining message (can be NULL)
 // @param user_data Optional user data passed to the cleanup function
-void queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data) {
+void sc_queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data) {
   if (q == NULL) {
     queue_errno = QUEUE_ERR_NULL;
     return;
@@ -226,7 +226,7 @@ void queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *u
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to the message to add (must not be NULL)
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_add(queue_t *q, message_t *msg) {
+int sc_queue_add(queue_t *q, message_t *msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -250,12 +250,12 @@ int queue_add(queue_t *q, message_t *msg) {
     pthread_mutex_unlock(&q->cond_mutex);
 
     if (result == ETIMEDOUT) {
-      log_error("queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
+      log_error("sc_queue_add timed out after %d seconds", QUEUE_ADD_TIMEOUT);
       queue_errno = QUEUE_ERR_TIMEOUT;
       return QUEUE_ERR_TIMEOUT;
     }
     if (result != 0) {
-      log_error("queue_add pthread_cond_timedwait failed: %d", result);
+      log_error("sc_queue_add pthread_cond_timedwait failed: %d", result);
       queue_errno = QUEUE_ERR_THREAD;
       return QUEUE_ERR_THREAD;
     }
@@ -282,7 +282,7 @@ int queue_add(queue_t *q, message_t *msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to store the removed message (must not be NULL)
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int queue_pop(queue_t *q, message_t **msg) {
+int sc_queue_pop(queue_t *q, message_t **msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -308,12 +308,12 @@ int queue_pop(queue_t *q, message_t **msg) {
     pthread_mutex_unlock(&q->cond_mutex);
 
     if (result == ETIMEDOUT) {
-      log_error("queue_pop timed out after %d seconds", QUEUE_POP_TIMEOUT);
+      log_error("sc_queue_pop timed out after %d seconds", QUEUE_POP_TIMEOUT);
       queue_errno = QUEUE_ERR_TIMEOUT;
       return QUEUE_ERR_TIMEOUT;
     }
     if (result != 0) {
-      log_error("queue_pop pthread_cond_timedwait failed: %d", result);
+      log_error("sc_queue_pop pthread_cond_timedwait failed: %d", result);
       queue_errno = QUEUE_ERR_THREAD;
       return QUEUE_ERR_THREAD;
     }
@@ -343,7 +343,7 @@ int queue_pop(queue_t *q, message_t **msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to the message to add (must not be NULL)
 // @return QUEUE_SUCCESS on success, QUEUE_ERR_FULL if full, or error code
-int queue_try_add(queue_t *q, message_t *msg) {
+int sc_queue_try_add(queue_t *q, message_t *msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -378,7 +378,7 @@ int queue_try_add(queue_t *q, message_t *msg) {
 // @param q Pointer to the queue (must not be NULL)
 // @param msg Pointer to store the removed message (must not be NULL)
 // @return QUEUE_SUCCESS on success, QUEUE_ERR_EMPTY if empty, or error code
-int queue_try_pop(queue_t *q, message_t **msg) {
+int sc_queue_try_pop(queue_t *q, message_t **msg) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL || msg == NULL) {
@@ -418,7 +418,7 @@ int queue_try_pop(queue_t *q, message_t **msg) {
 // Checks if the queue is empty (thread-safe)
 // @param q Pointer to the queue
 // @return true if the queue is empty, false otherwise (including on error)
-bool queue_is_empty(queue_t *q) {
+bool sc_queue_is_empty(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -435,7 +435,7 @@ bool queue_is_empty(queue_t *q) {
 // Checks if the queue is full (thread-safe)
 // @param q Pointer to the queue
 // @return true if the queue is full, false otherwise (including on error)
-bool queue_is_full(queue_t *q) {
+bool sc_queue_is_full(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -452,7 +452,7 @@ bool queue_is_full(queue_t *q) {
 // Gets the current number of messages in the queue (thread-safe)
 // @param q Pointer to the queue
 // @return Number of messages currently in the queue, 0 on error
-size_t queue_get_size(queue_t *q) {
+size_t sc_queue_get_size(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
