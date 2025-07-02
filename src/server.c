@@ -475,7 +475,7 @@ int main(void) {
   }
 
   // Create message queue
-  queue_t *msg_queue = sc_queue_create(QUEUE_CAPACITY);
+  queue_t *msg_queue = sc_queue_init(QUEUE_CAPACITY);
   if (!msg_queue) {
     log_error("%s", "Failed to create message queue");
     cleanup_connection_pool();
@@ -486,7 +486,7 @@ int main(void) {
   worker_pool_t *worker_pool = sc_worker_pool_create(WORKER_POOL_SIZE, msg_queue);
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -499,7 +499,7 @@ int main(void) {
   if (server_fd < 0) {
     sc_worker_pool_stop(worker_pool);
     sc_worker_pool_destroy(worker_pool);
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -509,7 +509,7 @@ int main(void) {
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
     sc_worker_pool_destroy(worker_pool);
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -521,7 +521,7 @@ int main(void) {
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
     sc_worker_pool_destroy(worker_pool);
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -537,7 +537,7 @@ int main(void) {
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
     sc_worker_pool_destroy(worker_pool);
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     return EXIT_FAILURE;
   }
 
@@ -560,7 +560,7 @@ int main(void) {
     close(server_fd);
     sc_worker_pool_stop(worker_pool);
     sc_worker_pool_destroy(worker_pool);
-    sc_queue_destroy(msg_queue);
+    sc_queue_exit(msg_queue);
     cleanup_connection_pool();
     return EXIT_FAILURE;
   }
@@ -644,7 +644,7 @@ int main(void) {
     free(msg->body);
     free(msg);
   }
-  sc_queue_destroy(msg_queue);
+  sc_queue_exit(msg_queue);
 
   // Clean up all client buffers
   while (client_buffers) {

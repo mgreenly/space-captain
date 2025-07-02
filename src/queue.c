@@ -72,7 +72,7 @@ static void get_absolute_timeout(struct timespec *abs_timeout, int timeout_secon
 // Creates a new thread-safe message queue with the specified capacity
 // @param capacity Maximum number of messages the queue can hold (must be > 0)
 // @return Pointer to the newly created queue, or NULL on failure
-queue_t *sc_queue_create(size_t capacity) {
+queue_t *sc_queue_init(size_t capacity) {
   queue_errno = QUEUE_SUCCESS;
 
   if (capacity == 0 || capacity > QUEUE_MAX_CAPACITY) {
@@ -155,7 +155,7 @@ queue_t *sc_queue_create(size_t capacity) {
 // Note: Does not free messages still in the queue - caller is responsible
 // @param q Pointer to the queue to destroy
 // @return QUEUE_SUCCESS on success, or an error code on failure
-int sc_queue_destroy(queue_t *q) {
+int sc_queue_exit(queue_t *q) {
   queue_errno = QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -185,7 +185,7 @@ int sc_queue_destroy(queue_t *q) {
 // @param q Pointer to the queue to destroy (must not be NULL)
 // @param cleanup_fn Optional callback to process each remaining message (can be NULL)
 // @param user_data Optional user data passed to the cleanup function
-void sc_queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data) {
+void sc_queue_exit_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data) {
   if (q == NULL) {
     queue_errno = QUEUE_ERR_NULL;
     return;

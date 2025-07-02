@@ -42,7 +42,7 @@ This design prevents deadlocks that could occur if a single lock was used for bo
 ### How is a queue created?
 
 ```c
-queue_t *sc_queue_create(size_t capacity)
+queue_t *sc_queue_init(size_t capacity)
 ```
 
 The creation process:
@@ -63,7 +63,7 @@ Two destruction methods are provided:
 
 #### Basic Destruction
 ```c
-int sc_queue_destroy(queue_t *q)
+int sc_queue_exit(queue_t *q)
 ```
 - Destroys synchronization primitives
 - Frees the buffer and queue structure
@@ -71,7 +71,7 @@ int sc_queue_destroy(queue_t *q)
 
 #### Destruction with Cleanup
 ```c
-void sc_queue_destroy_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data)
+void sc_queue_exit_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data)
 ```
 - Locks the queue to prevent new operations
 - Drains all remaining messages
@@ -234,7 +234,7 @@ void cleanup_message(message_t *msg, void *user_data) {
 }
 
 // Destroy queue with cleanup
-sc_queue_destroy_with_cleanup(queue, cleanup_message, NULL);
+sc_queue_exit_with_cleanup(queue, cleanup_message, NULL);
 ```
 
 ## Design Decisions & Trade-offs
