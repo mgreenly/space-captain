@@ -17,7 +17,7 @@ CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
 LDFLAGS = -lpthread
 
 # Build settings
-TAG ?= pre  # Build tag (defaults to 'pre' if not specified)
+TAG ?= pre
 PREFIX ?= $(HOME)/.local  # Installation prefix
 
 # Directory structure
@@ -71,7 +71,6 @@ client: $(BIN_DIR)/client
 release:
 	@$(MAKE) clean
 	@$(MAKE) $(BIN_DIR)/server-release $(BIN_DIR)/client-release
-	@$(MAKE) bump-build
 
 # ============================================================================
 # Build Rules - Debug
@@ -98,15 +97,15 @@ $(OBJ_DIR)/debug/client.o: $(CLIENT_MAIN) | $(OBJ_DIR)/debug
 # Release executables (with versioning)
 $(BIN_DIR)/server-release: $(SERVER_OBJ_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
-	BUILD=$$(cat .BUILD); \
-	FULL_VERSION="$$VERSION-$(TAG).$$BUILD"; \
+	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
+	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
 	$(CC) $(LDFLAGS) -o $(BIN_DIR)/server-$$FULL_VERSION $^; \
 	ln -sf server-$$FULL_VERSION $@
 
 $(BIN_DIR)/client-release: $(CLIENT_OBJ_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
-	BUILD=$$(cat .BUILD); \
-	FULL_VERSION="$$VERSION-$(TAG).$$BUILD"; \
+	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
+	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
 	$(CC) $(LDFLAGS) -o $(BIN_DIR)/client-$$FULL_VERSION $^; \
 	ln -sf client-$$FULL_VERSION $@
 
@@ -200,8 +199,8 @@ clean:
 .PHONY: version
 version:
 	@VERSION=$$(cat .VERSION); \
-	BUILD=$$(cat .BUILD); \
-	echo "$$VERSION-$(TAG).$$BUILD"
+	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
+	echo "$$VERSION-$(TAG).$$DATETIME"
 
 .PHONY: bump-patch
 bump-patch:
@@ -230,12 +229,6 @@ bump-major:
 	echo "$$NEW_MAJOR.0.0" > .VERSION; \
 	echo "Version bumped to $$(cat .VERSION)"
 
-.PHONY: bump-build
-bump-build:
-	@BUILD=$$(cat .BUILD); \
-	NEW_BUILD=$$(($$BUILD + 1)); \
-	echo "$$NEW_BUILD" > .BUILD; \
-	echo "Build number bumped to $$(cat .BUILD)"
 
 # ============================================================================
 # Help Target
