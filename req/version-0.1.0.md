@@ -12,13 +12,43 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 - Efficiently handle 5,000 concurrent client connections
 - Networking approach: epoll-based event loop
 
+## Game World Specifications
+
+### Coordinate System
+- 2D space representing a solar system
+- Coordinate type: `double` (IEEE 754 double-precision)
+- Units: meters
+- Maximum radius: 10¹⁵ meters (1 petameter) from origin
+- Total dimensions: 2 × 10¹⁵ × 2 × 10¹⁵ meters
+- Origin: Star at center (0,0)
+- Precision: 0.125 meters at edge, 0.02 mm at spawn orbit
+
+### Ship Specifications
+- Single ship type for all players
+- Hull structure: 1,000 units
+- Power plant: 100 units total
+- Power allocation (1-unit increments):
+  - Drives (movement/speed)
+  - Shields (defense)
+  - Weapons (offense)
+  - Cloaking (stealth)
+
+### Movement System
+- Speeds measured in meters per second (m/s)
+- Speed dial: 1-100 (logarithmic scale)
+  - Speed 1: 500 m/s (minimum)
+  - Speed 100: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
+- See docs/speed-table.md for complete speed reference
+
+### Spawning
+- New ships spawn at random position on circular orbit
+- Spawn orbit radius: 1.5 × 10¹¹ meters (150 million km) from star
+
 ## MVP (Minimum Viable Product)
 - Each client controls a spacecraft in 2D space
-- Coordinate system: 100,000,000 x 100,000,000 meters
-- Velocities expressed as fractions of the speed of light
-- Basic flight mechanics and movement
+- Basic flight mechanics with logarithmic speed control
 - Combat system: shooting at other players
-- Ship systems: power management, shields, weapons, and cloaking
+- Dynamic power management between ship systems
 - Real-time synchronization of all ship states between clients
 - Only Linux clients will be supported in this release
 
