@@ -5,6 +5,7 @@ This directory contains frequently asked questions and detailed explanations abo
 ## Table of Contents
 
 ### Architecture
+- [Architecture Diagram](arch.png) - Visual overview of the system architecture
 - [Main Server Loop](main-loop.md) - High-level overview of the epoll loop, message queue, and worker threads
 
 ### Build System
