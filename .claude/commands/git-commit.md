@@ -1,4 +1,4 @@
-Create a git commit with proper Claude co-authorship attribution.
+Create a git commit with proper Claude co-authorship attribution and automatically push after approval.
 
 **Steps to execute:**
 
@@ -42,12 +42,13 @@ Create a git commit with proper Claude co-authorship attribution.
    git status
    ```
 
-7. Push the commit to the remote repository:
+7. After user approves the commit message, automatically push to remote:
    ```bash
    git push
    ```
 
 **Important notes:**
+- Step 7 (git push) should be executed automatically AFTER the user approves the commit message
 - The commit message should use the exact template format: `<title>` followed by blank line, then `<body>`, then co-author line
 - The model ID (claude-opus-4-20250514) will be dynamically inserted when creating the commit
 - The commit message should NOT include type prefixes (like fix:, refactor:, add:, etc.)
