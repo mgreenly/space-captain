@@ -174,9 +174,9 @@ fmt:
 SRC_FILES = $(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/*.h)
 
 .PHONY: dot
-dot: faq/arch.png
+dot: docs/arch.png
 
-faq/arch.png: arch.dot $(SRC_FILES)
+docs/arch.png: arch.dot $(SRC_FILES)
 	dot -Tpng $< -o $@
 
 # ============================================================================

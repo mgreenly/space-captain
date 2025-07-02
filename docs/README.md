@@ -1,6 +1,6 @@
-# Space Captain FAQ
+# Space Captain Documentation
 
-This directory contains frequently asked questions and detailed explanations about various aspects of the Space Captain project.
+This directory contains documentation and detailed explanations about various aspects of the Space Captain project.
 
 ## Table of Contents
 
@@ -13,9 +13,12 @@ This directory contains frequently asked questions and detailed explanations abo
 ### Build System
 - [Unified C Project Structure](unified-c-project-structure.md) - Explains the unified build approach used in this project
 
+### Development Guidelines
+- [Code Style Guidelines](code-style.md) - Coding standards and naming conventions
+
 ## Contributing
 
-When adding new FAQ documents:
+When adding new documentation:
 1. Use kebab-case for filenames (e.g., `my-new-topic.md`)
 2. Add a link to the document in this README
-3. Organize links by category as the FAQ grows
+3. Organize links by category as the documentation grows
