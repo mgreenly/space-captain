@@ -14,15 +14,15 @@
 
 // Queue operation return codes
 typedef enum {
-  QUEUE_SUCCESS      = 0,  // Operation completed successfully
-  QUEUE_ERR_TIMEOUT  = -1, // Operation timed out
-  QUEUE_ERR_THREAD   = -2, // Thread operation failed
-  QUEUE_ERR_NULL     = -3, // Null pointer parameter
-  QUEUE_ERR_MEMORY   = -4, // Memory allocation failure
-  QUEUE_ERR_FULL     = -5, // Queue is full (for try_add)
-  QUEUE_ERR_EMPTY    = -6, // Queue is empty (for try_pop)
+  QUEUE_ERR_OVERFLOW = -8, // Integer overflow in capacity calculation
   QUEUE_ERR_INVALID  = -7, // Invalid parameter (e.g., capacity = 0)
-  QUEUE_ERR_OVERFLOW = -8  // Integer overflow in capacity calculation
+  QUEUE_ERR_EMPTY    = -6, // Queue is empty (for try_pop)
+  QUEUE_ERR_FULL     = -5, // Queue is full (for try_add)
+  QUEUE_ERR_MEMORY   = -4, // Memory allocation failure
+  QUEUE_ERR_NULL     = -3, // Null pointer parameter
+  QUEUE_ERR_THREAD   = -2, // Thread operation failed
+  QUEUE_ERR_TIMEOUT  = -1, // Operation timed out
+  QUEUE_SUCCESS      = 0   // Operation completed successfully
 } sc_queue_ret_val_t;
 
 // Timeout values in seconds for blocking operations
