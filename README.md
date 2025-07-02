@@ -26,9 +26,5 @@ Installing
 ```
 git clone https://github.com/mgreenly/space-captain.git
 cd space-captian
-make clean; make release; PREFIX=$HOME/.local/bin make install
+make clean; PREFIX=$HOME/.local/bin make install
 ```
-
-Testing
-=======
-  https://github.com/ThrowTheSwitch/Unity/blob/b9d897b5f38674248c86fb58342b87cb6006fe1f/docs/UnityAssertionsCheatSheetSuitableforPrintingandPossiblyFraming.pdf
