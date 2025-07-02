@@ -484,7 +484,7 @@ int main(void) {
   }
 
   // Create worker pool
-  worker_pool_t *worker_pool = sc_worker_pool_create(WORKER_POOL_SIZE, msg_queue);
+  sc_worker_pool_t *worker_pool = sc_worker_pool_create(WORKER_POOL_SIZE, msg_queue);
   if (!worker_pool) {
     log_error("%s", "Failed to create worker pool");
     sc_queue_exit(msg_queue);

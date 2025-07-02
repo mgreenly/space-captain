@@ -10,17 +10,17 @@
 #include "config.h"
 
 // Create worker pool
-worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
+sc_worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
   assert(pool_size > 0);
   assert(msg_queue != NULL);
 
-  worker_pool_t *pool = malloc(sizeof(worker_pool_t));
+  sc_worker_pool_t *pool = malloc(sizeof(sc_worker_pool_t));
   if (!pool) {
     log_error("%s", "Failed to allocate worker pool");
     return NULL;
   }
 
-  pool->workers = calloc(pool_size, sizeof(worker_context_t));
+  pool->workers = calloc(pool_size, sizeof(sc_worker_context_t));
   if (!pool->workers) {
     log_error("%s", "Failed to allocate worker contexts");
     free(pool);
@@ -43,7 +43,7 @@ worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue) {
 }
 
 // Destroy worker pool
-void sc_worker_pool_destroy(worker_pool_t *pool) {
+void sc_worker_pool_destroy(sc_worker_pool_t *pool) {
   if (!pool)
     return;
 
@@ -53,7 +53,7 @@ void sc_worker_pool_destroy(worker_pool_t *pool) {
 }
 
 // Start all workers
-void sc_worker_pool_start(worker_pool_t *pool) {
+void sc_worker_pool_start(sc_worker_pool_t *pool) {
   assert(pool != NULL);
 
   for (int32_t i = 0; i < pool->pool_size; i++) {
@@ -66,7 +66,7 @@ void sc_worker_pool_start(worker_pool_t *pool) {
 }
 
 // Stop all workers
-void sc_worker_pool_stop(worker_pool_t *pool) {
+void sc_worker_pool_stop(sc_worker_pool_t *pool) {
   assert(pool != NULL);
 
   pool->shutdown_flag = true;
@@ -81,7 +81,7 @@ void sc_worker_pool_stop(worker_pool_t *pool) {
 
 // Worker thread function
 void *sc_worker_thread(void *arg) {
-  worker_context_t *ctx = (worker_context_t *) arg;
+  sc_worker_context_t *ctx = (sc_worker_context_t *) arg;
   log_info("Worker %d started", ctx->id);
 
   while (!*ctx->shutdown_flag) {

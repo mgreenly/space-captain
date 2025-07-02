@@ -13,21 +13,21 @@ typedef struct {
   pthread_t thread;
   queue_t *msg_queue;
   volatile bool *shutdown_flag;
-} worker_context_t;
+} sc_worker_context_t;
 
 // Worker pool structure
 typedef struct {
-  worker_context_t *workers;
+  sc_worker_context_t *workers;
   int32_t pool_size;
   queue_t *msg_queue;
   volatile bool shutdown_flag;
-} worker_pool_t;
+} sc_worker_pool_t;
 
 // Worker pool functions
-worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue);
-void sc_worker_pool_destroy(worker_pool_t *pool);
-void sc_worker_pool_start(worker_pool_t *pool);
-void sc_worker_pool_stop(worker_pool_t *pool);
+sc_worker_pool_t *sc_worker_pool_create(int32_t pool_size, queue_t *msg_queue);
+void sc_worker_pool_destroy(sc_worker_pool_t *pool);
+void sc_worker_pool_start(sc_worker_pool_t *pool);
+void sc_worker_pool_stop(sc_worker_pool_t *pool);
 
 // Worker thread function
 void *sc_worker_thread(void *arg);
