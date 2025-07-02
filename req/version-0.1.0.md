@@ -35,9 +35,9 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 
 ### Movement System
 - Speeds measured in meters per second (m/s)
-- Speed dial: 1-100 (logarithmic scale)
+- Speed dial: 1-1000 (logarithmic scale)
   - Speed 1: 500 m/s (minimum)
-  - Speed 100: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
+  - Speed 1000: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
 - See docs/speed-table.md for complete speed reference
 
 ### Spawning
