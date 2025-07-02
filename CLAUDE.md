@@ -56,7 +56,7 @@ The project uses a **unified build structure** where source files are included d
 ### File Organization
 - **Headers**: message.h, queue.h, state.h, game.h, network.h, config.h, log.h
 - **Sources**: server.c, client.c, worker.c, queue.c
-- **Tests**: Unity framework in tst/*_tests.c
+- **Tests**: Unity framework in tests/*_tests.c
 - **Data**: State files in data/ directory
 
 ### Key Components

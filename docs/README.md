@@ -16,6 +16,10 @@ This directory contains documentation and detailed explanations about various as
 ### Development Guidelines
 - [Code Style Guidelines](code-style.md) - Coding standards and naming conventions
 
+### Game Design
+- [Coordinate System Precision](coordinate-precision.md) - Analysis of double-precision coordinates for the game world
+- [Speed Table](speed-table.md) - Logarithmic speed scale reference and implementation
+
 ## Contributing
 
 When adding new documentation:

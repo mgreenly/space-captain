@@ -1406,7 +1406,7 @@ void tearDown(void) {
 }
 
 int main(void) {
-  UnityBegin("tst/queue_tests.c");
+  UnityBegin("tests/queue_tests.c");
   RUN_TEST(test_queue_add_and_pop_message);
   RUN_TEST(test_queue_pop_blocks_until_push);
   RUN_TEST(test_queue_add_blocks_on_full_queue);

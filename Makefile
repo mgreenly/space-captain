@@ -23,7 +23,7 @@ PREFIX ?= $(HOME)/.local
 
 # Directory structure
 SRC_DIR = src
-TST_DIR = tst
+TST_DIR = tests
 OBJ_DIR = obj
 BIN_DIR = bin
 DAT_DIR = data
