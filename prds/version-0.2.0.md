@@ -186,6 +186,29 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 6. **Token Security**: Tokens could be compromised if not properly secured
    - Mitigation: Use OS credential managers, implement token rotation
 
+## Development Schedule
+
+### Q4 2025 Weekly Milestones
+
+#### October 2025
+- **October 5**: TBD
+- **October 12**: TBD
+- **October 19**: TBD
+- **October 26**: TBD
+
+#### November 2025
+- **November 2**: TBD
+- **November 9**: TBD
+- **November 16**: TBD
+- **November 23**: TBD
+- **November 30**: TBD
+
+#### December 2025
+- **December 7**: TBD
+- **December 14**: TBD
+- **December 21**: TBD
+- **December 28**: TBD
+
 ## Future Considerations
 
 This release establishes the security and portability foundation necessary for the graphical clients planned in versions 0.3.0+ and the eventual move to production deployment.

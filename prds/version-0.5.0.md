@@ -104,6 +104,29 @@ Version 0.5.0 completes the cross-platform graphical client trilogy by adding Wi
 3. **DirectX Version Compatibility**: Balancing features vs compatibility
    - Mitigation: DirectX 11 minimum ensures broad hardware support
 
+## Development Schedule
+
+### Q3 2026 Weekly Milestones
+
+#### July 2026
+- **July 5**: TBD
+- **July 12**: TBD
+- **July 19**: TBD
+- **July 26**: TBD
+
+#### August 2026
+- **August 2**: TBD
+- **August 9**: TBD
+- **August 16**: TBD
+- **August 23**: TBD
+- **August 30**: TBD
+
+#### September 2026
+- **September 6**: TBD
+- **September 13**: TBD
+- **September 20**: TBD
+- **September 27**: TBD
+
 ## Future Considerations
 
 With all major platforms supported, focus can shift to gameplay features in 0.6.0.

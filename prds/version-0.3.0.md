@@ -113,6 +113,29 @@ Version 0.3.0 focuses exclusively on creating a graphical client for Linux syste
 2. **Performance on Low-End Hardware**: TODO - Define minimum specs
 3. **UI/UX Design Complexity**: TODO - Create mockups early
 
+## Development Schedule
+
+### Q1 2026 Weekly Milestones
+
+#### January 2026
+- **January 4**: TBD
+- **January 11**: TBD
+- **January 18**: TBD
+- **January 25**: TBD
+
+#### February 2026
+- **February 1**: TBD
+- **February 8**: TBD
+- **February 15**: TBD
+- **February 22**: TBD
+
+#### March 2026
+- **March 1**: TBD
+- **March 8**: TBD
+- **March 15**: TBD
+- **March 22**: TBD
+- **March 29**: TBD
+
 ## Future Considerations
 
 This release establishes the foundation for graphical clients on other platforms (MacOS in 0.4.0, Windows in 0.5.0).

@@ -112,6 +112,29 @@ Version 0.6.0 marks a fundamental shift from a session-based space combat simula
 3. **Economic Balance**: TODO
 4. **Player Progression Pacing**: TODO
 
+## Development Schedule
+
+### Q4 2026 Weekly Milestones
+
+#### October 2026
+- **October 4**: TBD
+- **October 11**: TBD
+- **October 18**: TBD
+- **October 25**: TBD
+
+#### November 2026
+- **November 1**: TBD
+- **November 8**: TBD
+- **November 15**: TBD
+- **November 22**: TBD
+- **November 29**: TBD
+
+#### December 2026
+- **December 6**: TBD
+- **December 13**: TBD
+- **December 20**: TBD
+- **December 27**: TBD
+
 ## Future Considerations
 
 This release establishes the foundation for expanding MMO features in subsequent versions.

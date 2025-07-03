@@ -27,6 +27,30 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 - Structured log levels (ERROR, WARN, INFO, DEBUG)
 - Log rotation and file management
 
+### Global Game State
+- Centralized state containing all shared game data
+- Per-ship state includes:
+  - X, Y coordinates (double precision)
+  - Heading (direction)
+  - Power dial settings:
+    - Drive power (0-100)
+    - Weapons power (0-100)
+    - Shields power (0-100)
+    - Cloak power (0-100)
+- Thread-safe access for concurrent operations
+
+### Game Loop Architecture
+- Dedicated game thread running at 4 Hz (250ms tick rate)
+- Message processing:
+  - Client messages queued on shared MPMC queue
+  - Game loop processes all queued messages each tick
+  - Server responds immediately with ACK on message receipt
+  - Actual game state changes processed during next tick
+- State updates:
+  - Game loop resolves all actions and physics
+  - Broadcasts state updates to all clients every 250ms
+  - Updates contain only information visible to each client
+
 ### Game World
 - 2D space representing a solar system
 - Coordinate system using double precision (10¹⁵ meter radius)
@@ -73,7 +97,7 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 ### Server Requirements
 - Platform: x86_64 and AArch64 Linux
 - Handle 5,000 concurrent client connections
-- Maintain 60 tick/second update rate
+- Maintain 4 tick/second update rate (250ms game loop)
 - Single server architecture (no distribution)
 
 ### Client Requirements
@@ -96,7 +120,7 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 
 ### Performance Testing
 - 5,000 concurrent connections
-- 60 Hz tick rate maintenance
+- 4 Hz tick rate maintenance (250ms game loop)
 - Client-server latency under 50ms on LAN
 
 ### Thread Safety
@@ -118,7 +142,7 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 
 ## Success Criteria
 
-1. Server maintains 60 tick/second with 5,000 clients
+1. Server maintains 4 tick/second (250ms) with 5,000 clients
 2. Client-server latency under 50ms on LAN
 3. Zero memory leaks over 24-hour test
 4. All functional tests pass consistently

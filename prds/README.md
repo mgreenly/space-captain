@@ -77,7 +77,7 @@ Each PRD should contain the following sections in order:
 7. **Migration Path** - Compatibility considerations and documentation needs
 8. **Success Criteria** - Measurable goals to determine release success
 9. **Risks and Mitigation** - Known challenges and mitigation strategies
-10. **Development Schedule** - Weekly milestones for tracking progress (if applicable)
+10. **Development Schedule** - Weekly milestones for tracking progress (required - Sunday milestones for the target quarter)
 11. **Future Considerations** - Non-goals and preparation for subsequent releases
 
 This structure ensures consistency across versions and comprehensive coverage of all aspects needed for successful release planning.

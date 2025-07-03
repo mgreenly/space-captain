@@ -99,6 +99,29 @@ Version 0.4.0 extends the graphical client to MacOS, providing native support fo
 2. **App Store Requirements**: TODO
 3. **Cross-Platform Code Maintenance**: TODO
 
+## Development Schedule
+
+### Q2 2026 Weekly Milestones
+
+#### April 2026
+- **April 5**: TBD
+- **April 12**: TBD
+- **April 19**: TBD
+- **April 26**: TBD
+
+#### May 2026
+- **May 3**: TBD
+- **May 10**: TBD
+- **May 17**: TBD
+- **May 24**: TBD
+- **May 31**: TBD
+
+#### June 2026
+- **June 7**: TBD
+- **June 14**: TBD
+- **June 21**: TBD
+- **June 28**: TBD
+
 ## Future Considerations
 
 This release prepares for Windows support in 0.5.0 by establishing cross-platform architecture.
