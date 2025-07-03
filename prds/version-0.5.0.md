@@ -1,4 +1,4 @@
-# Version 0.5.0 Requirements - Windows Graphical Client
+# Version 0.5.0 PRD - Windows Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q3 (July - September 2026)

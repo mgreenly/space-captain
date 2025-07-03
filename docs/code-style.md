@@ -1,6 +1,6 @@
 # Code Style Guidelines
 
-This document outlines the code style requirements for the Space Captain project.
+This document outlines the code style guidelines for the Space Captain project.
 
 ## General Style Requirements
 

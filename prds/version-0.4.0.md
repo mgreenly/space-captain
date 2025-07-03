@@ -1,4 +1,4 @@
-# Version 0.4.0 Requirements - MacOS Graphical Client
+# Version 0.4.0 PRD - MacOS Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q2 (April - June 2026)

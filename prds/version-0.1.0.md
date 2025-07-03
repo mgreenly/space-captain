@@ -1,4 +1,4 @@
-# Version 0.1.0 Requirements - Technical Demo
+# Version 0.1.0 PRD - Technical Demo
 
 **Status**: Active Development
 **Target Release**: 2025 Q3 (July - September 2025)

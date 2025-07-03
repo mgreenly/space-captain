@@ -1,4 +1,4 @@
-# Version 0.3.0 Requirements - Linux Graphical Client
+# Version 0.3.0 PRD - Linux Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q1 (January - March 2026)

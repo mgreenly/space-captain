@@ -1,4 +1,4 @@
-# Version 0.6.0 Requirements - Persistent World Foundation
+# Version 0.6.0 PRD - Persistent World Foundation
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q4 (October - December 2026)

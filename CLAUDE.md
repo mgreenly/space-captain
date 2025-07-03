@@ -70,7 +70,7 @@ The project uses a **unified build structure** where source files are included d
 ## Development Workflow
 
 ### Before Making Changes
-1. Check requirements in `requirements/` folder
+1. Check requirements in `prds/` folder
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 

@@ -1,10 +1,10 @@
-# Space Captain Requirements
+# Space Captain Product Requirements Documents
 
-This directory contains the requirements documents for each version of Space Captain. The project follows a quarterly release cycle with one minor version per quarter.
+This directory contains the Product Requirements Documents (PRDs) for each version of Space Captain. The project follows a quarterly release cycle with one minor version per quarter.
 
 ## Important Notice
 
-**All future release requirements (0.2.0 and beyond) are pure speculation based on current planning and are likely to change significantly as development progresses.**
+**All future release PRDs (0.2.0 and beyond) are pure speculation based on current planning and are likely to change significantly as development progresses.**
 
 ## Development Plan
 
@@ -34,13 +34,13 @@ This directory contains the requirements documents for each version of Space Cap
 
 ## Version Planning Guidelines
 
-When creating requirements for a new version:
+When creating PRDs for a new version:
 
 1. **Scope**: Each minor version should contain 3 months of development work
 2. **Focus**: Maintain a clear theme or focus area for each release
 3. **Dependencies**: Build upon previous versions incrementally
 4. **Testing**: Include specific success criteria and performance targets
-5. **Documentation**: Update this README when adding new version requirements
+5. **Documentation**: Update this README when adding new version PRDs
 
 ## Version 1.0 Target
 
@@ -52,7 +52,7 @@ The 1.0 release target has not been set yet. The 1.0 release will represent a fe
 
 ## Naming Convention
 
-Requirements files should be named using the following pattern:
+PRD files should be named using the following pattern:
 ```
 version-X.Y.Z.md
 ```
@@ -60,11 +60,11 @@ version-X.Y.Z.md
 Where:
 - `X` = Major version (breaking changes)
 - `Y` = Minor version (new features, quarterly releases)
-- `Z` = Patch version (bug fixes, typically 0 for requirements docs)
+- `Z` = Patch version (bug fixes, typically 0 for PRD docs)
 
-## Requirements Document Structure
+## PRD Document Structure
 
-Each requirements document should contain the following sections in order:
+Each PRD should contain the following sections in order:
 
 1. **Title and Header** - Version number, name, status, target release, and theme
 2. **Overview** - High-level description of what the release accomplishes

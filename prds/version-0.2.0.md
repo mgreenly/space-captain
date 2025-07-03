@@ -1,4 +1,4 @@
-# Version 0.2.0 Requirements - TLS Security and Cross-Platform Support
+# Version 0.2.0 PRD - TLS Security and Cross-Platform Support
 
 **Status**: PLANNED
 **Target Release**: 2025 Q4 (October - December 2025)
