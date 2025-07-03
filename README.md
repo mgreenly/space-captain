@@ -3,8 +3,7 @@
 Space Captain
 =============
 
-What is this?  It's toy MMO and learning exercise centered around building a game that can best be described as a blend
-of Eve Online and Dwarf Fortress with a sprinkling of Factorio presented.
+Space Captain is a client-server MMO project built in C as a technical exploration of Linux network programming and systems optimization. Following a structured quarterly release cycle, the project evolves from a foundational technical demo (v0.1.0) featuring CLI-based space combat with 5,000 concurrent connections, through platform-specific graphical clients (v0.2.0-0.4.0), to a persistent world with crew progression, economy, and manufacturing systems (v0.5.0+). This methodical approach prioritizes robust infrastructure and incremental feature development, ultimately targeting a game that blends elements of Eve Online, Dwarf Fortress, and Factorio.
 
 You can follow along at https://www.youtube.com/@LinuxProgrammingandStuff
 
