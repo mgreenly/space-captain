@@ -18,6 +18,7 @@ This directory contains the Product Requirements Documents (PRDs) for each versi
 ### Planned Releases (Speculative)
 - [Version 0.2.0](version-0.2.0.md) - **2025 Q4** (October - December 2025)
   - TLS security implementation
+  - OIDC authentication with Google and Apple
   - Cross-platform build system
   - CLI client support for Linux, macOS, and Windows
 - [Version 0.3.0](version-0.3.0.md) - **2026 Q1** (January - March 2026)
