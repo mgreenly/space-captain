@@ -22,21 +22,31 @@ The project follows a quarterly release cycle:
 - **Q3**: July - September
 - **Q4**: October - December
 
+## Important Notice
+
+**All future release requirements (0.2.0 and beyond) are pure speculation based on current planning and are likely to change significantly as development progresses.**
+
 ## Version History
 
 ### Active Development
 - [Version 0.1.0](version-0.1.0.md) - **2025 Q3** (July - September 2025)
+  - Technical Demo
   - Core infrastructure and networking
-  - Basic 2D space combat mechanics
-  - Server-authoritative state management
+  - CLI/ncurses client with space combat
+  - Captain command REPL interface
 
-### Planned Releases
-- Version 0.2.0 - **2025 Q4** (October - December 2025)
-  - *Requirements to be defined*
-- Version 0.3.0 - **2026 Q1** (January - March 2026)
-  - *Requirements to be defined*
-- Version 0.4.0 - **2026 Q2** (April - June 2026)
-  - *Requirements to be defined*
+### Planned Releases (Speculative)
+- [Version 0.2.0](version-0.2.0.md) - **2025 Q4** (October - December 2025)
+  - Linux graphical client
+  - Feature parity with CLI version
+- [Version 0.3.0](version-0.3.0.md) - **2026 Q1** (January - March 2026)
+  - MacOS graphical client
+- [Version 0.4.0](version-0.4.0.md) - **2026 Q2** (April - June 2026)
+  - Windows graphical client
+- [Version 0.5.0](version-0.5.0.md) - **2026 Q3** (July - September 2026)
+  - Persistent world foundations
+  - Crew progression, economy, tech progression
+  - Resource gathering and manufacturing
 
 ## Version Planning Guidelines
 
