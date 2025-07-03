@@ -287,7 +287,7 @@ static int read_tls_message(int client_fd, client_buffer_t *buf, message_t **msg
 
 ### 4. Client-Side Integration
 
-#### Client TLS Initialization
+#### Client TLS Initialization with Certificate Pinning
 ```c
 typedef struct {
     SSL_CTX *ctx;
@@ -315,15 +315,18 @@ static client_tls_t *init_client_tls(void) {
     // Set minimum TLS version
     SSL_CTX_set_min_proto_version(tls->ctx, TLS1_2_VERSION);
     
-    // For self-signed certificates - load CA cert
-    if (SSL_CTX_load_verify_locations(tls->ctx, TLS_CA_PATH, NULL) != 1) {
-        log_warn("Failed to load CA certificate, continuing without verification");
-        // For development, allow unverified certificates
-        SSL_CTX_set_verify(tls->ctx, SSL_VERIFY_NONE, NULL);
-    } else {
-        // Verify server certificate
-        SSL_CTX_set_verify(tls->ctx, SSL_VERIFY_PEER, NULL);
+    // Certificate pinning - load pinned certificate
+    if (SSL_CTX_load_verify_locations(tls->ctx, TLS_PINNED_CERT_PATH, NULL) != 1) {
+        log_error("Failed to load pinned certificate: %s", 
+                  ERR_error_string(ERR_get_error(), NULL));
+        SSL_CTX_free(tls->ctx);
+        free(tls);
+        return NULL;
     }
+    
+    // Always verify against pinned certificate
+    SSL_CTX_set_verify(tls->ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+    SSL_CTX_set_verify_depth(tls->ctx, 1);
     
     return tls;
 }
@@ -356,13 +359,20 @@ static int connect_to_server_tls(client_tls_t *tls) {
         return -1;
     }
     
-    // Verify certificate (optional for self-signed)
+    // Verify pinned certificate matches
     X509 *cert = SSL_get_peer_certificate(tls->ssl);
-    if (cert) {
-        log_info("Server certificate: %s", 
-                 X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0));
-        X509_free(cert);
+    if (!cert) {
+        log_error("No server certificate received");
+        SSL_free(tls->ssl);
+        close(tls->fd);
+        return -1;
     }
+    
+    // Certificate is already verified against pinned cert by OpenSSL
+    // Additional fingerprint checking can be done here if needed
+    log_info("Connected with pinned certificate: %s", 
+             X509_NAME_oneline(X509_get_subject_name(cert), NULL, 0));
+    X509_free(cert);
     
     return tls->fd;
 }
@@ -406,7 +416,7 @@ Add to `config.h`:
 #define TLS_ENABLED 1
 #define TLS_CERT_PATH "certs/server.crt"
 #define TLS_KEY_PATH "certs/server.key"
-#define TLS_CA_PATH "certs/ca.crt"
+#define TLS_PINNED_CERT_PATH "certs/pinned_cert.crt"
 #define TLS_SESSION_TIMEOUT 300
 #define TLS_SESSION_CACHE_SIZE 1024
 #define TLS_HANDSHAKE_TIMEOUT_MS 5000
@@ -738,27 +748,28 @@ openssl s_time -connect localhost:4242 -new -time 10
 openssl s_client -connect localhost:4242 -cipher 'ECDHE-RSA-AES256-GCM-SHA384'
 ```
 
-### 12. Security Considerations
+### 12. Security Considerations with Certificate Pinning
 
-#### Certificate Validation
+#### Certificate Validation with Pinning
 ```c
 static int verify_callback(int preverify_ok, X509_STORE_CTX *ctx) {
+    // With pinning, we only accept the exact certificate we trust
     if (!preverify_ok) {
-        // For self-signed certificates in development
         int err = X509_STORE_CTX_get_error(ctx);
-        if (err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN ||
-            err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT) {
-            // Accept self-signed certificates
-            return 1;
-        }
+        log_error("Certificate verification failed: %s", 
+                  X509_verify_cert_error_string(err));
+        return 0; // Reject all verification failures
     }
-    return preverify_ok;
+    
+    // Additional checks can be performed here
+    return 1;
 }
 
-SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, verify_callback);
+SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, 
+                   verify_callback);
 ```
 
-#### Certificate Pinning
+#### Enhanced Certificate Pinning
 ```c
 static int pin_certificate(SSL *ssl, const char *expected_fingerprint) {
     X509 *cert = SSL_get_peer_certificate(ssl);
@@ -781,9 +792,50 @@ static int pin_certificate(SSL *ssl, const char *expected_fingerprint) {
     int match = strcmp(fingerprint, expected_fingerprint) == 0;
     X509_free(cert);
     
+    if (!match) {
+        log_error("Certificate fingerprint mismatch");
+    }
+    
     return match;
 }
+
+// Pin public key instead of certificate (more flexible)
+static int pin_public_key(SSL *ssl, const unsigned char *expected_pubkey_hash) {
+    X509 *cert = SSL_get_peer_certificate(ssl);
+    if (!cert) return 0;
+    
+    EVP_PKEY *pkey = X509_get_pubkey(cert);
+    if (!pkey) {
+        X509_free(cert);
+        return 0;
+    }
+    
+    // Hash the public key and compare
+    // Implementation details omitted for brevity
+    
+    EVP_PKEY_free(pkey);
+    X509_free(cert);
+    return 1;
+}
 ```
+
+#### Certificate Pinning Strategies
+
+1. **Pin the Certificate**
+   - Simple but requires update when certificate changes
+   - Good for controlled environments
+
+2. **Pin the Public Key**
+   - Allows certificate renewal without client updates
+   - Same key can be used with new certificates
+
+3. **Pin Certificate Chain**
+   - Pin intermediate or root CA
+   - More flexible but less secure
+
+4. **Backup Pins**
+   - Include multiple pins (current + backup)
+   - Enables certificate rotation without service disruption
 
 ### 13. Implementation Phases
 

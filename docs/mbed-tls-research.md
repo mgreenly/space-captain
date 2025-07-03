@@ -101,7 +101,7 @@ typedef struct client_buffer {
 
 ### 4. Client-Side Integration
 
-#### TLS Initialization
+#### TLS Initialization with Certificate Pinning
 ```c
 static int init_tls_client(tls_context_t *tls) {
     mbedtls_ssl_init(&tls->ssl);
@@ -120,9 +120,15 @@ static int init_tls_client(tls_context_t *tls) {
                                 MBEDTLS_SSL_TRANSPORT_STREAM,
                                 MBEDTLS_SSL_PRESET_DEFAULT);
     
-    // For self-signed certificates
-    mbedtls_ssl_conf_authmode(&tls->conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+    // Certificate pinning - verify against known certificate
+    mbedtls_ssl_conf_authmode(&tls->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
     
+    // Load the pinned server certificate
+    if (mbedtls_x509_crt_parse_file(&tls->cert, TLS_PINNED_CERT_PATH) != 0) {
+        return -1;
+    }
+    
+    mbedtls_ssl_conf_ca_chain(&tls->conf, &tls->cert, NULL);
     mbedtls_ssl_conf_rng(&tls->conf, mbedtls_ctr_drbg_random, &tls->ctr_drbg);
     
     return 0;
@@ -150,6 +156,9 @@ static int connect_to_server_tls(tls_context_t *tls) {
         }
     }
     
+    // Verify certificate after handshake (already done by VERIFY_REQUIRED)
+    // Additional verification can be done here if needed
+    
     return sock;
 }
 ```
@@ -174,23 +183,36 @@ For the server's epoll-based architecture:
    }
    ```
 
-### 6. Certificate Management
+### 6. Certificate Management with Pinning
 
-#### Development Setup
+#### Certificate Pinning Setup
 1. Generate one self-signed certificate for the server
-2. Distribute certificate to clients for pinning
+2. Pin the certificate in client builds
 3. Store in `certs/` directory:
    ```
    certs/
-   ├── server.crt
-   ├── server.key
-   └── ca.crt (copy of server.crt for client trust)
+   ├── server.crt          # Server certificate
+   ├── server.key          # Server private key (server only)
+   └── pinned_cert.crt     # Copy distributed with clients
    ```
 
+#### Certificate Pinning Implementation
+```c
+// Verify pinned certificate matches
+static int verify_pinned_cert(mbedtls_ssl_context *ssl) {
+    const mbedtls_x509_crt *peer_cert = mbedtls_ssl_get_peer_cert(ssl);
+    if (!peer_cert) return -1;
+    
+    // Compare with pinned certificate
+    // In production, compare fingerprints or public keys
+    return 0;
+}
+```
+
 #### Production Considerations
-- Implement certificate rotation mechanism
-- Consider certificate pinning for additional security
-- Add certificate validation callbacks for custom checks
+- Certificate rotation requires client updates
+- Store certificate fingerprint/hash for efficient comparison
+- Plan for emergency certificate replacement procedures
 
 ### 7. Configuration Updates
 
@@ -200,8 +222,9 @@ Add to `config.h`:
 #define TLS_ENABLED 1
 #define TLS_CERT_PATH "certs/server.crt"
 #define TLS_KEY_PATH "certs/server.key"
-#define TLS_CA_PATH "certs/ca.crt"
+#define TLS_PINNED_CERT_PATH "certs/pinned_cert.crt"
 #define TLS_HANDSHAKE_TIMEOUT_MS 5000
+#define TLS_VERIFY_MODE MBEDTLS_SSL_VERIFY_REQUIRED
 ```
 
 ### 8. Build System Integration
@@ -366,20 +389,26 @@ endif()
    - Compare throughput with/without TLS
    - Monitor CPU usage increase
 
-### 12. Security Considerations
+### 12. Security Considerations with Certificate Pinning
 
-1. **Self-Signed Certificate Risks**
-   - No chain of trust
-   - Vulnerable to MITM on first connection
-   - Requires secure certificate distribution
+1. **Certificate Pinning Benefits**
+   - Prevents MITM attacks even with compromised CAs
+   - No reliance on external trust chains
+   - Simplified trust model for closed systems
 
-2. **Mitigations**
-   - Implement certificate pinning
+2. **Certificate Pinning Risks**
+   - Certificate updates require client updates
+   - No automatic certificate renewal
+   - Risk of lockout if certificate expires
+
+3. **Mitigation Strategies**
+   - Pin multiple certificates (current + next)
+   - Implement certificate version checking
+   - Plan update mechanism for certificate rotation
+   - Consider backup certificate pins
+
+4. **Configuration Hardening**
    - Use strong key sizes (4096-bit RSA or P-256 ECC)
-   - Regular certificate rotation
-   - Consider TOFU (Trust On First Use) model
-
-3. **Configuration Hardening**
    - Disable weak cipher suites
    - Enforce minimum TLS version (1.2+)
    - Enable session resumption for performance
