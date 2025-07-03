@@ -1,104 +1,118 @@
-# Version 0.3.0 Requirements - MacOS Graphical Client
+# Version 0.3.0 Requirements - Linux Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q1 (January - March 2026)
-**Theme**: MacOS Platform Support
+**Theme**: Graphical User Interface for Linux
 
 ## Overview
 
-Version 0.3.0 extends the graphical client to MacOS, providing native support for Apple silicon and Intel-based Macs. This release maintains feature parity with the Linux graphical client from version 0.2.0.
+Version 0.3.0 focuses exclusively on creating a graphical client for Linux systems. This release will not introduce any new gameplay features but will provide a visual interface that maintains feature parity with the 0.1.0 CLI/ncurses client.
 
 ## Goals
 
-1. Native MacOS graphical client
-2. Feature parity with Linux graphical client
-3. MacOS-specific optimizations and integrations
-4. Maintain consistent user experience across platforms
+1. Create a native Linux graphical client
+2. Maintain feature parity with the CLI version
+3. Provide an intuitive visual interface for space combat
+4. Preserve the captain command REPL experience
 
 ## Features
 
-### MacOS Client
-- [ ] MacOS application bundle
-- [ ] Metal graphics API integration
-- [ ] Native MacOS window management
-- [ ] Retina display support
-- [ ] Apple Silicon optimization via Metal Performance Shaders
+### Graphical Client Foundation
+- [ ] Vulkan graphics API integration for Linux
+- [ ] Window management and display initialization
+- [ ] Event handling system for user input
+- [ ] Rendering pipeline for 2D space visualization
 
-### Platform Integration
-- [ ] MacOS menu bar integration
-- [ ] Dock support
-- [ ] TODO: MacOS-specific features (notifications, etc.)
+### Visual Components
+- [ ] Space view showing ship positions and movements
+- [ ] Contact list display panel
+- [ ] Target information panel
+- [ ] Power distribution visualization (shields, drives, cloaks)
+- [ ] Command REPL interface with history
 
-### Cross-Platform Considerations
-- [ ] Shared codebase with Linux client (except rendering)
-- [ ] Abstract rendering interface for Vulkan/Metal
-- [ ] Platform-specific shader compilation
-- [ ] Unified asset pipeline across platforms
+### User Interface
+- [ ] Main game window layout
+- [ ] HUD elements for critical information
+- [ ] Visual feedback for commands
+- [ ] TODO: Specific UI mockups and design specifications
+
+### Client Architecture
+- [ ] Separation of rendering from game logic
+- [ ] Integration with existing network protocol
+- [ ] Performance optimization for smooth rendering
+- [ ] TODO: Target frame rate and performance metrics
 
 ### Packaging and Distribution
-- [ ] MacOS .app bundle creation
-- [ ] Code signing with Apple Developer certificate
-- [ ] Notarization for Gatekeeper approval
-- [ ] Homebrew cask formula for distribution
-- [ ] Automated Homebrew tap maintenance
-- [ ] Distribution exclusively through Homebrew
+- [ ] Source tarball with Makefile
+- [ ] Comprehensive build from source documentation
+- [ ] Dependency installation scripts for major distributions
+- [ ] Automated testing of source builds
+- [ ] Distribution exclusively through source code
 
 ## Technical Requirements
 
 ### Platform Support
-- MacOS 11.0 (Big Sur) or later
-- Intel and Apple Silicon architectures
-- TODO: Specific hardware requirements
+- Linux x86_64
+- Distribution method:
+  - Build from source with Makefile only
+  - Compatible with any Linux distribution
+  - No pre-built packages provided
+- TODO: Minimum system requirements
 
 ### Dependencies
-- MacOS SDK with Metal framework
-- Xcode for Metal shader compilation
-- Code signing certificate for distribution
-- Homebrew for package distribution
+- Vulkan SDK for Linux
+- Vulkan-compatible GPU drivers
+- Window system integration (X11/Wayland)
+- TODO: UI framework requirements
+- TODO: Build system updates
 
 ### Performance Targets
-- TODO: Performance parity with Linux client
-- TODO: Battery life considerations
-- TODO: Memory usage on MacOS
+- TODO: Target FPS
+- TODO: Memory usage limits
+- TODO: Network bandwidth constraints
 
 ## Testing Requirements
 
-### Platform Testing
-- [ ] Intel Mac compatibility
-- [ ] Apple Silicon compatibility
-- [ ] Multiple MacOS versions
-- [ ] TODO: Automated testing on MacOS
+### Functional Testing
+- [ ] All CLI features accessible via GUI
+- [ ] Command REPL functionality preserved
+- [ ] Network communication compatibility
+- [ ] TODO: Automated GUI testing approach
 
-### Integration Testing
-- [ ] Cross-platform server compatibility
-- [ ] Feature parity verification
-- [ ] TODO: MacOS-specific test cases
+### Performance Testing
+- [ ] Rendering performance benchmarks
+- [ ] Memory usage profiling
+- [ ] Network latency impact
+- [ ] TODO: Specific performance test scenarios
 
 ## Migration Path
 
 ### Compatibility
-- Server remains unchanged from 0.2.0
+- Server remains unchanged from 0.1.0
 - Network protocol compatibility maintained
-- Linux client continues to function
+- CLI client continues to function
 
 ### Documentation
-- [ ] MacOS client installation guide
-- [ ] Platform-specific troubleshooting
-- [ ] TODO: Cross-platform user guide
+- [ ] GUI client user guide
+- [ ] Detailed build from source instructions
+- [ ] Makefile usage and configuration options
+- [ ] Distribution-specific dependency installation guides
+- [ ] Troubleshooting guide for common build issues
+- [ ] TODO: Video tutorials or screenshots
 
 ## Success Criteria
 
-1. MacOS users can play with same features as Linux users
-2. Native MacOS look and feel
-3. TODO: App Store approval (if applicable)
-4. TODO: Performance benchmarks
+1. Linux users can connect to servers using the graphical client
+2. All features from the CLI version are accessible
+3. Performance meets minimum requirements
+4. TODO: User acceptance testing criteria
 
 ## Risks and Mitigation
 
-1. **MacOS Development Environment**: TODO
-2. **App Store Requirements**: TODO
-3. **Cross-Platform Code Maintenance**: TODO
+1. **Graphics Framework Selection**: TODO - Evaluate options
+2. **Performance on Low-End Hardware**: TODO - Define minimum specs
+3. **UI/UX Design Complexity**: TODO - Create mockups early
 
 ## Future Considerations
 
-This release prepares for Windows support in 0.4.0 by establishing cross-platform architecture.
+This release establishes the foundation for graphical clients on other platforms (MacOS in 0.4.0, Windows in 0.5.0).

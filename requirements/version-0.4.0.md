@@ -1,109 +1,104 @@
-# Version 0.4.0 Requirements - Windows Graphical Client
+# Version 0.4.0 Requirements - MacOS Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q2 (April - June 2026)
-**Theme**: Windows Platform Support
+**Theme**: MacOS Platform Support
 
 ## Overview
 
-Version 0.4.0 completes the cross-platform graphical client trilogy by adding Windows support. This release provides a native Windows experience while maintaining feature parity with Linux and MacOS clients.
+Version 0.4.0 extends the graphical client to MacOS, providing native support for Apple silicon and Intel-based Macs. This release maintains feature parity with the Linux graphical client from version 0.3.0.
 
 ## Goals
 
-1. Native Windows graphical client
-2. Feature parity with Linux and MacOS clients
-3. Windows-specific optimizations
-4. Complete cross-platform support
+1. Native MacOS graphical client
+2. Feature parity with Linux graphical client
+3. MacOS-specific optimizations and integrations
+4. Maintain consistent user experience across platforms
 
 ## Features
 
-### Windows Client
-- [ ] Windows executable (.exe)
-- [ ] Windows installer (MSI or similar)
-- [ ] DirectX 11+ graphics API support
-- [ ] DirectX 11 baseline with DirectX 12 optimizations
-- [ ] Windows 10/11 specific features
+### MacOS Client
+- [ ] MacOS application bundle
+- [ ] Metal graphics API integration
+- [ ] Native MacOS window management
+- [ ] Retina display support
+- [ ] Apple Silicon optimization via Metal Performance Shaders
 
 ### Platform Integration
-- [ ] Windows taskbar integration
-- [ ] Native Windows controls where appropriate
-- [ ] TODO: Windows notification system
-- [ ] TODO: Xbox controller support
+- [ ] MacOS menu bar integration
+- [ ] Dock support
+- [ ] TODO: MacOS-specific features (notifications, etc.)
 
-### Cross-Platform Completion
-- [ ] Unified codebase with platform-specific rendering
-- [ ] Abstract rendering interface supporting Vulkan/Metal/DirectX
-- [ ] Consistent user experience across all platforms
-- [ ] Cross-platform build automation for all three targets
+### Cross-Platform Considerations
+- [ ] Shared codebase with Linux client (except rendering)
+- [ ] Abstract rendering interface for Vulkan/Metal
+- [ ] Platform-specific shader compilation
+- [ ] Unified asset pipeline across platforms
 
 ### Packaging and Distribution
-- [ ] MSI installer package creation
-- [ ] Code signing with certificate for security
-- [ ] WinGet manifest creation and submission
-- [ ] Automated WinGet package updates
-- [ ] Windows Defender SmartScreen approval process
-- [ ] Distribution exclusively through WinGet
+- [ ] MacOS .app bundle creation
+- [ ] Code signing with Apple Developer certificate
+- [ ] Notarization for Gatekeeper approval
+- [ ] Homebrew cask formula for distribution
+- [ ] Automated Homebrew tap maintenance
+- [ ] Distribution exclusively through Homebrew
 
 ## Technical Requirements
 
 ### Platform Support
-- Windows 10 version 1909 or later
-- Windows 11 support
-- TODO: 32-bit vs 64-bit considerations
+- MacOS 11.0 (Big Sur) or later
+- Intel and Apple Silicon architectures
+- TODO: Specific hardware requirements
 
 ### Dependencies
-- Visual Studio 2022 or later
-- Windows SDK with DirectX 11+ support
-- DirectX runtime redistribution
-- MSVC runtime libraries
+- MacOS SDK with Metal framework
+- Xcode for Metal shader compilation
+- Code signing certificate for distribution
+- Homebrew for package distribution
 
 ### Performance Targets
-- DirectX 11 baseline performance
-- DirectX 12 optimizations where available
-- TODO: Windows Defender compatibility
-- TODO: Anti-cheat considerations
+- TODO: Performance parity with Linux client
+- TODO: Battery life considerations
+- TODO: Memory usage on MacOS
 
 ## Testing Requirements
 
 ### Platform Testing
-- [ ] Windows 10 compatibility
-- [ ] Windows 11 compatibility
-- [ ] Various hardware configurations
-- [ ] TODO: Windows-specific edge cases
+- [ ] Intel Mac compatibility
+- [ ] Apple Silicon compatibility
+- [ ] Multiple MacOS versions
+- [ ] TODO: Automated testing on MacOS
 
-### Distribution Testing
-- [ ] MSI installer functionality verification
-- [ ] WinGet installation and update testing
-- [ ] Code signing validation
-- [ ] SmartScreen reputation testing
+### Integration Testing
+- [ ] Cross-platform server compatibility
+- [ ] Feature parity verification
+- [ ] TODO: MacOS-specific test cases
 
 ## Migration Path
 
 ### Compatibility
 - Server remains unchanged from 0.3.0
 - Network protocol compatibility maintained
-- Linux and MacOS clients continue to function
+- Linux client continues to function
 
 ### Documentation
-- [ ] Windows client installation guide
-- [ ] Windows-specific troubleshooting
-- [ ] TODO: Complete cross-platform guide
+- [ ] MacOS client installation guide
+- [ ] Platform-specific troubleshooting
+- [ ] TODO: Cross-platform user guide
 
 ## Success Criteria
 
-1. Windows users have full game access
-2. Performance comparable to other platforms
-3. TODO: Windows certification requirements
-4. TODO: User adoption metrics
+1. MacOS users can play with same features as Linux users
+2. Native MacOS look and feel
+3. TODO: App Store approval (if applicable)
+4. TODO: Performance benchmarks
 
 ## Risks and Mitigation
 
-1. **Windows Development Complexity**: Multiple DirectX versions
-   - Mitigation: Target DirectX 11 as baseline, add 12 features progressively
-2. **Anti-Virus False Positives**: TODO
-3. **DirectX Version Compatibility**: Balancing features vs compatibility
-   - Mitigation: DirectX 11 minimum ensures broad hardware support
+1. **MacOS Development Environment**: TODO
+2. **App Store Requirements**: TODO
+3. **Cross-Platform Code Maintenance**: TODO
 
 ## Future Considerations
 
-With all major platforms supported, focus can shift to gameplay features in 0.5.0.
+This release prepares for Windows support in 0.5.0 by establishing cross-platform architecture.

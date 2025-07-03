@@ -1,117 +1,109 @@
-# Version 0.5.0 Requirements - Persistent World Foundation
+# Version 0.5.0 Requirements - Windows Graphical Client
 
 **Status**: SPECULATIVE - Subject to change
 **Target Release**: 2026 Q3 (July - September 2026)
-**Theme**: Transition from Combat Sim to Persistent MMO
+**Theme**: Windows Platform Support
 
 ## Overview
 
-Version 0.5.0 marks a fundamental shift from a session-based space combat simulator to a persistent world MMO. This release introduces minimal viable versions of core MMO systems: crew progression, economy, technology progression, resource gathering, and manufacturing.
+Version 0.5.0 completes the cross-platform graphical client trilogy by adding Windows support. This release provides a native Windows experience while maintaining feature parity with Linux and MacOS clients.
 
 ## Goals
 
-1. Implement persistent player data
-2. Introduce progression systems
-3. Create basic economic gameplay loops
-4. Establish foundation for long-term player engagement
+1. Native Windows graphical client
+2. Feature parity with Linux and MacOS clients
+3. Windows-specific optimizations
+4. Complete cross-platform support
 
 ## Features
 
-### Persistence Layer
-- [ ] Player account system
-- [ ] Persistent ship state
-- [ ] Database integration
-- [ ] TODO: Save/load architecture
+### Windows Client
+- [ ] Windows executable (.exe)
+- [ ] Windows installer (MSI or similar)
+- [ ] DirectX 11+ graphics API support
+- [ ] DirectX 11 baseline with DirectX 12 optimizations
+- [ ] Windows 10/11 specific features
 
-### Crew Progression (Minimal)
-- [ ] Basic crew member attributes
-- [ ] Simple experience/skill system
-- [ ] Crew performance impacts
-- [ ] TODO: Progression mechanics
+### Platform Integration
+- [ ] Windows taskbar integration
+- [ ] Native Windows controls where appropriate
+- [ ] TODO: Windows notification system
+- [ ] TODO: Xbox controller support
 
-### Economy System (Minimal)
-- [ ] Basic currency (credits)
-- [ ] Simple trading between players
-- [ ] NPC vendors (basic)
-- [ ] TODO: Economic balance
+### Cross-Platform Completion
+- [ ] Unified codebase with platform-specific rendering
+- [ ] Abstract rendering interface supporting Vulkan/Metal/DirectX
+- [ ] Consistent user experience across all platforms
+- [ ] Cross-platform build automation for all three targets
 
-### Technology Progression (Minimal)
-- [ ] Basic tech tree
-- [ ] Simple upgrade paths
-- [ ] Research mechanics
-- [ ] TODO: Tech tree design
-
-### Resource Gathering (Minimal)
-- [ ] Scannable resource nodes
-- [ ] Basic mining/collection mechanics
-- [ ] Resource inventory system
-- [ ] TODO: Resource types and distribution
-
-### Manufacturing (Minimal)
-- [ ] Simple crafting recipes
-- [ ] Basic production queues
-- [ ] Component assembly
-- [ ] TODO: Manufacturing gameplay loop
+### Packaging and Distribution
+- [ ] MSI installer package creation
+- [ ] Code signing with certificate for security
+- [ ] WinGet manifest creation and submission
+- [ ] Automated WinGet package updates
+- [ ] Windows Defender SmartScreen approval process
+- [ ] Distribution exclusively through WinGet
 
 ## Technical Requirements
 
-### Server Architecture
-- [ ] Database integration
-- [ ] State persistence
-- [ ] Account management
-- [ ] TODO: Scalability planning
+### Platform Support
+- Windows 10 version 1909 or later
+- Windows 11 support
+- TODO: 32-bit vs 64-bit considerations
 
-### Client Updates
-- [ ] New UI panels for progression
-- [ ] Inventory management
-- [ ] Trading interface
-- [ ] TODO: UI/UX for new systems
+### Dependencies
+- Visual Studio 2022 or later
+- Windows SDK with DirectX 11+ support
+- DirectX runtime redistribution
+- MSVC runtime libraries
 
-### Data Management
-- [ ] Player data schema
-- [ ] Resource definitions
-- [ ] TODO: Data migration strategy
+### Performance Targets
+- DirectX 11 baseline performance
+- DirectX 12 optimizations where available
+- TODO: Windows Defender compatibility
+- TODO: Anti-cheat considerations
 
 ## Testing Requirements
 
-### System Testing
-- [ ] Persistence reliability
-- [ ] Progression balance
-- [ ] Economic simulation
-- [ ] TODO: Load testing with persistent data
+### Platform Testing
+- [ ] Windows 10 compatibility
+- [ ] Windows 11 compatibility
+- [ ] Various hardware configurations
+- [ ] TODO: Windows-specific edge cases
 
-### Gameplay Testing
-- [ ] Progression pacing
-- [ ] Economic balance
-- [ ] Resource distribution
-- [ ] TODO: Player retention metrics
+### Distribution Testing
+- [ ] MSI installer functionality verification
+- [ ] WinGet installation and update testing
+- [ ] Code signing validation
+- [ ] SmartScreen reputation testing
 
 ## Migration Path
 
 ### Compatibility
-- Existing clients can connect with limited features
-- Character/ship data migration from session-based to persistent
-- Backward compatibility for basic combat gameplay
+- Server remains unchanged from 0.4.0
+- Network protocol compatibility maintained
+- Linux and MacOS clients continue to function
 
 ### Documentation
-- [ ] Progression systems guide
-- [ ] Economy and trading tutorial
-- [ ] TODO: Complete gameplay documentation
+- [ ] Windows client installation guide
+- [ ] Windows-specific troubleshooting
+- [ ] TODO: Complete cross-platform guide
 
 ## Success Criteria
 
-1. Players can progress between sessions
-2. Basic economic gameplay loops function
-3. TODO: Retention metrics
-4. TODO: Performance with persistent data
+1. Windows users have full game access
+2. Performance comparable to other platforms
+3. TODO: Windows certification requirements
+4. TODO: User adoption metrics
 
 ## Risks and Mitigation
 
-1. **Scope Creep**: Keep features minimal
-2. **Database Performance**: TODO
-3. **Economic Balance**: TODO
-4. **Player Progression Pacing**: TODO
+1. **Windows Development Complexity**: Multiple DirectX versions
+   - Mitigation: Target DirectX 11 as baseline, add 12 features progressively
+2. **Anti-Virus False Positives**: TODO
+3. **DirectX Version Compatibility**: Balancing features vs compatibility
+   - Mitigation: DirectX 11 minimum ensures broad hardware support
 
 ## Future Considerations
 
-This release establishes the foundation for expanding MMO features in subsequent versions.
+With all major platforms supported, focus can shift to gameplay features in 0.6.0.

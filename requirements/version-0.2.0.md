@@ -1,118 +1,152 @@
-# Version 0.2.0 Requirements - Linux Graphical Client
+# Version 0.2.0 Requirements - TLS Security and Cross-Platform Support
 
-**Status**: SPECULATIVE - Subject to change
+**Status**: PLANNED
 **Target Release**: 2025 Q4 (October - December 2025)
-**Theme**: Graphical User Interface for Linux
+**Theme**: Security Foundation and Platform Portability
 
 ## Overview
 
-Version 0.2.0 focuses exclusively on creating a graphical client for Linux systems. This release will not introduce any new gameplay features but will provide a visual interface that maintains feature parity with the 0.1.0 CLI/ncurses client.
+Version 0.2.0 establishes critical security infrastructure and cross-platform support for the Space Captain project. This release focuses on implementing TLS encryption for all client-server communications and ensuring the CLI client builds and runs correctly on Linux, macOS, and Windows platforms.
 
 ## Goals
 
-1. Create a native Linux graphical client
-2. Maintain feature parity with the CLI version
-3. Provide an intuitive visual interface for space combat
-4. Preserve the captain command REPL experience
+1. Implement TLS encryption for all network communications
+2. Establish cross-platform build system
+3. Ensure CLI client works on Linux, macOS, and Windows
+4. Create foundation for secure, portable game infrastructure
 
 ## Features
 
-### Graphical Client Foundation
-- [ ] Vulkan graphics API integration for Linux
-- [ ] Window management and display initialization
-- [ ] Event handling system for user input
-- [ ] Rendering pipeline for 2D space visualization
+### TLS Implementation
+- [ ] TLS 1.2+ support for all client-server connections
+- [ ] Self-signed certificate generation and management
+- [ ] Certificate validation options for development/production
+- [ ] Encrypted message protocol over TLS
+- [ ] Performance optimization for encrypted connections
 
-### Visual Components
-- [ ] Space view showing ship positions and movements
-- [ ] Contact list display panel
-- [ ] Target information panel
-- [ ] Power distribution visualization (shields, drives, cloaks)
-- [ ] Command REPL interface with history
+### Cross-Platform Build System
+- [ ] CMake-based build system for all platforms
+- [ ] Platform-specific networking abstraction layer
+- [ ] Unified dependency management
+- [ ] Automated build testing on all platforms
+- [ ] Cross-compilation support
 
-### User Interface
-- [ ] Main game window layout
-- [ ] HUD elements for critical information
-- [ ] Visual feedback for commands
-- [ ] TODO: Specific UI mockups and design specifications
+### Linux Support (Enhanced)
+- [ ] Native epoll support maintained for server
+- [ ] TLS integration with existing epoll architecture
+- [ ] Package build scripts for major distributions
+- [ ] Systemd service files for server deployment
 
-### Client Architecture
-- [ ] Separation of rendering from game logic
-- [ ] Integration with existing network protocol
-- [ ] Performance optimization for smooth rendering
-- [ ] TODO: Target frame rate and performance metrics
+### macOS Support
+- [ ] kqueue-based event handling for server
+- [ ] Native macOS socket implementation
+- [ ] Homebrew formula for easy installation
+- [ ] macOS keychain integration for certificates (optional)
 
-### Packaging and Distribution
-- [ ] Source tarball with Makefile
-- [ ] Comprehensive build from source documentation
-- [ ] Dependency installation scripts for major distributions
-- [ ] Automated testing of source builds
-- [ ] Distribution exclusively through source code
+### Windows Support
+- [ ] Windows socket (Winsock2) implementation
+- [ ] IOCP or select-based event handling for server
+- [ ] Visual Studio and MinGW build support
+- [ ] Windows service wrapper for server deployment
+- [ ] MSI installer for client distribution
+
+### Security Infrastructure
+- [ ] Certificate generation utilities
+- [ ] Certificate management documentation
+- [ ] Security best practices guide
+- [ ] Performance impact analysis of TLS
 
 ## Technical Requirements
 
-### Platform Support
-- Linux x86_64
-- Distribution method:
-  - Build from source with Makefile only
-  - Compatible with any Linux distribution
-  - No pre-built packages provided
-- TODO: Minimum system requirements
+### TLS Library Selection
+- Primary option: OpenSSL (broad platform support)
+- Alternative option: mbed TLS (smaller footprint)
+- Platform-specific options documented
+- Library abstraction layer for future flexibility
 
-### Dependencies
-- Vulkan SDK for Linux
-- Vulkan-compatible GPU drivers
-- Window system integration (X11/Wayland)
-- TODO: UI framework requirements
-- TODO: Build system updates
+### Platform Requirements
 
-### Performance Targets
-- TODO: Target FPS
-- TODO: Memory usage limits
-- TODO: Network bandwidth constraints
+#### Linux
+- GCC 9+ or Clang 10+
+- CMake 3.16+
+- OpenSSL 1.1.1+ or mbed TLS 2.16+
+- glibc 2.31+ (Ubuntu 20.04 LTS baseline)
+
+#### macOS
+- macOS 11.0+ (Big Sur)
+- Xcode 12+ or Command Line Tools
+- CMake via Homebrew
+- OpenSSL via Homebrew (not system LibreSSL)
+
+#### Windows
+- Windows 10 version 1909+
+- Visual Studio 2019+ or MinGW-w64
+- CMake 3.16+
+- OpenSSL or mbed TLS binaries
+
+### Network Protocol Updates
+- [ ] TLS handshake integration with connection establishment
+- [ ] Encrypted message framing
+- [ ] Backward compatibility plan for non-TLS connections (development only)
+- [ ] Connection upgrade path from non-TLS to TLS
 
 ## Testing Requirements
 
-### Functional Testing
-- [ ] All CLI features accessible via GUI
-- [ ] Command REPL functionality preserved
-- [ ] Network communication compatibility
-- [ ] TODO: Automated GUI testing approach
+### Security Testing
+- [ ] TLS configuration validation
+- [ ] Certificate verification tests
+- [ ] Performance benchmarks with TLS enabled
+- [ ] Penetration testing guidelines
+
+### Platform Testing
+- [ ] Automated builds on Linux (Ubuntu, Fedora, Arch)
+- [ ] Automated builds on macOS (Intel and Apple Silicon)
+- [ ] Automated builds on Windows (MSVC and MinGW)
+- [ ] Cross-platform compatibility testing
+- [ ] Network protocol compatibility across platforms
 
 ### Performance Testing
-- [ ] Rendering performance benchmarks
-- [ ] Memory usage profiling
-- [ ] Network latency impact
-- [ ] TODO: Specific performance test scenarios
+- [ ] TLS overhead measurement
+- [ ] Platform-specific optimization validation
+- [ ] Concurrent connection testing with TLS
+- [ ] Memory usage analysis per platform
 
 ## Migration Path
 
 ### Compatibility
-- Server remains unchanged from 0.1.0
-- Network protocol compatibility maintained
-- CLI client continues to function
+- Version 0.1.0 clients can connect to 0.2.0 servers (with warning)
+- Configuration option to disable TLS (development only)
+- Clear deprecation timeline for non-TLS connections
 
 ### Documentation
-- [ ] GUI client user guide
-- [ ] Detailed build from source instructions
-- [ ] Makefile usage and configuration options
-- [ ] Distribution-specific dependency installation guides
-- [ ] Troubleshooting guide for common build issues
-- [ ] TODO: Video tutorials or screenshots
+- [ ] TLS setup and configuration guide
+- [ ] Platform-specific build instructions
+- [ ] Certificate management procedures
+- [ ] Security best practices
+- [ ] Troubleshooting guide per platform
 
 ## Success Criteria
 
-1. Linux users can connect to servers using the graphical client
-2. All features from the CLI version are accessible
-3. Performance meets minimum requirements
-4. TODO: User acceptance testing criteria
+1. All client-server communications encrypted with TLS
+2. CLI client builds and runs on Linux, macOS, and Windows
+3. No significant performance degradation from TLS
+4. Automated CI/CD pipeline for all platforms
+5. Security audit passed
 
 ## Risks and Mitigation
 
-1. **Graphics Framework Selection**: TODO - Evaluate options
-2. **Performance on Low-End Hardware**: TODO - Define minimum specs
-3. **UI/UX Design Complexity**: TODO - Create mockups early
+1. **TLS Performance Impact**: May affect server capacity
+   - Mitigation: Implement session resumption, optimize cipher suites
+   
+2. **Platform-Specific Bugs**: Different behavior across OSes
+   - Mitigation: Comprehensive platform abstraction layer
+   
+3. **Certificate Management Complexity**: Self-signed certs add complexity
+   - Mitigation: Clear documentation, automated tooling
+   
+4. **Build System Complexity**: CMake across platforms can be challenging
+   - Mitigation: Well-documented build process, pre-built binaries for testing
 
 ## Future Considerations
 
-This release establishes the foundation for graphical clients on other platforms (MacOS in 0.3.0, Windows in 0.4.0).
+This release establishes the security and portability foundation necessary for the graphical clients planned in versions 0.3.0+ and the eventual move to production deployment.
