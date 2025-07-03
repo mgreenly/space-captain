@@ -25,6 +25,7 @@ This directory contains documentation and detailed explanations about various as
 - [OpenSSL Integration Research](openssl-research.md) - Analysis of integrating OpenSSL for TLS encryption with certificate pinning
 - [OIDC Authentication Research](oidc-for-cli-research.md) - OAuth 2.0 + OIDC authentication integration for CLI clients
 - [NCurses Research](ncurses-research.md) - Comprehensive guide to NCurses for terminal UI development
+- [MMO State Management and Protocols](mmo-state-management-protocols.md) - Technical white paper on MMO global state management and client-server protocols
 
 ## Contributing
 
