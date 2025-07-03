@@ -17,13 +17,17 @@ This directory contains the requirements documents for each version of Space Cap
 
 ### Planned Releases (Speculative)
 - [Version 0.2.0](version-0.2.0.md) - **2025 Q4** (October - December 2025)
-  - Linux graphical client
-  - Feature parity with CLI version
+  - TLS security implementation
+  - Cross-platform build system (CMake)
+  - CLI client support for Linux, macOS, and Windows
 - [Version 0.3.0](version-0.3.0.md) - **2026 Q1** (January - March 2026)
-  - MacOS graphical client
+  - Linux graphical client with Vulkan
+  - Feature parity with CLI version
 - [Version 0.4.0](version-0.4.0.md) - **2026 Q2** (April - June 2026)
-  - Windows graphical client
+  - MacOS graphical client with Metal
 - [Version 0.5.0](version-0.5.0.md) - **2026 Q3** (July - September 2026)
+  - Windows graphical client with DirectX
+- [Version 0.6.0](version-0.6.0.md) - **2026 Q4** (October - December 2026)
   - Persistent world foundations
   - Crew progression, economy, tech progression
   - Resource gathering and manufacturing
