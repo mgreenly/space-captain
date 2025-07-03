@@ -74,6 +74,19 @@ The project uses a **unified build structure** where source files are included d
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 
+### When Modifying PRDs
+1. **ALWAYS UPDATE prds/README.md** - When making changes to any PRD document in the `prds/` folder, you must also update the corresponding summary in `prds/README.md`
+2. Ensure the summary accurately reflects the key features and changes
+3. Keep summaries concise (typically 3-5 bullet points per version)
+4. Maintain consistent formatting with other version summaries
+
+### When Modifying Documentation
+1. **ALWAYS UPDATE docs/README.md** - When adding or modifying any document in the `docs/` folder, you must also update the table of contents in `docs/README.md`
+2. Add new documents to the appropriate category section
+3. Use descriptive link text that clearly indicates the document's content
+4. Follow the existing format: `- [Link Text](filename.md) - Brief description`
+5. Create new category sections if needed for better organization
+
 ### After Making Changes
 1. Run `make` to check for warnings
 2. Run `make fmt` to format code
