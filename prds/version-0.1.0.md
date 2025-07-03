@@ -133,6 +133,29 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 3. **Network Protocol Evolution**: Protocol may need changes
    - Mitigation: Version field in header for compatibility
 
+## Development Schedule
+
+### Q3 2025 Weekly Milestones
+
+#### July 2025
+- **July 6**: TBD
+- **July 13**: TBD
+- **July 20**: TBD
+- **July 27**: TBD
+
+#### August 2025
+- **August 3**: TBD
+- **August 10**: TBD
+- **August 17**: TBD
+- **August 24**: TBD
+- **August 31**: TBD
+
+#### September 2025
+- **September 7**: TBD
+- **September 14**: TBD
+- **September 21**: TBD
+- **September 28**: TBD
+
 ## Future Considerations
 
 ### Non-Goals for 0.1.0

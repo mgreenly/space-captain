@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Space Captain project implements a thread-safe Multi-Producer Multi-Consumer (MPMC) queue that allows multiple threads to safely add and remove messages concurrently. This queue is a critical component for the server's worker thread pool architecture, enabling efficient message passing between the main server thread and worker threads.
+The Space Captain project implements a thread-safe Multi-Producer Multi-Consumer (MPMC) FIFO (First-In-First-Out) queue that allows multiple threads to safely add and remove messages concurrently. This queue is a critical component for the server's worker thread pool architecture, enabling efficient message passing between the main server thread and worker threads. Messages are processed in the order they are received, ensuring fair and predictable message handling.
 
 ## Architecture & Design
 
@@ -26,7 +26,10 @@ typedef struct {
 
 ### Why use a circular buffer?
 
-The circular buffer provides O(1) performance for both enqueue and dequeue operations. The `head` and `tail` indices wrap around using modulo arithmetic (`% capacity`), eliminating the need to shift elements and providing consistent performance regardless of queue size.
+The circular buffer provides O(1) performance for both enqueue and dequeue operations. The `head` and `tail` indices wrap around using modulo arithmetic (`% capacity`), eliminating the need to shift elements and providing consistent performance regardless of queue size. This design naturally implements FIFO semantics:
+- New messages are added at the `tail` position (end of queue)
+- Messages are removed from the `head` position (front of queue)
+- This ensures the first message added is the first message removed
 
 ### What synchronization mechanisms are used?
 
@@ -117,7 +120,7 @@ sc_queue_ret_val_t sc_queue_pop(queue_t *q, message_t **msg)
    - Releases the write lock
    - Waits on `cond_not_empty` condition with timeout
    - Re-acquires write lock when message becomes available
-3. Retrieves message from head position
+3. Retrieves message from head position (FIFO - oldest message first)
 4. Updates head index: `head = (head + 1) % capacity`
 5. Decrements size
 6. Signals `cond_not_full` for waiting producers
