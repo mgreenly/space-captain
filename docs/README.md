@@ -24,6 +24,7 @@ This directory contains documentation and detailed explanations about various as
 - [Mbed TLS Integration Research](mbed-tls-research.md) - Analysis of integrating mbed-tls library for TLS encryption with certificate pinning
 - [OpenSSL Integration Research](openssl-research.md) - Analysis of integrating OpenSSL for TLS encryption with certificate pinning
 - [OIDC Authentication Research](oidc-for-cli-research.md) - OAuth 2.0 + OIDC authentication integration for CLI clients
+- [NCurses Research](ncurses-research.md) - Comprehensive guide to NCurses for terminal UI development
 
 ## Contributing
 
