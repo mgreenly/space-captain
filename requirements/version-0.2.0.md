@@ -18,7 +18,7 @@ Version 0.2.0 focuses exclusively on creating a graphical client for Linux syste
 ## Features
 
 ### Graphical Client Foundation
-- [ ] Graphics framework selection and integration (TODO: Specify framework)
+- [ ] Vulkan graphics API integration for Linux
 - [ ] Window management and display initialization
 - [ ] Event handling system for user input
 - [ ] Rendering pipeline for 2D space visualization
@@ -42,15 +42,27 @@ Version 0.2.0 focuses exclusively on creating a graphical client for Linux syste
 - [ ] Performance optimization for smooth rendering
 - [ ] TODO: Target frame rate and performance metrics
 
+### Packaging and Distribution
+- [ ] Source tarball with Makefile
+- [ ] Comprehensive build from source documentation
+- [ ] Dependency installation scripts for major distributions
+- [ ] Automated testing of source builds
+- [ ] Distribution exclusively through source code
+
 ## Technical Requirements
 
 ### Platform Support
 - Linux x86_64
-- TODO: Specific distributions to support
+- Distribution method:
+  - Build from source with Makefile only
+  - Compatible with any Linux distribution
+  - No pre-built packages provided
 - TODO: Minimum system requirements
 
 ### Dependencies
-- TODO: Graphics library (SDL2, Raylib, etc.)
+- Vulkan SDK for Linux
+- Vulkan-compatible GPU drivers
+- Window system integration (X11/Wayland)
 - TODO: UI framework requirements
 - TODO: Build system updates
 
@@ -82,7 +94,10 @@ Version 0.2.0 focuses exclusively on creating a graphical client for Linux syste
 
 ### Documentation
 - [ ] GUI client user guide
-- [ ] Installation instructions for Linux
+- [ ] Detailed build from source instructions
+- [ ] Makefile usage and configuration options
+- [ ] Distribution-specific dependency installation guides
+- [ ] Troubleshooting guide for common build issues
 - [ ] TODO: Video tutorials or screenshots
 
 ## Success Criteria

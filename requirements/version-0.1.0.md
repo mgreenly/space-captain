@@ -1,29 +1,36 @@
-# Version 0.1.0 Requirements
+# Version 0.1.0 Requirements - Technical Demo
+
+**Status**: Active Development
+**Target Release**: 2025 Q3 (July - September 2025)
+**Theme**: Core Infrastructure and Space Combat
 
 ## Overview
+
 Space Captain is a client-server MMO project built in C to explore Linux network programming and systems optimization. Version 0.1.0 focuses exclusively on establishing the core infrastructure: efficient networking protocols, concurrent connection handling, message processing, and state management. This release prioritizes building a solid technical foundation over gameplay mechanics and creates a robust platform for future development and optimization experiments.
 
-## Core Features
+## Goals
+
+1. Establish core client-server architecture
+2. Implement efficient networking with 5,000 concurrent connections
+3. Create basic 2D space combat gameplay
+4. Build CLI/ncurses interface with captain command REPL
+5. Demonstrate server-authoritative state management
+
+## Features
+
+### Core Infrastructure
 - Server-authoritative state management
 - Clients only receive information visible to their player (no omniscient data)
+- Epoll-based event loop for efficient connection handling
+- Multi-threaded message processing with worker pool
 
-## Technical Specs
-- Server platform: x86_64 and AArch64 Linux
-- Efficiently handle 5,000 concurrent client connections
-- Networking approach: epoll-based event loop
-
-## Game World Specifications
-
-### Coordinate System
+### Game World
 - 2D space representing a solar system
-- Coordinate type: `double` (IEEE 754 double-precision)
-- Units: meters
-- Maximum radius: 10¹⁵ meters (1 petameter) from origin
-- Total dimensions: 2 × 10¹⁵ × 2 × 10¹⁵ meters
-- Origin: Star at center (0,0)
-- Precision: 0.125 meters at edge, 0.02 mm at spawn orbit
+- Coordinate system using double precision (10¹⁵ meter radius)
+- Star at center (0,0)
+- Ships spawn at 1.5 × 10¹¹ meters from star
 
-### Ship Specifications
+### Ship Systems
 - Single ship type for all players
 - Hull structure: 1,000 units
 - Power plant: 100 units total
@@ -33,47 +40,99 @@ Space Captain is a client-server MMO project built in C to explore Linux network
   - Weapons (offense)
   - Cloaking (stealth)
 
-### Movement System
-- Speeds measured in meters per second (m/s)
-- Speed dial: 1-1000 (logarithmic scale)
-  - Speed 1: 500 m/s (minimum)
-  - Speed 1000: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
+### Movement Mechanics
+- Logarithmic speed scale: 1-1000
+- Speed 1: 500 m/s (minimum)
+- Speed 1000: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
 - See docs/speed-table.md for complete speed reference
 
-### Spawning
-- New ships spawn at random position on circular orbit
-- Spawn orbit radius: 1.5 × 10¹¹ meters (150 million km) from star
+### Combat System
+- Basic shooting mechanics
+- Hull damage and destruction
+- Death requires disconnect/reconnect
 
-## Tech Demo
-- Each client controls a spacecraft in 2D space
-- Basic flight mechanics with logarithmic speed control
-- Combat system: shooting at other players
-- Dynamic power management between ship systems
-- Real-time synchronization of all ship states between clients
-- Only Linux clients will be supported in this release
+### Client Interface
+- CLI-only (Linux)
+- ncurses-based display showing:
+  - List of nearby contacts
+  - Current target information
+  - Power distribution display
+  - Command REPL for captain orders
 
-## Non-Goals for Version 0.1.0
+## Technical Requirements
+
+### Server Requirements
+- Platform: x86_64 and AArch64 Linux
+- Handle 5,000 concurrent client connections
+- Maintain 60 tick/second update rate
+- Single server architecture (no distribution)
+
+### Client Requirements
+- Linux x86_64
+- CLI/terminal interface
+- ncurses library for display
+
+### Network Protocol
+- TCP with custom binary protocol
+- Fixed 8-byte header (type + length)
+- Message types: echo, reverse, time (initial implementation)
+
+## Testing Requirements
+
+### Functional Testing
+- Server stability with 50 concurrent clients over 30 seconds
+- Message processing correctness
+- State synchronization accuracy
+- Memory leak detection over 24-hour test
+
+### Performance Testing
+- 5,000 concurrent connections
+- 60 Hz tick rate maintenance
+- Client-server latency under 50ms on LAN
+
+### Thread Safety
+- Queue operations verification
+- Worker pool concurrency testing
+- State management race condition checks
+
+## Migration Path
+
+### Compatibility
+- First release - no migration required
+- Establishes baseline protocol for future versions
+- Foundation for future client implementations
+
+### Documentation
+- [ ] Server setup and configuration guide
+- [ ] Client installation instructions
+- [ ] Basic gameplay tutorial
+
+## Success Criteria
+
+1. Server maintains 60 tick/second with 5,000 clients
+2. Client-server latency under 50ms on LAN
+3. Zero memory leaks over 24-hour test
+4. All functional tests pass consistently
+5. Basic space combat gameplay functions correctly
+
+## Risks and Mitigation
+
+1. **Performance at Scale**: May not reach 5,000 clients initially
+   - Mitigation: Iterative optimization, profiling tools
+2. **Thread Safety Issues**: Concurrent access bugs
+   - Mitigation: Thorough testing, memory barriers where needed
+3. **Network Protocol Evolution**: Protocol may need changes
+   - Mitigation: Version field in header for compatibility
+
+## Future Considerations
+
+### Non-Goals for 0.1.0
 - Persistence/save games
 - AI/NPCs
 - Account system/authentication
+- Graphical interface
 
-## Success Criteria
-- Server maintains 60 tick/second update rate with 5,000 clients
-- Client-server latency under 50ms on LAN
-- Zero memory leaks over 24-hour test
-
-## Known Constraints
-- Target delivery: 2025 Q3 (July - September 2025)
-- Must run on a single server (no distributed architecture)
-
-## Enhancement Considerations
+### Enhancement Opportunities
 - Consider SO_REUSEPORT and multiple network threads
-- Consider io_uring
-
-## Testing
-- Functional test suite validates server stability with 50 concurrent clients over 30 seconds
-- Tests monitor for error messages and ensure all processes remain running
-
-## Thread Safety Improvements
-- Add memory barriers or atomic operations where appropriate in queue.c
-- Review and document thread safety guarantees for concurrent data structures
+- Consider io_uring for improved I/O performance
+- Prepare architecture for graphical clients in 0.2.0

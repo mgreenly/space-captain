@@ -19,9 +19,10 @@ Version 0.3.0 extends the graphical client to MacOS, providing native support fo
 
 ### MacOS Client
 - [ ] MacOS application bundle
+- [ ] Metal graphics API integration
 - [ ] Native MacOS window management
 - [ ] Retina display support
-- [ ] TODO: Apple Silicon optimization
+- [ ] Apple Silicon optimization via Metal Performance Shaders
 
 ### Platform Integration
 - [ ] MacOS menu bar integration
@@ -29,9 +30,18 @@ Version 0.3.0 extends the graphical client to MacOS, providing native support fo
 - [ ] TODO: MacOS-specific features (notifications, etc.)
 
 ### Cross-Platform Considerations
-- [ ] Shared codebase with Linux client
-- [ ] Platform-specific rendering optimizations
-- [ ] TODO: Build system for multiple platforms
+- [ ] Shared codebase with Linux client (except rendering)
+- [ ] Abstract rendering interface for Vulkan/Metal
+- [ ] Platform-specific shader compilation
+- [ ] Unified asset pipeline across platforms
+
+### Packaging and Distribution
+- [ ] MacOS .app bundle creation
+- [ ] Code signing with Apple Developer certificate
+- [ ] Notarization for Gatekeeper approval
+- [ ] Homebrew cask formula for distribution
+- [ ] Automated Homebrew tap maintenance
+- [ ] Distribution exclusively through Homebrew
 
 ## Technical Requirements
 
@@ -41,9 +51,10 @@ Version 0.3.0 extends the graphical client to MacOS, providing native support fo
 - TODO: Specific hardware requirements
 
 ### Dependencies
-- TODO: MacOS SDK requirements
-- TODO: Code signing and notarization
-- TODO: Distribution method (App Store, direct download)
+- MacOS SDK with Metal framework
+- Xcode for Metal shader compilation
+- Code signing certificate for distribution
+- Homebrew for package distribution
 
 ### Performance Targets
 - TODO: Performance parity with Linux client
@@ -62,6 +73,18 @@ Version 0.3.0 extends the graphical client to MacOS, providing native support fo
 - [ ] Cross-platform server compatibility
 - [ ] Feature parity verification
 - [ ] TODO: MacOS-specific test cases
+
+## Migration Path
+
+### Compatibility
+- Server remains unchanged from 0.2.0
+- Network protocol compatibility maintained
+- Linux client continues to function
+
+### Documentation
+- [ ] MacOS client installation guide
+- [ ] Platform-specific troubleshooting
+- [ ] TODO: Cross-platform user guide
 
 ## Success Criteria
 

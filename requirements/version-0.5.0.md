@@ -86,6 +86,18 @@ Version 0.5.0 marks a fundamental shift from a session-based space combat simula
 - [ ] Resource distribution
 - [ ] TODO: Player retention metrics
 
+## Migration Path
+
+### Compatibility
+- Existing clients can connect with limited features
+- Character/ship data migration from session-based to persistent
+- Backward compatibility for basic combat gameplay
+
+### Documentation
+- [ ] Progression systems guide
+- [ ] Economy and trading tutorial
+- [ ] TODO: Complete gameplay documentation
+
 ## Success Criteria
 
 1. Players can progress between sessions

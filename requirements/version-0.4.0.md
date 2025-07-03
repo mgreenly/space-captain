@@ -20,8 +20,9 @@ Version 0.4.0 completes the cross-platform graphical client trilogy by adding Wi
 ### Windows Client
 - [ ] Windows executable (.exe)
 - [ ] Windows installer (MSI or similar)
-- [ ] DirectX or OpenGL rendering
-- [ ] TODO: Windows 10/11 specific features
+- [ ] DirectX 11+ graphics API support
+- [ ] DirectX 11 baseline with DirectX 12 optimizations
+- [ ] Windows 10/11 specific features
 
 ### Platform Integration
 - [ ] Windows taskbar integration
@@ -30,9 +31,18 @@ Version 0.4.0 completes the cross-platform graphical client trilogy by adding Wi
 - [ ] TODO: Xbox controller support
 
 ### Cross-Platform Completion
-- [ ] Unified codebase across all platforms
-- [ ] Consistent user experience
-- [ ] TODO: Cross-platform build automation
+- [ ] Unified codebase with platform-specific rendering
+- [ ] Abstract rendering interface supporting Vulkan/Metal/DirectX
+- [ ] Consistent user experience across all platforms
+- [ ] Cross-platform build automation for all three targets
+
+### Packaging and Distribution
+- [ ] MSI installer package creation
+- [ ] Code signing with certificate for security
+- [ ] WinGet manifest creation and submission
+- [ ] Automated WinGet package updates
+- [ ] Windows Defender SmartScreen approval process
+- [ ] Distribution exclusively through WinGet
 
 ## Technical Requirements
 
@@ -42,12 +52,14 @@ Version 0.4.0 completes the cross-platform graphical client trilogy by adding Wi
 - TODO: 32-bit vs 64-bit considerations
 
 ### Dependencies
-- TODO: Visual Studio or MinGW toolchain
-- TODO: Windows SDK requirements
-- TODO: Graphics API selection
+- Visual Studio 2022 or later
+- Windows SDK with DirectX 11+ support
+- DirectX runtime redistribution
+- MSVC runtime libraries
 
 ### Performance Targets
-- TODO: DirectX vs OpenGL performance
+- DirectX 11 baseline performance
+- DirectX 12 optimizations where available
 - TODO: Windows Defender compatibility
 - TODO: Anti-cheat considerations
 
@@ -60,9 +72,22 @@ Version 0.4.0 completes the cross-platform graphical client trilogy by adding Wi
 - [ ] TODO: Windows-specific edge cases
 
 ### Distribution Testing
-- [ ] Installer functionality
-- [ ] Auto-update mechanism
-- [ ] TODO: Microsoft Store submission
+- [ ] MSI installer functionality verification
+- [ ] WinGet installation and update testing
+- [ ] Code signing validation
+- [ ] SmartScreen reputation testing
+
+## Migration Path
+
+### Compatibility
+- Server remains unchanged from 0.3.0
+- Network protocol compatibility maintained
+- Linux and MacOS clients continue to function
+
+### Documentation
+- [ ] Windows client installation guide
+- [ ] Windows-specific troubleshooting
+- [ ] TODO: Complete cross-platform guide
 
 ## Success Criteria
 
@@ -73,9 +98,11 @@ Version 0.4.0 completes the cross-platform graphical client trilogy by adding Wi
 
 ## Risks and Mitigation
 
-1. **Windows Development Complexity**: TODO
+1. **Windows Development Complexity**: Multiple DirectX versions
+   - Mitigation: Target DirectX 11 as baseline, add 12 features progressively
 2. **Anti-Virus False Positives**: TODO
-3. **DirectX vs OpenGL Decision**: TODO
+3. **DirectX Version Compatibility**: Balancing features vs compatibility
+   - Mitigation: DirectX 11 minimum ensures broad hardware support
 
 ## Future Considerations
 

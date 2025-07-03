@@ -2,31 +2,11 @@
 
 This directory contains the requirements documents for each version of Space Captain. The project follows a quarterly release cycle with one minor version per quarter.
 
-## Naming Convention
-
-Requirements files should be named using the following pattern:
-```
-version-X.Y.Z.md
-```
-
-Where:
-- `X` = Major version (breaking changes)
-- `Y` = Minor version (new features, quarterly releases)
-- `Z` = Patch version (bug fixes, typically 0 for requirements docs)
-
-## Release Schedule
-
-The project follows a quarterly release cycle:
-- **Q1**: January - March
-- **Q2**: April - June
-- **Q3**: July - September
-- **Q4**: October - December
-
 ## Important Notice
 
 **All future release requirements (0.2.0 and beyond) are pure speculation based on current planning and are likely to change significantly as development progresses.**
 
-## Version History
+## Development Plan
 
 ### Active Development
 - [Version 0.1.0](version-0.1.0.md) - **2025 Q3** (July - September 2025)
@@ -52,7 +32,7 @@ The project follows a quarterly release cycle:
 
 When creating requirements for a new version:
 
-1. **Scope**: Each minor version should contain 3-4 months of development work
+1. **Scope**: Each minor version should contain 3 months of development work
 2. **Focus**: Maintain a clear theme or focus area for each release
 3. **Dependencies**: Build upon previous versions incrementally
 4. **Testing**: Include specific success criteria and performance targets
@@ -66,10 +46,14 @@ The 1.0 release target has not been set yet. The 1.0 release will represent a fe
 - AI/NPC entities
 - Expanded gameplay mechanics
 
-## Contributing
+## Naming Convention
 
-When proposing features for future versions:
-1. Consider the quarterly timeline
-2. Group related features together
-3. Ensure technical dependencies are met in earlier versions
-4. Keep performance and scalability goals in mind
+Requirements files should be named using the following pattern:
+```
+version-X.Y.Z.md
+```
+
+Where:
+- `X` = Major version (breaking changes)
+- `Y` = Minor version (new features, quarterly releases)
+- `Z` = Patch version (bug fixes, typically 0 for requirements docs)
