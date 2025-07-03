@@ -6,7 +6,7 @@
 
 ## Overview
 
-Version 0.2.0 establishes critical security infrastructure and cross-platform support for the Space Captain project. This release focuses on implementing TLS encryption for all client-server communications and ensuring the CLI client builds and runs correctly on Linux, macOS, and Windows platforms.
+Version 0.2.0 establishes critical security infrastructure and cross-platform support for the Space Captain project. This release focuses on implementing TLS encryption for all client-server communications, OIDC authentication for user identity management, and ensuring the CLI client builds and runs correctly on Linux, macOS, and Windows platforms.
 
 ## Goals
 
@@ -14,6 +14,7 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 2. Establish cross-platform build system
 3. Ensure CLI client works on Linux, macOS, and Windows
 4. Create foundation for secure, portable game infrastructure
+5. Implement OIDC authentication for secure user identity management
 
 ## Features
 
@@ -66,6 +67,19 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Security best practices guide
 - [ ] Performance impact analysis of TLS
 
+### OIDC Authentication (CLI)
+- [ ] OAuth 2.0 + OIDC authentication flow for CLI
+- [ ] Google authentication provider integration
+- [ ] Apple authentication provider integration
+- [ ] Secure token storage using OS credential managers:
+  - Linux: Secret Service API/GNOME Keyring
+  - macOS: Keychain
+  - Windows: Credential Manager
+- [ ] PKCE (Proof Key for Code Exchange) implementation
+- [ ] Local callback server for OAuth redirect handling
+- [ ] Token refresh and session management
+- [ ] Provider-agnostic authentication abstraction
+
 ## Technical Requirements
 
 ### TLS Library Selection
@@ -99,6 +113,8 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Encrypted message framing
 - [ ] Backward compatibility plan for non-TLS connections (development only)
 - [ ] Connection upgrade path from non-TLS to TLS
+- [ ] Authentication token validation in message protocol
+- [ ] Session management for authenticated connections
 
 ## Testing Requirements
 
@@ -107,6 +123,9 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Certificate verification tests
 - [ ] Performance benchmarks with TLS enabled
 - [ ] Penetration testing guidelines
+- [ ] OIDC authentication flow testing
+- [ ] Token security validation
+- [ ] Credential storage security audit
 
 ### Platform Testing
 - [ ] Automated builds on Linux (Ubuntu, Fedora, Arch)
@@ -134,6 +153,8 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Certificate management procedures
 - [ ] Security best practices
 - [ ] Troubleshooting guide per platform
+- [ ] OIDC authentication setup guide
+- [ ] Provider-specific configuration instructions
 
 ## Success Criteria
 
@@ -142,6 +163,8 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 3. No significant performance degradation from TLS
 4. Automated CI/CD pipeline for all platforms
 5. Security audit passed
+6. OIDC authentication working with Google and Apple providers
+7. Secure credential storage on all platforms
 
 ## Risks and Mitigation
 
@@ -156,6 +179,12 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
    
 4. **Build System Complexity**: Cross-platform builds can be challenging
    - Mitigation: Well-documented build process, pre-built binaries for testing
+
+5. **OIDC Provider Changes**: Provider APIs may change
+   - Mitigation: Abstract provider-specific code, maintain provider SDK versions
+   
+6. **Token Security**: Tokens could be compromised if not properly secured
+   - Mitigation: Use OS credential managers, implement token rotation
 
 ## Future Considerations
 
