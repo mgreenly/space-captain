@@ -23,6 +23,9 @@ Space Captain is a client-server MMO project built in C to explore Linux network
 - Clients only receive information visible to their player (no omniscient data)
 - Epoll-based event loop for efficient connection handling
 - Multi-threaded message processing with worker pool
+- Basic logging system for debugging and monitoring
+- Structured log levels (ERROR, WARN, INFO, DEBUG)
+- Log rotation and file management
 
 ### Game World
 - 2D space representing a solar system
@@ -58,6 +61,12 @@ Space Captain is a client-server MMO project built in C to explore Linux network
   - Current target information
   - Power distribution display
   - Command REPL for captain orders
+- Client settings persistence:
+  - Connection preferences (server address/port)
+  - Display preferences
+  - Command history
+  - Key bindings (if applicable)
+  - Settings stored in ~/.spacecaptain/config
 
 ## Technical Requirements
 

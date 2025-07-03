@@ -25,7 +25,7 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Performance optimization for encrypted connections
 
 ### Cross-Platform Build System
-- [ ] CMake-based build system for all platforms
+- [ ] Cross-platform build system for all platforms
 - [ ] Platform-specific networking abstraction layer
 - [ ] Unified dependency management
 - [ ] Automated build testing on all platforms
@@ -50,6 +50,16 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 - [ ] Windows service wrapper for server deployment
 - [ ] MSI installer for client distribution
 
+### Client Settings Persistence (Cross-Platform)
+- [ ] Unified settings format across all platforms
+- [ ] Platform-specific storage locations:
+  - Linux: ~/.spacecaptain/config
+  - macOS: ~/Library/Application Support/SpaceCaptain/
+  - Windows: %APPDATA%\SpaceCaptain\
+- [ ] Settings migration from 0.1.0 format
+- [ ] TLS certificate preferences
+- [ ] Server connection history with encryption
+
 ### Security Infrastructure
 - [ ] Certificate generation utilities
 - [ ] Certificate management documentation
@@ -68,20 +78,20 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 
 #### Linux
 - GCC 9+ or Clang 10+
-- CMake 3.16+
+- Build tools (Make)
 - OpenSSL 1.1.1+ or mbed TLS 2.16+
 - glibc 2.31+ (Ubuntu 20.04 LTS baseline)
 
 #### macOS
 - macOS 11.0+ (Big Sur)
 - Xcode 12+ or Command Line Tools
-- CMake via Homebrew
+- Build tools
 - OpenSSL via Homebrew (not system LibreSSL)
 
 #### Windows
 - Windows 10 version 1909+
 - Visual Studio 2019+ or MinGW-w64
-- CMake 3.16+
+- Build tools
 - OpenSSL or mbed TLS binaries
 
 ### Network Protocol Updates
@@ -144,7 +154,7 @@ Version 0.2.0 establishes critical security infrastructure and cross-platform su
 3. **Certificate Management Complexity**: Self-signed certs add complexity
    - Mitigation: Clear documentation, automated tooling
    
-4. **Build System Complexity**: CMake across platforms can be challenging
+4. **Build System Complexity**: Cross-platform builds can be challenging
    - Mitigation: Well-documented build process, pre-built binaries for testing
 
 ## Future Considerations
