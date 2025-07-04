@@ -1,194 +1,117 @@
-# Version 0.1.0 PRD - Technical Demo
+Of course. Here is the complete, final version of the document, incorporating all the specified details and the latest change to the client count.
+
+---
+
+### **Product Requirements & System Design: Space Captain - Version 0.1.0**
 
 **Status**: Active Development
-**Target Release**: 2025 Q3 (July - September 2025)
+**Target Release**: Q3 2025 (July - September 2025)
 **Theme**: Core Infrastructure and Space Combat
 
-## Overview
+## 1. Overview
 
-Space Captain is a client-server MMO project built in C to explore Linux network programming and systems optimization. Version 0.1.0 focuses exclusively on establishing the core infrastructure: efficient networking protocols, concurrent connection handling, message processing, and state management. This release prioritizes building a solid technical foundation over gameplay mechanics and creates a robust platform for future development and optimization experiments.
+Space Captain is a client-server MMO project built in C to explore Linux network programming and high-performance systems design. Version 0.1.0 focuses exclusively on establishing a state-of-the-art core infrastructure capable of handling **thousands of concurrent connections** with high efficiency.
 
-## Goals
+This release will implement a **server-authoritative, distributed, and lock-free architecture** over a **custom reliable-UDP protocol**. The game world will be spatially partitioned and assigned to a dynamic pool of worker threads, enabling massive parallelism. This approach prioritizes building a technically superior foundation for future development, ensuring the system can scale to meet ambitious gameplay goals.
 
-1. Establish core client-server architecture
-2. Implement efficient networking with 5,000 concurrent connections
-3. Create basic 2D space combat gameplay
-4. Build CLI/ncurses interface with captain command REPL
-5. Demonstrate server-authoritative state management
+## 2. Goals
 
-## Features
+1.  Establish a scalable, multi-threaded client-server architecture.
+2.  Implement efficient networking to support **thousands of concurrent connections**.
+3.  Create basic 2D space combat gameplay to validate the architecture.
+4.  Build a functional CLI/ncurses interface with a command REPL.
+5.  Demonstrate a robust, server-authoritative, and highly parallel state management system.
+
+## 3. Features
 
 ### Core Infrastructure
-- Server-authoritative state management
-- Clients only receive information visible to their player (no omniscient data)
-- Epoll-based event loop for efficient connection handling
-- Multi-threaded message processing with worker pool
-- Basic logging system for debugging and monitoring
-- Structured log levels (ERROR, WARN, INFO, DEBUG)
-- Log rotation and file management
+*   Server-authoritative state management.
+*   Clients only receive targeted state updates for objects within their area of interest.
+*   `epoll`-based event loop for efficient network I/O.
+*   Dynamic worker pool for parallel message processing and state updates.
+*   Basic logging system with structured levels and log rotation.
 
-### Global Game State
-- Centralized state containing all shared game data
-- Per-ship state includes:
-  - X, Y coordinates (double precision)
-  - Heading (direction)
-  - Power dial settings:
-    - Drive power (0-100)
-    - Weapons power (0-100)
-    - Shields power (0-100)
-    - Cloak power (0-100)
-- Thread-safe access for concurrent operations
+### Game World & Coordinate System
+*   A 2D space representing a solar system with a **center-origin** at `(0.0, 0.0)`.
+*   Coordinate system uses **`double`-precision floating-point numbers**, with a world radius of **1.0e14 meters**.
+*   All ships spawn at a fixed distance of **1.5 × 10¹¹ meters** from the central star.
 
-### Game Loop Architecture
-- Dedicated game thread running at 4 Hz (250ms tick rate)
-- Message processing:
-  - Client messages queued on shared MPMC queue
-  - Game loop processes all queued messages each tick
-  - Server responds immediately with ACK on message receipt
-  - Actual game state changes processed during next tick
-- State updates:
-  - Game loop resolves all actions and physics
-  - Broadcasts state updates to all clients every 250ms
-  - Updates contain only information visible to each client
+### Distributed Game Loop & State Management
+*   The "game loop" is a **distributed concept**. Each worker thread runs its own update loop at a fixed **4 Hz (250ms tick rate)**.
+*   **Entity Identification:** The server is responsible for generating a unique, persistent `entity_id` (`uint64_t`) for each client upon successful connection. This ID is used in all game logic to reference the entity.
+*   **Per-Ship State:** All ship data is managed exclusively by its owning worker thread. The core state for each ship includes:
+    *   **Coordinates:** `x`, `y` position (`double`).
+    *   **Heading:** The direction the ship is facing (`double`).
+    *   **Hull Points:** Current structural integrity.
+    *   **Power Dials:** Four integer settings (0-100) for `speed`, `shields`, `weapons`, and `cloak`.
 
-### Game World
-- 2D space representing a solar system
-- Coordinate system using double precision (10¹⁵ meter radius)
-- Star at center (0,0)
-- Ships spawn at 1.5 × 10¹¹ meters from star
+### Client State Synchronization (Server-Side)
+*   For each client, the server tracks `Current Visible State` and `Last Acknowledged State`.
+*   **State Broadcast with Area of Interest (AoI):** For this version, the server will send a state update to each client every tick. This update includes the full state of the client's *own ship*, plus the `ID, x, y, heading` of all other entities within a **`5.0e10` meter radius**.
 
-### Ship Systems
-- Single ship type for all players
-- Hull structure: 1,000 units
-- Power plant: 100 units total
-- Power allocation (1-unit increments):
-  - Drives (movement/speed)
-  - Shields (defense)
-  - Weapons (offense)
-  - Cloaking (stealth)
+### Spatial Partitioning & Concurrency Model
+*   The game world is discretized into a fixed **128x128 grid**.
+*   A **dynamic pool of worker threads (defaulting to 32)** shares the load.
+*   **Hilbert Curve Partitioning:** A background thread uses a Hilbert curve to assign contiguous grid regions to workers.
+*   **Lock-Free Rebalancing:** The system uses a **double-buffered partition map** and an **atomic swap** to rebalance the load.
+*   **Consistent Snapshot:** To ensure an accurate load assessment, the rebalancing thread will acquire a consistent, point-in-time snapshot of all entity positions. This is orchestrated briefly at the start of a tick to prevent data races with moving entities, after which the main simulation continues while the rebalancing calculation proceeds on the static data.
 
-### Movement Mechanics
-- Logarithmic speed scale: 1-1000
-- Speed 1: 500 m/s (minimum)
-- Speed 1000: 1.67 × 10¹² m/s (traverse radius in 10 minutes)
-- See docs/speed-table.md for complete speed reference
+### Inter-Worker Communication
+*   **Asynchronous Message Passing** via **lock-free, multiple-producer/single-consumer (MPSC) queues**.
 
-### Combat System
-- Basic shooting mechanics
-- Hull damage and destruction
-- Death requires disconnect/reconnect
+### Combat & Movement
+*   **Movement:** Logarithmic speed scale from 1 to 1000.
+*   **Combat:** Basic weapon firing, hull damage, and destruction.
+*   **Respawn:** Death requires a client disconnect and reconnect.
 
 ### Client Interface
-- CLI-only (Linux)
-- ncurses-based display showing:
-  - List of nearby contacts
-  - Current target information
-  - Power distribution display
-  - Command REPL for captain orders
-- Client settings persistence:
-  - Connection preferences (server address/port)
-  - Display preferences
-  - Command history
-  - Key bindings (if applicable)
-  - Settings stored in ~/.spacecaptain/config
+*   CLI-only (Linux) with an `ncurses`-based display.
 
-## Technical Requirements
+## 4. Technical Requirements & Architecture
 
 ### Server Requirements
-- Platform: x86_64 and AArch64 Linux
-- Handle 5,000 concurrent client connections
-- Maintain 4 tick/second update rate (250ms game loop)
-- Single server architecture (no distribution)
+*   **Platform:** x86_64 and AArch64 Linux.
+*   **Concurrency:** Handle **thousands of concurrent client connections**.
+*   **Performance:** All worker threads must maintain a **4 Hz tick rate (250ms)**.
+*   **Configuration:** The server must load key operational parameters (tick rate, worker count, port, etc.) from an external configuration file (e.g., `server.conf`) at startup.
+*   **Graceful Shutdown:** The server must handle `SIGINT` and `SIGTERM` signals to perform a clean shutdown: stop accepting connections, notify clients, join all threads, and release resources.
 
 ### Client Requirements
-- Linux x86_64
-- CLI/terminal interface
-- ncurses library for display
+*   **Platform:** Linux x86_64.
+*   **Interface:** CLI/terminal with `ncurses` library.
 
-### Network Protocol
-- TCP with custom binary protocol
-- Fixed 8-byte header (type + length)
-- Message types: echo, reverse, time (initial implementation)
+### Network Protocol: Custom Reliable UDP
+*   **Transport Layer:** The protocol is built on top of **UDP**.
+*   **Connection Handshake:** A session is established via a four-way handshake:
+    1.  **Client -> Server:** `MSG_HELLO` (Client requests connection)
+    2.  **Server -> Client:** `MSG_CHALLENGE` (Server replies with a unique session token)
+    3.  **Client -> Server:** `MSG_RESPONSE` (Client sends the token back)
+    4.  **Server -> Client:** `MSG_WELCOME` (Server confirms, assigns an `entity_id`, and adds the client to its active list)
+*   **Session Management & Security:**
+    *   **Keep-Alive:** Clients must send a periodic `MSG_HEARTBEAT` packet if idle.
+    *   **Timeout:** The server will disconnect a client if no valid packets are received within a 30-second window.
+    *   **Spoofing Mitigation:** All packets from a connected client must contain the session token assigned during the handshake for validation by the server.
+*   **State Synchronization & Reliability:**
+    *   **Sequencing:** The server includes an incrementing sequence number in every state update packet sent to a client.
+    *   **ACKs:** The client acknowledges receipt by sending an ACK packet containing the sequence number of the message it received.
+    *   **Ordering:** The client discards any packet with a sequence number less than or equal to the last one it processed, ensuring it only acts on the newest state.
 
-## Testing Requirements
+## 5. Success Criteria
 
-### Functional Testing
-- Server stability with 50 concurrent clients over 30 seconds
-- Message processing correctness
-- State synchronization accuracy
-- Memory leak detection over 24-hour test
+1.  Server maintains a stable **4 tick/second (250ms)** update rate with a load of **at least 1,000 concurrent clients**, demonstrating the architecture's viability for scaling into the thousands.
+2.  The custom reliable-UDP protocol maintains state synchronization with minimal packet loss (<1%) on a LAN.
+3.  Client-server latency remains **under 50ms** on a LAN environment.
+4.  A 24-hour stress test with simulated clients shows **zero memory leaks**.
+5.  All functional tests for combat, movement, and state synchronization pass consistently.
 
-### Performance Testing
-- 5,000 concurrent connections
-- 4 Hz tick rate maintenance (250ms game loop)
-- Client-server latency under 50ms on LAN
+## 6. Risks and Mitigation
 
-### Thread Safety
-- Queue operations verification
-- Worker pool concurrency testing
-- State management race condition checks
+1.  **Performance at Scale**: The target of supporting **thousands of clients** on a single server is ambitious.
+    *   **Mitigation**: The architecture is designed for this scale. Profiling tools (`perf`) will be used iteratively to eliminate bottlenecks.
+2.  **Network Instability / Packet Loss**: UDP does not guarantee delivery.
+    *   **Mitigation**: For v0.1.0, because the full state is sent every 250ms, a single dropped packet will be corrected by the next successful one.
+3.  **Concurrency Bugs**: Lock-free programming is complex.
+    *   **Mitigation**: Use battle-tested lock-free libraries. Employ rigorous testing, sanitizers (TSan), and formal reasoning about memory barriers.
+4.  **Network Protocol Evolution**: The initial protocol may be insufficient.
+    *   **Mitigation**: A version field will be included in the protocol header from day one.
 
-## Migration Path
-
-### Compatibility
-- First release - no migration required
-- Establishes baseline protocol for future versions
-- Foundation for future client implementations
-
-### Documentation
-- [ ] Server setup and configuration guide
-- [ ] Client installation instructions
-- [ ] Basic gameplay tutorial
-
-## Success Criteria
-
-1. Server maintains 4 tick/second (250ms) with 5,000 clients
-2. Client-server latency under 50ms on LAN
-3. Zero memory leaks over 24-hour test
-4. All functional tests pass consistently
-5. Basic space combat gameplay functions correctly
-
-## Risks and Mitigation
-
-1. **Performance at Scale**: May not reach 5,000 clients initially
-   - Mitigation: Iterative optimization, profiling tools
-2. **Thread Safety Issues**: Concurrent access bugs
-   - Mitigation: Thorough testing, memory barriers where needed
-3. **Network Protocol Evolution**: Protocol may need changes
-   - Mitigation: Version field in header for compatibility
-
-## Development Schedule
-
-### Q3 2025 Weekly Milestones
-
-#### July 2025
-- **July 6**: TBD
-- **July 13**: TBD
-- **July 20**: TBD
-- **July 27**: TBD
-
-#### August 2025
-- **August 3**: TBD
-- **August 10**: TBD
-- **August 17**: TBD
-- **August 24**: TBD
-- **August 31**: TBD
-
-#### September 2025
-- **September 7**: TBD
-- **September 14**: TBD
-- **September 21**: TBD
-- **September 28**: TBD
-
-## Future Considerations
-
-### Non-Goals for 0.1.0
-- Persistence/save games
-- AI/NPCs
-- Account system/authentication
-- Graphical interface
-
-### Enhancement Opportunities
-- Consider SO_REUSEPORT and multiple network threads
-- Consider io_uring for improved I/O performance
-- Prepare architecture for graphical clients in 0.2.0

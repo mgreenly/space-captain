@@ -10,11 +10,12 @@ This directory contains the Product Requirements Documents (PRDs) for each versi
 
 ### Active Development
 - [Version 0.1.0](version-0.1.0.md) - **2025 Q3** (July - September 2025)
-  - Technical Demo
-  - Core infrastructure and networking
-  - CLI/ncurses client with space combat
-  - Captain command REPL interface
-  - Weekly development schedule with Sunday milestones
+  - State-of-the-art infrastructure supporting thousands of concurrent connections
+  - Custom reliable-UDP protocol with 4-way handshake and session management
+  - Server-authoritative, distributed, lock-free architecture
+  - Multi-threaded design with Hilbert curve spatial partitioning
+  - 2D space combat with 4Hz distributed game loop
+  - CLI/ncurses client with command REPL interface
 
 ### Planned Releases (Speculative)
 - [Version 0.2.0](version-0.2.0.md) - **2025 Q4** (October - December 2025)
