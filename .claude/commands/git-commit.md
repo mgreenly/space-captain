@@ -3,26 +3,43 @@ Create a git commit with proper co-authorship attribution and automatically push
 **Arguments:**
 - No arguments or `claude`: Use Claude co-author attribution (dynamically determined model)
 - `gemini`: Use Gemini co-author attribution
-- `claude gemini`: Use both attributions (Claude first, then Gemini)
+- `claude gemini` or `gemini claude`: Use both attributions (Claude first, then Gemini)
 - Any other value: Abort with error
 
 **Steps to execute:**
 
 1. Parse arguments and validate:
    ```bash
+   # Check if arguments contain both claude and gemini
+   HAS_CLAUDE=false
+   HAS_GEMINI=false
+   
+   for arg in "$@"; do
+       if [ "$arg" = "claude" ]; then
+           HAS_CLAUDE=true
+       elif [ "$arg" = "gemini" ]; then
+           HAS_GEMINI=true
+       fi
+   done
+   
+   # Get gemini CLI version if needed
+   if [ "$HAS_GEMINI" = true ]; then
+       GEMINI_VERSION=$(gemini --version)
+   fi
+   
    # Check arguments and set co-author lines
-   if [ $# -eq 0 ] || [ "$1" = "claude" ]; then
+   if [ $# -eq 0 ] || ([ $# -eq 1 ] && [ "$1" = "claude" ]); then
        # Claude only (default)
        CO_AUTHORS="co-author: claude-opus-4-20250514"  # Model ID will be dynamically determined
-   elif [ "$1" = "gemini" ]; then
+   elif [ $# -eq 1 ] && [ "$1" = "gemini" ]; then
        # Gemini only
-       CO_AUTHORS="co-author: gemini-2.5-pro (via aistudio.google.com)"
-   elif [ "$1" = "claude" ] && [ "$2" = "gemini" ]; then
-       # Both Claude and Gemini
+       CO_AUTHORS="co-author: gemini-cli-${GEMINI_VERSION} (gemini-2.5-pro)"
+   elif [ $# -eq 2 ] && [ "$HAS_CLAUDE" = true ] && [ "$HAS_GEMINI" = true ]; then
+       # Both Claude and Gemini (always Claude first regardless of argument order)
        CO_AUTHORS="co-author: claude-opus-4-20250514
-co-author: gemini-2.5-pro (via aistudio.google.com)"
+co-author: gemini-cli-${GEMINI_VERSION} (gemini-2.5-pro)"
    else
-       echo "ERROR: Invalid arguments. Use: git-commit [claude|gemini|'claude gemini']"
+       echo "ERROR: Invalid arguments. Use: git-commit [claude|gemini|'claude gemini'|'gemini claude']"
        exit 1
    fi
    ```
@@ -89,7 +106,7 @@ co-author: gemini-2.5-pro (via aistudio.google.com)"
 - Step 9 (git push) should be executed automatically AFTER the commit is created
 - The commit message should use the exact template format: `<title>` followed by blank line, then `<body>`, then co-author line(s)
 - For Claude commits, the model ID will be dynamically determined (e.g., claude-opus-4-20250514)
-- For Gemini commits, always use: `gemini-2.5-pro (via aistudio.google.com)`
+- For Gemini commits, the format is: `gemini-cli-<version> (gemini-2.5-pro)` where <version> is determined by running `gemini --version`
 - When both are specified, Claude co-author line comes first
 - The commit message should NOT include type prefixes (like fix:, refactor:, add:, etc.)
 - Don't include the 🤖 emoji or Claude Code link as per the updated convention
