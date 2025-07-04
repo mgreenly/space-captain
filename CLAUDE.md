@@ -104,6 +104,10 @@ Always use this exact commit template:
 co-author: <model>
 ```
 
+Where `<model>` should be:
+- For Claude: `claude-opus-4-20250514`
+- For Gemini: `gemini-2.5-pro (via aistudio.google.com)`
+
 **Important**: 
 1. Always show the exact commit message to the user BEFORE running `git commit`
 2. Wait for user approval of the commit message
