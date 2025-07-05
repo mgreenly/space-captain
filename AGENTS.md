@@ -70,12 +70,12 @@ The project uses a **unified build structure** where source files are included d
 ## Development Workflow
 
 ### Before Making Changes
-1. Check requirements in `prds/` folder
+1. Check requirements in `prd/` folder
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 
 ### When Modifying PRDs
-1. **ALWAYS UPDATE prds/README.md** - When making changes to any PRD document in the `prds/` folder, you must also update the corresponding summary in `prds/README.md`
+1. **ALWAYS UPDATE prd/README.md** - When making changes to any PRD document in the `prd/` folder, you must also update the corresponding summary in `prd/README.md`
 2. Ensure the summary accurately reflects the key features and changes
 3. Keep summaries concise (typically 3-5 bullet points per version)
 4. Maintain consistent formatting with other version summaries

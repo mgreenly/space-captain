@@ -14,9 +14,11 @@ This directory contains the Product Requirements Documents (PRDs) for each versi
   - DTLS-secured UDP protocol with certificate pinning for authentication
   - Server-authoritative, distributed, lock-free architecture
   - Multi-threaded design with Hilbert curve spatial partitioning
-  - 2D space combat with 4Hz distributed game loop
+  - 2D space combat with instant beam weapons and shield mechanics
   - Hybrid diff/full-state synchronization for bandwidth efficiency
   - CLI/ncurses client with command REPL interface
+  - Streamlined network protocol with 10 message types using client-side state inference
+  - Cloak mechanics with logarithmic visibility reduction
 
 ### Planned Releases (Speculative)
 - [Version 0.2.0](version-0.2.0.md) - **2025 Q4** (October - December 2025)
