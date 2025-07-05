@@ -56,8 +56,18 @@ This release will implement a **server-authoritative, distributed, and lock-free
     *   **Power Dials:** Four integer settings (0-100) for `speed`, `shields`, `weapons`, and `cloak`.
 
 ### Client State Synchronization (Server-Side)
-*   For each client, the server tracks `server state` and `acknowledged state`.
-*   **State Broadcast with Area of Interest (AoI):** For this version, the server will send a state update to each client every tick. This update includes the full state of the client's *own ship*, plus the `ID, x, y, heading` of all other entities within a **`5.0e10` meter radius**. While future versions will send only the diff between the `server state` and `acknowledged state`, the v0.1.0 release will send the complete state in each update.
+*   For each client, the server tracks `current state`, `acknowledged state`, and a `pending diff accumulator`.
+*   **Hybrid State Broadcast with Area of Interest (AoI):** The server uses a hybrid approach for state synchronization:
+    *   **Normal Operation:** Sends only the diff between `current state` and `acknowledged state` each tick.
+    *   **Fallback Mode:** Sends full state when the client is more than 10 sequences behind or on initial connection.
+    *   **Area of Interest:** Updates include changes to the client's own ship plus any entities within a **`5.0e10` meter radius`.
+    *   **v0.1.0 Implementation Note:** The diff calculation will be a dummy implementation that always marks all fields as changed, effectively sending full state every tick. This establishes the protocol structure while deferring optimization to future releases.
+*   **State Tracking Per Client:**
+    *   `current_state`: The authoritative server state for this client.
+    *   `current_sequence`: Incrementing sequence number for ordering.
+    *   `acked_state`: Last state acknowledged by the client.
+    *   `acked_sequence`: Sequence number of last acknowledged state.
+    *   `pending_diff`: Accumulates all changes since last ACK (always indicates "all changed" in v0.1.0).
 
 ### Spatial Partitioning & Concurrency Model
 *   The game world is discretized into a fixed **128x128 grid**.
@@ -77,6 +87,11 @@ This release will implement a **server-authoritative, distributed, and lock-free
 ### Client Interface
 *   CLI-only (Linux) with an `ncurses`-based display.
 
+### Client-Side Prediction
+*   To compensate for network latency and the low server tick rate (4 Hz), the client will implement simple prediction.
+*   **Extrapolation:** When the client receives a state update from the server, it will store the entity's position, velocity, and heading. In between server updates, the client will continue to move the entity forward based on its last known state.
+*   **Correction:** Upon receiving a new server update, the client will snap the entity to the new authoritative position. For v0.1.0, no sophisticated smoothing (e.g., interpolation) will be implemented. This simple "snap" correction is sufficient to provide a responsive experience while keeping complexity low.
+
 ## 4. Technical Requirements & Architecture
 
 ### Server Requirements
@@ -92,7 +107,7 @@ This release will implement a **server-authoritative, distributed, and lock-free
 
 ### Network Protocol & Security: DTLS over UDP
 
-*   **Transport Layer:** The protocol is built on top of **UDP** and secured with **Datagram Transport Layer Security (DTLS) 1.3**.
+*   **Transport Layer:** The protocol is built on top of **UDP** and secured with **Datagram Transport Layer Security (DTLS) 1.2**.
 *   **Security Library Abstraction:** To maintain flexibility, the server will use a custom wrapper interface that abstracts the underlying security library.
     *   The initial implementation will use **Mbed TLS**.
     *   The wrapper will be designed to allow for future integration of other libraries like wolfSSL with a compile-time flag.
@@ -107,12 +122,14 @@ This release will implement a **server-authoritative, distributed, and lock-free
     *   **Timeout:** The server will disconnect a client if no valid DTLS records are received within a 30-second window.
 *   **State Synchronization & Reliability:**
     *   **Sequencing:** The server includes an incrementing sequence number in every state update packet sent to a client over the secure channel.
-    *   **ACKs:** The client acknowledges receipt by sending back the full state update it received. This allows the server to set the new acknowledged state for the client without needing to store a history of sent states.
+    *   **ACKs:** The client acknowledges receipt by sending back just the sequence number. The server uses this to update the client's acknowledged state and clear the pending diff accumulator.
+    *   **Diff-Based Updates:** The server normally sends only state differences (diffs) containing changes since the last acknowledged state. This significantly reduces bandwidth usage. **Note:** In v0.1.0, the diff calculation is a placeholder that marks all fields as changed, effectively sending full state each tick while establishing the protocol framework.
+    *   **Full State Fallback:** If a client falls more than 10 sequences behind (due to packet loss or processing delays), the server automatically sends a full state update to resynchronize.
     *   **Ordering:** The client discards any packet with a sequence number less than or equal to the last one it processed, ensuring it only acts on the newest state.
 
 ## 5. Success Criteria
 
-1.  Server maintains a stable **4 tick/second (250ms)** update rate with a load of **at least 1,000 concurrent clients**, demonstrating the architecture's viability for scaling into the thousands.
+1.  Server maintains a stable **4 tick/second (250ms)** update rate with a load of **2,000 concurrent clients**, demonstrating the architecture's viability for scaling into the thousands.
 2.  The custom reliable-UDP protocol maintains state synchronization with minimal packet loss (<1%) on a LAN.
 3.  Client-server latency remains **under 50ms** on a LAN environment.
 4.  A 24-hour stress test with simulated clients shows **zero memory leaks**.
@@ -123,7 +140,7 @@ This release will implement a **server-authoritative, distributed, and lock-free
 1.  **Performance at Scale**: The target of supporting **thousands of clients** on a single server is ambitious.
     *   **Mitigation**: The architecture is designed for this scale. Profiling tools (`perf`) will be used iteratively to eliminate bottlenecks.
 2.  **Network Instability / Packet Loss**: UDP does not guarantee delivery.
-    *   **Mitigation**: For v0.1.0, because the full state is sent every 250ms, a single dropped packet will be corrected by the next successful one.
+    *   **Mitigation**: The hybrid diff/full-state approach handles packet loss gracefully. Missing diffs are compensated by the automatic full-state fallback when clients fall behind.
 3.  **Concurrency Bugs**: Lock-free programming is complex.
     *   **Mitigation**: Use battle-tested lock-free libraries. Employ rigorous testing, sanitizers (TSan), and formal reasoning about memory barriers.
 4.  **Network Protocol Evolution**: The initial protocol may be insufficient.
