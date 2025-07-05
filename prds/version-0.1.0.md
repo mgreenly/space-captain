@@ -100,7 +100,7 @@ This release will implement a **server-authoritative, distributed, and lock-free
     *   **Timeout:** The server will disconnect a client if no valid DTLS records are received within a 30-second window.
 *   **State Synchronization & Reliability:**
     *   **Sequencing:** The server includes an incrementing sequence number in every state update packet sent to a client over the secure channel.
-    *   **ACKs:** The client acknowledges receipt by sending an ACK packet containing the sequence number of the message it received.
+    *   **ACKs:** The client acknowledges receipt by sending back the full state update it received. This allows the server to set the new acknowledged state for the client without needing to store a history of sent states.
     *   **Ordering:** The client discards any packet with a sequence number less than or equal to the last one it processed, ensuring it only acts on the newest state.
 
 ## 5. Success Criteria
