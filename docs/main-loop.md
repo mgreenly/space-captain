@@ -1,198 +1,92 @@
-# Main Server Loop Architecture
+# Server Loop and Worker Architecture
 
-## Overview
+**Status**: Adopted
 
-The Space Captain server uses a high-performance architecture combining an epoll-based event loop, a thread-safe message queue, and a worker thread pool. This design allows the server to handle thousands of concurrent connections efficiently.
+## 1. High-Level Architecture
 
-## Key Components
+The Space Captain server uses a high-performance architecture combining an `epoll`-based event loop on the main thread with a pool of worker threads for game logic processing. This design allows the server to handle thousands of concurrent connections efficiently by separating network I/O from CPU-intensive simulation tasks.
 
-### 1. Epoll Event Loop (Main Thread)
+A key element of this architecture is the use of thread-safe, lock-free queues to pass messages from the network thread to the appropriate worker threads.
 
-The main thread runs an edge-triggered epoll loop that handles all network I/O:
+## 2. The Main Network Thread
 
-```
-Main Thread (server.c)
-├── Creates listening socket
-├── Initializes epoll instance
-├── Pre-allocates connection pool
-└── Runs event loop
-    ├── epoll_wait() for events
-    ├── Accept new connections
-    ├── Read client data (non-blocking)
-    └── Queue messages for processing
-```
+The main thread is responsible for all direct network I/O. It runs an edge-triggered `epoll` loop that handles the following:
 
-**Key characteristics:**
-- **Edge-triggered mode (EPOLLET)**: More efficient but requires draining all available data
-- **Non-blocking I/O**: Never blocks on network operations
-- **Connection pooling**: Pre-allocates 5000 client buffers to avoid malloc during operation
-- **Adaptive timeout**: Uses 0ms timeout when active, 100ms when idle
+*   Accepting new client connections.
+*   Reading incoming data from all client sockets.
+*   Performing minimal parsing to identify message boundaries.
+*   Dispatching complete messages to the appropriate worker's input queue.
+*   Sending outgoing state updates prepared by the worker threads.
 
-### 2. Message Queue (Thread-Safe)
+### Key Characteristics:
+- **Edge-triggered mode (`EPOLLET`)**: Reduces the number of system calls, but requires the application to drain all available data from the socket.
+- **Non-blocking I/O**: The main thread never blocks on network operations, ensuring it can always handle new events.
+- **Connection Pooling**: The server pre-allocates thousands of client buffers at startup to avoid `malloc` calls during runtime.
 
-A custom thread-safe queue connects the I/O thread with worker threads:
+## 3. Worker Thread Architecture
 
-```
-Message Queue (queue.c)
-├── Bounded circular buffer
-├── Read-write lock for thread safety
-├── Condition variables for blocking operations
-└── Operations
-    ├── sc_queue_add() - Blocks if full
-    ├── sc_queue_pop() - Blocks if empty
-    ├── sc_queue_try_add() - Non-blocking
-    └── sc_queue_try_pop() - Non-blocking
-```
+### The Problem: Handling Asynchronous Input
 
-**Design features:**
-- **Bounded capacity**: Prevents unbounded memory growth
-- **Blocking semantics**: Workers sleep when queue is empty
-- **Timeout support**: Can specify max wait time for operations
+Client inputs arrive at the server asynchronously, influenced by network latency. The server's game loop, however, runs at a fixed tick rate (4 Hz for v0.1.0). The fundamental challenge is to reconcile the asynchronous nature of network I/O with the synchronous, discrete steps of the game simulation. While processing inputs immediately might seem to offer lower latency, it leads to non-deterministic behavior, fairness issues, and extreme concurrency complexity.
 
-### 3. Worker Thread Pool
+### The Solution: Batched Input Processing
 
-Multiple worker threads process messages concurrently:
+To solve this, Space Captain has adopted the industry-standard **Batched Input Processing** model. This model prioritizes determinism, fairness, and simplified concurrency.
 
-```
-Worker Threads (worker.c)
-├── Created at startup (default: 4 threads)
-├── Each thread runs sc_worker_thread()
-└── Processing loop
-    ├── sc_queue_pop() - Block waiting for message
-    ├── Process message based on type
-    ├── Send response back to client
-    └── Free message memory
-```
+The implementation is built around a **phased worker loop** that operates at a fixed 4 Hz (250ms) tick rate.
 
-**Message handlers:**
-- `MSG_ECHO`: Returns the message unchanged
-- `MSG_REVERSE`: Returns the message with content reversed
-- `MSG_TIME`: Returns current timestamp
+### Phased Worker Tick Cycle
 
-## Data Flow
+The main loop for each worker thread is divided into a strict sequence of non-overlapping phases:
 
-Here's how a client request flows through the system:
+1.  **Synchronization**: At the beginning of a tick, all worker threads wait at a barrier for a start signal from the main server thread. This ensures all workers start their simulation tick at the same time, providing a consistent state for global operations like load balancing.
 
-```
-1. Client sends message
-   ↓
-2. Epoll detects EPOLLIN event
-   ↓
-3. Main thread reads data into client buffer
-   ↓
-4. When complete message received:
-   - Allocate message_t structure
-   - Copy data and add client_fd
-   - sc_queue_add() to message queue
-   ↓
-5. Worker thread wakes up
-   - sc_queue_pop() gets message
-   - Process based on message type
-   - send() response directly to client_fd
-   - Free message memory
-   ↓
-6. Client receives response
-```
+2.  **Input Processing**: Each worker drains its dedicated, lock-free, multiple-producer/single-consumer (MPSC) command queue. It processes the entire batch of client messages that have accumulated since the previous tick.
 
-## Performance Optimizations
+3.  **Game State Update**: With the new client inputs applied, the worker runs the game simulation for all entities it manages. This includes updating positions, resolving combat, and handling other game logic.
 
-### 1. Zero-Copy Where Possible
-- Client file descriptor is passed with message
-- Workers send responses directly to clients
-- No intermediate buffering for responses
+4.  **State Broadcast Preparation**: The worker identifies which clients need updates and prepares the outgoing messages. For v0.1.0, this includes the client's own ship state plus the state of all other entities within its Area of Interest (AoI).
 
-### 2. Memory Management
-- **Connection pool**: Pre-allocated buffers avoid malloc during operation
-- **Message recycling**: Could be added for further optimization
-- **Careful buffer sizing**: Avoids reallocation
+5.  **Message Dispatch**: The prepared messages are pushed into a global, thread-safe outbound queue. The main network thread reads from this queue to send the UDP datagrams to the clients.
 
-### 3. Concurrency Design
-- **Single reader**: Only main thread reads from sockets
-- **Multiple processors**: Workers handle CPU-intensive tasks
-- **Lock-free where possible**: Epoll operations don't need locks
+6.  **Sleep**: The worker calculates the time spent on the tick and sleeps for the remaining duration to maintain the fixed 4 Hz rate.
 
-### 4. Network Optimizations
-- **TCP_NODELAY**: Disabled Nagle's algorithm for lower latency
-- **EPOLLRDHUP**: Detect half-closed connections efficiently
-- **Edge-triggered epoll**: Reduces system calls
+### Concrete Scenario
 
-## Handling Edge Cases
+To illustrate the flow, consider a scenario with two players, **Player A** and **Player B**, both managed by the same worker thread. The server is running at 4 ticks per second (250ms per tick).
 
-### Client Disconnection
-```c
-if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
-    // Clean up client state
-    remove_client_buffer(events[i].data.fd);
-    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
-    close(events[i].data.fd);
-}
-```
+**Timeline:**
+*   `T=0ms`: Tick #100 begins.
+*   `T=50ms`: Player A's client sends an input message: `SET_WEAPONS_DIAL(100)`.
+*   `T=120ms`: Player B's client sends an input message: `SET_SPEED_DIAL(80)`.
+*   `T=200ms`: Player A's client sends another input: `FIRE_WEAPONS`.
+*   `T=250ms`: Tick #100 ends. Tick #101 begins.
 
-### Queue Full
-- Main thread uses blocking `sc_queue_add()`
-- Naturally provides backpressure
-- Prevents accepting data faster than processing
+**Flow through the Phases for Tick #101:**
 
-### Partial Messages
-- Each client has a state machine tracking:
-  - `READING_HEADER`: Accumulating 8-byte header
-  - `READING_BODY`: Accumulating message body
-- Buffers store partial data between epoll events
+1.  **Input Queue (Before Tick #101):**
+    The server's main network thread receives these three messages asynchronously. It immediately places them into the responsible worker's MPSC queue.
 
-## Configuration
+2.  **Phase 1: Synchronization (T=250ms):**
+    The worker thread, along with all other workers, waits for and receives the global start signal for Tick #101.
 
-Key constants in `config.h`:
-- `MAX_EVENTS`: 10000 - Maximum epoll events per wait
-- `MAX_CONNECTIONS`: 5000 - Size of connection pool
-- `WORKER_POOL_SIZE`: 4 - Number of worker threads
-- `QUEUE_CAPACITY`: 1000 - Maximum queued messages
-- `EPOLL_TIMEOUT_MS`: 100 - Timeout when idle
+3.  **Phase 2: Input Processing (T=251ms - T=260ms):**
+    The worker thread drains its input queue, processing the three messages in order. Player A's weapon dial is set, Player B's speed dial is set, and Player A's fire command is registered.
 
-## Shutdown Sequence
+4.  **Phase 3: Game State Update (T=261ms - T=300ms):**
+    The worker simulates the tick: it calculates Player B's new velocity, processes Player A's fire command by creating a projectile, and updates all other entity positions.
 
-Graceful shutdown on SIGINT/SIGTERM:
+5.  **Phase 4 & 5: State Dispatch (T=301ms - T=320ms):**
+    The worker prepares and enqueues the state update packets for the main network thread to send out.
 
-1. Set `shutdown_flag` in signal handler
-2. Main loop exits on next iteration
-3. Stop accepting new connections
-4. Call `sc_worker_pool_stop()` - signals workers
-5. Workers drain queue and exit
-6. Clean up remaining messages
-7. Free all resources
+The worker then calculates it spent `70ms` on the tick and sleeps for the remaining `180ms` until Tick #102 begins.
 
-## Monitoring and Debugging
+## 4. Graceful Shutdown
 
-The server logs key events:
-- Connection accepted/closed
-- Message received/sent
-- Worker pool status
-- Queue operations (when errors occur)
-- Performance warnings (e.g., connection pool exhausted)
+The server handles `SIGINT` and `SIGTERM` for a graceful shutdown:
 
-## Common Patterns
-
-### Adding a New Message Type
-
-1. Add to `message_type_t` enum in `message.h`
-2. Update `message_type_to_string()`
-3. Add handler function in `worker.c`
-4. Add case in `sc_worker_thread()` switch statement
-
-### Scaling Considerations
-
-To handle more connections:
-1. Increase `MAX_CONNECTIONS` and `MAX_EVENTS`
-2. Adjust `WORKER_POOL_SIZE` based on workload
-3. Consider multiple accept threads (not currently implemented)
-4. Add message batching for better throughput
-
-## Summary
-
-This architecture provides:
-- **High concurrency**: Handles 5000+ connections
-- **Low latency**: Direct worker-to-client responses
-- **Scalability**: Easy to adjust worker count
-- **Reliability**: Graceful shutdown and error handling
-- **Simplicity**: Clear separation of concerns
-
-The epoll loop handles all I/O efficiently, the message queue decouples I/O from processing, and the worker pool provides parallel message handling - creating a robust and performant server architecture.
+1.  A global `shutdown_flag` is set by the signal handler.
+2.  The main loop exits on its next iteration.
+3.  The server stops accepting new connections.
+4.  The worker pool is signaled to stop. Workers finish their current tick, drain their input queues one last time, and then exit.
+5.  All remaining resources are freed.

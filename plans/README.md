@@ -14,12 +14,7 @@ While PRDs define **what** will be built, implementation plans define **how** it
 
 ## Available Plans
 
-### Active Plans
-- [Version 0.1.0 Implementation Plan](plan-0.1.0.md) - **Active Development**
-  - 54 distinct development steps across 13 phases
-  - Ruby test harness integration for robustness testing
-  - Focus on building scalable UDP-based infrastructure
-  - Supports development of thousands of concurrent connections
+There are currently no active implementation plans. New plans will be added here as they are developed.
 
 ## Plan Structure
 

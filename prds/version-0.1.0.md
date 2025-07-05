@@ -47,6 +47,7 @@ This release will implement a **server-authoritative, distributed, and lock-free
     3.  **Game State Update:** The worker simulates physics, updates entity positions, and resolves combat for all entities under its management.
     4.  **State Broadcast Preparation:** The worker determines the necessary state updates for each client it owns (including data for other entities within their Area of Interest).
     5.  **Message Dispatch:** The prepared update messages are enqueued into a global outbound queue for the main network thread to send to clients.
+    6.  **Sleep:** The worker calculates the time spent on the tick and sleeps for the remaining duration to maintain the fixed 4 Hz rate.
 *   **Entity Identification:** The server is responsible for generating a unique, persistent `entity_id` (`uint64_t`) for each client upon successful connection. This ID is used in all game logic to reference the entity.
 *   **Per-Ship State:** All ship data is managed exclusively by its owning worker thread. The core state for each ship includes:
     *   **Coordinates:** `x`, `y` position (`double`).
