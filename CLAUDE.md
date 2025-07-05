@@ -38,7 +38,7 @@ TEST_NUM_CLIENTS=50 TEST_RUNTIME_SECONDS=30 bin/server_client_tests
 ## Architecture Overview
 
 ### Network Architecture
-- **Server**: Epoll-based event loop, edge-triggered mode, handles 5000+ concurrent connections
+- **Server**: Epoll-based event loop, edge-triggered mode, handles 1000s of concurrent connections
 - **Protocol**: Fixed 8-byte header (type + length) followed by message body
 - **Message Types**: MSG_ECHO (0), MSG_REVERSE (1), MSG_TIME (2)
 - **Optimizations**: TCP_NODELAY, connection pooling, adaptive timeouts, EPOLLRDHUP
@@ -173,7 +173,7 @@ make bump-major    # Increment major version
 ```
 
 ## Important Notes
-- Server must handle 5000 concurrent connections at 60 ticks/second
+- Server must handle 1000s of concurrent connections at 60 ticks/second
 - All networking is non-blocking
 - Error handling is critical - check all return values
 - Memory management - no leaks allowed (test with valgrind)
