@@ -29,7 +29,10 @@ This release will implement a **server-authoritative, distributed, and lock-free
 *   Clients only receive targeted state updates for objects within their area of interest.
 *   `epoll`-based event loop for efficient network I/O.
 *   Dynamic worker pool for parallel message processing and state updates.
-*   Basic logging system with structured levels and log rotation.
+*   **Logging**: The server will log to standard streams following Unix conventions. Log messages must follow the format: `YYYY-MM-DD HH:MM:SS <LEVEL>: <message>`.
+    *   `DEBUG` and `INFO` levels will be written to **`stdout`**.
+    *   `WARN`, `ERROR`, and `FATAL` levels will be written to **`stderr`**.
+    *   The application will not handle log files or rotation; this is the responsibility of the service manager (e.g., `systemd`).
 
 ### Game World & Coordinate System
 *   A 2D space representing a solar system with a **center-origin** at `(0.0, 0.0)`.
