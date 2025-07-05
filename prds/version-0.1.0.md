@@ -49,8 +49,8 @@ This release will implement a **server-authoritative, distributed, and lock-free
     *   **Power Dials:** Four integer settings (0-100) for `speed`, `shields`, `weapons`, and `cloak`.
 
 ### Client State Synchronization (Server-Side)
-*   For each client, the server tracks `Current Visible State` and `Last Acknowledged State`.
-*   **State Broadcast with Area of Interest (AoI):** For this version, the server will send a state update to each client every tick. This update includes the full state of the client's *own ship*, plus the `ID, x, y, heading` of all other entities within a **`5.0e10` meter radius**.
+*   For each client, the server tracks `server state` and `acknowledged state`.
+*   **State Broadcast with Area of Interest (AoI):** For this version, the server will send a state update to each client every tick. This update includes the full state of the client's *own ship*, plus the `ID, x, y, heading` of all other entities within a **`5.0e10` meter radius**. While future versions will send only the diff between the `server state` and `acknowledged state`, the v0.1.0 release will send the complete state in each update.
 
 ### Spatial Partitioning & Concurrency Model
 *   The game world is discretized into a fixed **128x128 grid**.
