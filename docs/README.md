@@ -7,6 +7,7 @@ This directory contains documentation and detailed explanations about various as
 ### Architecture
 - [Architecture Diagram](arch.png) - Visual overview of the system architecture
 - [Main Server Loop](main-loop.md) - High-level overview of the epoll loop, message queue, and worker threads
+- [Main Loop and Input Processing](main-loop-and-input-processing.md) - Design choices and architecture for the worker main loop
 - [MPMC Queue Implementation](mpmc-queue.md) - Detailed explanation of the multi-producer multi-consumer queue
 - [Worker Thread Pool](worker-thread-pool.md) - In-depth look at the worker thread pool and message processing
 

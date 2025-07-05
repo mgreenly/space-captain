@@ -40,7 +40,13 @@ This release will implement a **server-authoritative, distributed, and lock-free
 *   All ships spawn at a fixed distance of **1.5 × 10¹¹ meters** from the central star.
 
 ### Distributed Game Loop & State Management
-*   The "game loop" is a **distributed concept**. Each worker thread runs its own update loop at a fixed **4 Hz (250ms tick rate)**.
+*   The "game loop" is a **distributed concept**. Each worker thread runs its own update loop at a fixed **4 Hz (250ms tick rate)**. This loop uses a **batched input processing model** to ensure determinism and fairness.
+*   **Phased Tick Cycle:** The worker's main loop is divided into a strict sequence of phases to manage concurrency and enable safe, consistent state snapshots for operations like rebalancing.
+    1.  **Synchronization:** Workers wait for a start-of-tick signal from the main server thread. This acts as a barrier, ensuring all workers begin the tick simultaneously.
+    2.  **Input Processing:** Each worker drains its dedicated, lock-free MPSC command queue, processing all client messages received since the last tick.
+    3.  **Game State Update:** The worker simulates physics, updates entity positions, and resolves combat for all entities under its management.
+    4.  **State Broadcast Preparation:** The worker determines the necessary state updates for each client it owns (including data for other entities within their Area of Interest).
+    5.  **Message Dispatch:** The prepared update messages are enqueued into a global outbound queue for the main network thread to send to clients.
 *   **Entity Identification:** The server is responsible for generating a unique, persistent `entity_id` (`uint64_t`) for each client upon successful connection. This ID is used in all game logic to reference the entity.
 *   **Per-Ship State:** All ship data is managed exclusively by its owning worker thread. The core state for each ship includes:
     *   **Coordinates:** `x`, `y` position (`double`).
