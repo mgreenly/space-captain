@@ -83,19 +83,23 @@ This release will implement a **server-authoritative, distributed, and lock-free
 *   **Platform:** Linux x86_64.
 *   **Interface:** CLI/terminal with `ncurses` library.
 
-### Network Protocol: Custom Reliable UDP
-*   **Transport Layer:** The protocol is built on top of **UDP**.
-*   **Connection Handshake:** A session is established via a four-way handshake:
-    1.  **Client -> Server:** `MSG_HELLO` (Client requests connection)
-    2.  **Server -> Client:** `MSG_CHALLENGE` (Server replies with a unique session token)
-    3.  **Client -> Server:** `MSG_RESPONSE` (Client sends the token back)
-    4.  **Server -> Client:** `MSG_WELCOME` (Server confirms, assigns an `entity_id`, and adds the client to its active list)
-*   **Session Management & Security:**
-    *   **Keep-Alive:** Clients must send a periodic `MSG_HEARTBEAT` packet if idle.
-    *   **Timeout:** The server will disconnect a client if no valid packets are received within a 30-second window.
-    *   **Spoofing Mitigation:** All packets from a connected client must contain the session token assigned during the handshake for validation by the server.
+### Network Protocol & Security: DTLS over UDP
+
+*   **Transport Layer:** The protocol is built on top of **UDP** and secured with **Datagram Transport Layer Security (DTLS) 1.3**.
+*   **Security Library Abstraction:** To maintain flexibility, the server will use a custom wrapper interface that abstracts the underlying security library.
+    *   The initial implementation will use **Mbed TLS**.
+    *   The wrapper will be designed to allow for future integration of other libraries like wolfSSL with a compile-time flag.
+*   **Cipher Suite Selection:** The DTLS connection will be configured to prioritize performance by selecting cipher suites with the lowest computational cost (e.g., using ChaCha20-Poly1305 or AES-GCM). Security only needs to be guaranteed for the duration of a single game session.
+*   **Authentication with Certificate Pinning:**
+    *   The server will use a self-signed certificate.
+    *   The client will not use a traditional public CA infrastructure. Instead, it will be pre-configured with a hash of the server's public key or certificate.
+    *   During the DTLS handshake, the client will verify that the server's certificate matches the pinned hash, preventing man-in-the-middle (MITM) attacks.
+*   **Connection Handshake:** The DTLS handshake itself will serve as the connection establishment mechanism, replacing the previous manual four-way handshake. A successful handshake indicates a secure and established session.
+*   **Session Management:**
+    *   **Keep-Alive:** DTLS has built-in replay protection and session management. The application will send periodic heartbeat messages over the secure channel to ensure the connection remains active.
+    *   **Timeout:** The server will disconnect a client if no valid DTLS records are received within a 30-second window.
 *   **State Synchronization & Reliability:**
-    *   **Sequencing:** The server includes an incrementing sequence number in every state update packet sent to a client.
+    *   **Sequencing:** The server includes an incrementing sequence number in every state update packet sent to a client over the secure channel.
     *   **ACKs:** The client acknowledges receipt by sending an ACK packet containing the sequence number of the message it received.
     *   **Ordering:** The client discards any packet with a sequence number less than or equal to the last one it processed, ensuring it only acts on the newest state.
 
