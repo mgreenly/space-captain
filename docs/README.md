@@ -21,6 +21,7 @@ This directory contains documentation and detailed explanations about various as
 - [Speed Table](speed-table.md) - Logarithmic speed scale reference and implementation
 
 ### Research
+- [Net-Worker Pool Architecture](net-worker-pool-architecture.md) - A 3-tier server model for extreme I/O scalability and simplified rebalancing
 - [DTLS for Real-Time Game Traffic](dtls-research.md) - Research summary on securing UDP with DTLS and selecting a crypto library
 - [MMO Architecture Research](mmo-architecture-research.md) - High-level architecture patterns and design considerations for MMO systems
 - [MMO State Management and Protocols](mmo-state-management-protocols.md) - Technical white paper on MMO global state management and client-server protocols
