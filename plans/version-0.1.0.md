@@ -14,7 +14,7 @@ This document presents the final, restructured work plan for implementing Space 
         *   `config.h` will explicitly define key constants from the PRD: `AOI_RADIUS (5.0e10)`, `SPAWN_RADIUS (1.5e11)`, and `WORLD_RADIUS (1.0e14)`.
     *   [x] **1.3: Testing Framework Integration:** Integrate the Unity test framework and create the initial test runner.
     *   [x] **1.4: Basic Server Loop:** Implement a non-blocking UDP socket with a basic `epoll` loop and graceful signal handling.
-    *   [x] **1.5: Minimal Test Client:** Create a `tests/mock_client.c` capable of sending a single packet and asserting a response, to be used in automated functional tests.
+    *   [x] **1.5: Minimal Test Client:** Create a `tests/server_tests.c` capable of sending a single packet and asserting a response, to be used in automated functional tests.
 
 ---
 
