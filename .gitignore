@@ -1,7 +1,9 @@
-/prompt.txt
-/bin
-/misc
-/tags
-/obj
-/NOTES.md
+NOTES.md
+bin/
+misc/
 node_modules/
+obj/
+package-lock.json
+package.json
+prompt.txt
+tags
