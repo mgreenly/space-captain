@@ -4,11 +4,12 @@ Space Captain: A toy MMO written in C as a learning experiment for Linux network
 
 ## Critical Rules
 1. **NO COMPILER WARNINGS** - All code must compile cleanly. Fix warnings immediately.
-2. **NO CUSTOM TEST SCRIPTS** - Use `bin/mock_client_tests` for functional testing
+2. **NO CUSTOM TEST SCRIPTS** - Use `bin/server_tests` for functional testing
 3. **ALWAYS USE FORMAT STRINGS** - `log_error("%s", msg)` not `log_error(msg)`
 4. **ALWAYS RUN AFTER CHANGES** - `make` to verify builds, `make fmt` for formatting
 5. **NEVER COMMIT WITHOUT EXPLICIT REQUEST** - Do not create git commits unless the user explicitly asks you to commit changes. When commits are requested and approved, automatically push to remote.
 6. **ALWAYS INCLUDE HIDDEN FILES** - When using any file operation commands (`ls`, `find`, `glob`, etc.), always include hidden files and directories (those starting with `.`). For `ls`, always use the `-a` flag
+7. **NO BACKGROUND PROCESSES** - Never run processes in the background. Functional tests are responsible for starting and stopping the applications they require
 
 ## Quick Reference
 
@@ -25,7 +26,7 @@ make fmt          # Format code with clang-format
 
 ### Functional Testing
 ```bash
-bin/mock_client_tests
+bin/server_tests
 ```
 
 ## Architecture Overview
@@ -108,7 +109,7 @@ Where `<model>` should be:
 
 ## Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)
-- **Functional tests**: Full system testing (mock_client_tests.c)
+- **Functional tests**: Full system testing (server_tests.c)
 - **Manual testing**: Use `make run-server` and `make run-client`
 - **Performance testing**: Monitor with 50+ clients
 
