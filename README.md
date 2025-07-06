@@ -5,7 +5,7 @@ Space Captain
 
 Space Captain is a toy MMO project built in C as a technical exploration of Linux network programming, systems optimization and game design. The project will evolve from a foundational technical demo (v0.1.0) featuring CLI-based space combat with 1000's concurrent client connections, through platform-specific graphical clients (v0.2.0-0.4.0), to a persistent world with crew progression, economy, and manufacturing systems (v0.5.0+).
 
-You can follow along at https://www.youtube.com/@LinuxProgrammingandStuff
+You can follow along at https://www.youtube.com/@SpaceCaptainDevLog
 
 Installing
 ==========
