@@ -10,11 +10,11 @@
 
 # Compiler settings
 CC = gcc
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP $(shell pkg-config --cflags mbedtls)
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
-LDFLAGS = -lpthread
+LDFLAGS = -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
 
 # Build settings
 TAG ?= pre
@@ -79,10 +79,10 @@ release:
 
 # Debug executables
 $(BIN_DIR)/server: $(SERVER_OBJ_DEBUG) | $(BIN_DIR)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(BIN_DIR)/client: $(CLIENT_OBJ_DEBUG) | $(BIN_DIR)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 # Debug object files
 $(OBJ_DIR)/debug/server.o: $(SERVER_MAIN) | $(OBJ_DIR)/debug
@@ -100,14 +100,14 @@ $(BIN_DIR)/server-release: $(SERVER_OBJ_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
 	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
 	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
-	$(CC) $(LDFLAGS) -o $(BIN_DIR)/server-$$FULL_VERSION $^; \
+	$(CC) -o $(BIN_DIR)/server-$$FULL_VERSION $^ $(LDFLAGS); \
 	ln -sf server-$$FULL_VERSION $@
 
 $(BIN_DIR)/client-release: $(CLIENT_OBJ_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
 	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
 	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
-	$(CC) $(LDFLAGS) -o $(BIN_DIR)/client-$$FULL_VERSION $^; \
+	$(CC) -o $(BIN_DIR)/client-$$FULL_VERSION $^ $(LDFLAGS); \
 	ln -sf client-$$FULL_VERSION $@
 
 # Release object files
@@ -133,7 +133,7 @@ run-tests: tests server client
 
 # Test executables
 $(BIN_DIR)/%_tests: $(OBJ_DIR)/%_tests.o | $(BIN_DIR)
-	$(CC) $(LDFLAGS) -o $@ $^
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 # Test object files
 $(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)
@@ -168,6 +168,13 @@ fmt:
 		echo "Formatting: $$file"; \
 		clang-format -i "$$file"; \
 	done
+
+# Generate self-signed certificates for DTLS
+.PHONY: certs
+certs:
+	@mkdir -p certs
+	@openssl req -x509 -newkey rsa:4096 -keyout certs/server.key -out certs/server.crt -sha256 -days 365 -nodes -subj "/CN=localhost"
+	@echo "Certificates generated in certs/"
 
 # Update CLI tools
 .PHONY: update-tools
