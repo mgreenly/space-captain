@@ -164,7 +164,7 @@ debug-client: client
 # Code formatting
 .PHONY: fmt
 fmt:
-	@find . -path ./tst/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print | while read file; do \
+	@find . -path ./node_modules -prune -o -path ./tests/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print | while read file; do \
 		echo "Formatting: $$file"; \
 		clang-format -i "$$file"; \
 	done
