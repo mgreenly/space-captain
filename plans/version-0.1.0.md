@@ -23,10 +23,10 @@ This document presents the final, restructured work plan for implementing Space 
 *   **Goal:** Implement a secure communication channel and the basic message-passing system.
 *   **Verifiable Outcome:** The mock test client can establish a full DTLS 1.2 connection, send a `PING` message, and receive a `PONG` response, all verified with a functional test.
 *   **Tasks:**
-    *   [ ] **2.1: DTLS Integration:** Implement the security abstraction layer, certificate management, and client-side pinning.
+    *   [x] **2.1: DTLS Integration:** Implement the security abstraction layer, certificate management, and client-side pinning.
         *   Generate a self-signed server certificate for the server to use.
         *   Configure the DTLS context to prioritize performant cipher suites, specifically `AES-GCM`.
-    *   [ ] **2.2: Secure Handshake:** Integrate the DTLS handshake into the main server loop for new connections.
+    *   [x] **2.2: Secure Handshake:** Integrate the DTLS handshake into the main server loop for new connections.
         *   Implement a 30-second timeout for the handshake and for ongoing connections that have not sent a heartbeat.
     *   [ ] **2.3: Core Protocol:** Define the `MessageHeader` and a basic `PING`/`PONG` message set. Implement the necessary serialization/deserialization.
     *   [ ] **2.4: Functional Connection Test:** Create `tests/connection_test.c` which uses the mock client to automate and verify the secure connection and ping/pong exchange.

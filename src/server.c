@@ -9,10 +9,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <time.h>
 
 #include "config.h"
 #include "log.h"
 #include "server.h"
+#include "dtls.h"
+
+// Include DTLS implementation
+#include "dtls.c"
 
 // Server bind addresses
 const char *LISTEN_ADDRESSES[] = {
@@ -20,13 +25,111 @@ const char *LISTEN_ADDRESSES[] = {
   NULL         // NULL terminator
 };
 
-// Global flag for graceful shutdown
+// Client session structure
+typedef struct client_session {
+  struct sockaddr_in addr;
+  socklen_t addr_len;
+  dtls_session_t *dtls_session;
+  time_t last_activity;
+  bool handshake_complete;
+  struct client_session *next;
+} client_session_t;
+
+// Global variables
 static volatile sig_atomic_t g_running = 1;
+static client_session_t *g_clients     = NULL;
+static dtls_context_t *g_dtls_ctx      = NULL;
 
 // Signal handler for graceful shutdown
 static void handle_shutdown(int sig) {
   (void) sig;
   g_running = 0;
+}
+
+// Find client session by address
+static client_session_t *find_client(const struct sockaddr_in *addr) {
+  client_session_t *client = g_clients;
+  while (client) {
+    if (client->addr.sin_addr.s_addr == addr->sin_addr.s_addr &&
+        client->addr.sin_port == addr->sin_port) {
+      return client;
+    }
+    client = client->next;
+  }
+  return NULL;
+}
+
+// Add new client session
+static client_session_t *add_client(const struct sockaddr_in *addr, socklen_t addr_len, int sock) {
+  client_session_t *client = calloc(1, sizeof(client_session_t));
+  if (!client) {
+    log_error("%s", "Failed to allocate client session");
+    return NULL;
+  }
+
+  memcpy(&client->addr, addr, addr_len);
+  client->addr_len           = addr_len;
+  client->last_activity      = time(NULL);
+  client->handshake_complete = false;
+
+  // Create DTLS session
+  client->dtls_session =
+    sc_dtls_session_create(g_dtls_ctx, sock, (struct sockaddr *) addr, addr_len);
+  if (!client->dtls_session) {
+    log_error("%s", "Failed to create DTLS session");
+    free(client);
+    return NULL;
+  }
+
+  // Add to list
+  client->next = g_clients;
+  g_clients    = client;
+
+  char addr_str[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &addr->sin_addr, addr_str, sizeof(addr_str));
+  log_info("New client connected from %s:%d", addr_str, ntohs(addr->sin_port));
+
+  return client;
+}
+
+// Remove client session
+static void remove_client(client_session_t *client) {
+  char addr_str[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &client->addr.sin_addr, addr_str, sizeof(addr_str));
+  log_info("Client disconnected: %s:%d", addr_str, ntohs(client->addr.sin_port));
+
+  // Remove from list
+  client_session_t **pp = &g_clients;
+  while (*pp && *pp != client) {
+    pp = &(*pp)->next;
+  }
+  if (*pp) {
+    *pp = client->next;
+  }
+
+  // Clean up DTLS session
+  if (client->dtls_session) {
+    sc_dtls_close(client->dtls_session);
+    sc_dtls_session_destroy(client->dtls_session);
+  }
+
+  free(client);
+}
+
+// Check for inactive clients
+static void check_client_timeouts(void) {
+  time_t now               = time(NULL);
+  client_session_t *client = g_clients;
+  client_session_t *next;
+
+  while (client) {
+    next = client->next;
+    if (now - client->last_activity > CLIENT_TIMEOUT_SECONDS) {
+      log_warn("%s", "Client timeout - removing inactive client");
+      remove_client(client);
+    }
+    client = next;
+  }
 }
 
 // Set socket to non-blocking mode
@@ -94,6 +197,21 @@ static int create_udp_socket(const char *address) {
 int main() {
   log_info("%s", "Space Captain Server starting...");
 
+  // Initialize DTLS
+  if (sc_dtls_init() != DTLS_OK) {
+    log_error("%s", "Failed to initialize DTLS");
+    return 1;
+  }
+
+  // Create DTLS context for server
+  g_dtls_ctx =
+    sc_dtls_context_create(DTLS_ROLE_SERVER, "certs/server.crt", "certs/server.key", NULL, 0);
+  if (!g_dtls_ctx) {
+    log_error("%s", "Failed to create DTLS context");
+    sc_dtls_cleanup();
+    return 1;
+  }
+
   // Set up signal handlers
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
@@ -103,6 +221,8 @@ int main() {
 
   if (sigaction(SIGINT, &sa, NULL) < 0 || sigaction(SIGTERM, &sa, NULL) < 0) {
     log_error("Failed to set signal handlers: %s", strerror(errno));
+    sc_dtls_context_destroy(g_dtls_ctx);
+    sc_dtls_cleanup();
     return 1;
   }
 
@@ -154,9 +274,10 @@ int main() {
 
   // Main event loop
   struct epoll_event events[EPOLL_MAX_EVENTS];
-  char buffer[SOCKET_BUFFER_SIZE];
+  uint8_t buffer[SOCKET_BUFFER_SIZE];
   struct sockaddr_in client_addr;
   socklen_t client_len;
+  time_t last_timeout_check = time(NULL);
 
   while (g_running) {
     int nfds = epoll_wait(epoll_fd, events, EPOLL_MAX_EVENTS, 1000); // 1 second timeout
@@ -170,6 +291,13 @@ int main() {
       }
     }
 
+    // Check for client timeouts periodically
+    time_t now = time(NULL);
+    if (now - last_timeout_check >= 5) { // Check every 5 seconds
+      check_client_timeouts();
+      last_timeout_check = now;
+    }
+
     // Process events
     for (int i = 0; i < nfds; i++) {
       int sock = events[i].data.fd;
@@ -177,26 +305,88 @@ int main() {
       // Read all available datagrams (edge-triggered mode)
       while (1) {
         client_len = sizeof(client_addr);
-        ssize_t len =
-          recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *) &client_addr, &client_len);
 
-        if (len < 0) {
+        // Peek at the packet to see which client it's from
+        ssize_t peek_len = recvfrom(sock, buffer, sizeof(buffer), MSG_PEEK,
+                                    (struct sockaddr *) &client_addr, &client_len);
+
+        if (peek_len < 0) {
           if (errno == EAGAIN || errno == EWOULDBLOCK) {
             break; // No more data
           }
-          log_error("recvfrom failed: %s", strerror(errno));
+          log_error("recvfrom peek failed: %s", strerror(errno));
           break;
         }
 
-        // Log received packet
-        char addr_str[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &client_addr.sin_addr, addr_str, sizeof(addr_str));
-        log_debug("Received %zd bytes from %s:%d", len, addr_str, ntohs(client_addr.sin_port));
+        // Find or create client session
+        client_session_t *client = find_client(&client_addr);
+        if (!client) {
+          // New client - create session
+          client = add_client(&client_addr, client_len, sock);
+          if (!client) {
+            // Failed to create session, discard packet
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            continue;
+          }
+        }
 
-        // Echo the packet back for now
-        ssize_t sent = sendto(sock, buffer, len, 0, (struct sockaddr *) &client_addr, client_len);
-        if (sent < 0) {
-          log_error("sendto failed: %s", strerror(errno));
+        // Update last activity
+        client->last_activity = time(NULL);
+
+        // Handle DTLS handshake or data
+        if (!client->handshake_complete) {
+          // Try to complete handshake
+          dtls_result_t result = sc_dtls_handshake(client->dtls_session);
+
+          if (result == DTLS_OK) {
+            client->handshake_complete = true;
+            char addr_str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &client_addr.sin_addr, addr_str, sizeof(addr_str));
+            log_info("DTLS handshake completed for %s:%d", addr_str, ntohs(client_addr.sin_port));
+
+            // Consume the packet that triggered handshake completion
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+          } else if (result == DTLS_ERROR_WOULD_BLOCK) {
+            // Handshake in progress, consume packet
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+          } else {
+            // Handshake failed
+            log_error("DTLS handshake failed: %s", sc_dtls_error_string(result));
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            remove_client(client);
+          }
+        } else {
+          // Handshake complete - read application data
+          size_t bytes_read = 0;
+          dtls_result_t result =
+            sc_dtls_read(client->dtls_session, buffer, sizeof(buffer), &bytes_read);
+
+          if (result == DTLS_OK && bytes_read > 0) {
+            // Log received data
+            char addr_str[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &client_addr.sin_addr, addr_str, sizeof(addr_str));
+            log_debug("Received %zu bytes from %s:%d (DTLS)", bytes_read, addr_str,
+                      ntohs(client_addr.sin_port));
+
+            // Echo the data back (for now)
+            size_t bytes_written = 0;
+            result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+            if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+              log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+              remove_client(client);
+            }
+          } else if (result == DTLS_ERROR_WOULD_BLOCK) {
+            // No data available yet
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+          } else if (result == DTLS_ERROR_PEER_CLOSED) {
+            // Client closed connection
+            remove_client(client);
+          } else {
+            // Read error
+            log_error("DTLS read failed: %s", sc_dtls_error_string(result));
+            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            remove_client(client);
+          }
         }
       }
     }
@@ -204,11 +394,22 @@ int main() {
 
   log_info("%s", "Server shutting down...");
 
-  // Clean up
+  // Clean up all client sessions
+  while (g_clients) {
+    remove_client(g_clients);
+  }
+
+  // Clean up sockets
   for (int i = 0; i < num_sockets; i++) {
     close(sockets[i]);
   }
   close(epoll_fd);
+
+  // Clean up DTLS
+  if (g_dtls_ctx) {
+    sc_dtls_context_destroy(g_dtls_ctx);
+  }
+  sc_dtls_cleanup();
 
   log_info("%s", "Server stopped");
   return 0;
