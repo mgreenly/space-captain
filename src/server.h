@@ -2,9 +2,6 @@
 #define SERVER_H
 
 // Server bind addresses
-static const char *LISTEN_ADDRESSES[] = {
-  "127.0.0.1", // localhost
-  NULL         // NULL terminator
-};
+extern const char *LISTEN_ADDRESSES[];
 
 #endif // SERVER_H

@@ -14,6 +14,12 @@
 #include "log.h"
 #include "server.h"
 
+// Server bind addresses
+const char *LISTEN_ADDRESSES[] = {
+  "127.0.0.1", // localhost
+  NULL         // NULL terminator
+};
+
 // Global flag for graceful shutdown
 static volatile sig_atomic_t g_running = 1;
 
