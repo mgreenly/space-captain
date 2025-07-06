@@ -164,9 +164,10 @@ int main() {
     if (nfds < 0) {
       if (errno == EINTR) {
         continue; // Interrupted by signal
+      } else {
+        log_error("epoll_wait encountered error: %s", strerror(errno));
+        continue; // Log error and continue running instead of breaking
       }
-      log_error("epoll_wait failed: %s", strerror(errno));
-      break;
     }
 
     // Process events
