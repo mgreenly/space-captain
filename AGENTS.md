@@ -25,14 +25,7 @@ make fmt          # Format code with clang-format
 
 ### Functional Testing
 ```bash
-# Quick test (5 clients, 5 seconds)
-TEST_NUM_CLIENTS=5 TEST_RUNTIME_SECONDS=5 bin/server_client_tests
-
-# Standard test (10 clients, 5 seconds - default)
 bin/server_client_tests
-
-# Stress test (50 clients, 30 seconds)
-TEST_NUM_CLIENTS=50 TEST_RUNTIME_SECONDS=30 bin/server_client_tests
 ```
 
 ## Architecture Overview
