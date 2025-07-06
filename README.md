@@ -49,3 +49,18 @@ If you want everything to work the way it does for me you'll need these things i
 - @google/gemini-cli
 - @anthropic-ai/claude-code
 - @openai/codex
+
+## Debian Package Requirements
+
+To build Space Captain on Debian/Ubuntu systems, install these packages:
+
+```bash
+sudo apt update
+sudo apt install build-essential gdb clang-format graphviz valgrind
+```
+
+- **build-essential** - GCC compiler, make, and core build tools
+- **gdb** - Debugger for debug targets
+- **clang-format** - Code formatter for `make fmt`
+- **graphviz** - Architecture diagram generation (`make dot`)
+- **valgrind** - Memory leak detection (recommended)
