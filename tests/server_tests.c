@@ -37,10 +37,10 @@ void setUp(void) {
     exit(1);
   }
   TEST_ASSERT_NOT_EQUAL(-1, server_pid);
-  
+
   // Give server time to start
   usleep(100000); // 100ms
-  
+
   // Create UDP socket for testing
   test_socket = socket(AF_INET, SOCK_DGRAM, 0);
   TEST_ASSERT_NOT_EQUAL(-1, test_socket);
@@ -64,7 +64,7 @@ void tearDown(void) {
     close(test_socket);
     test_socket = -1;
   }
-  
+
   // Stop the server
   if (server_pid > 0) {
     kill(server_pid, SIGTERM);
@@ -145,6 +145,74 @@ void test_server_large_packet(void) {
   TEST_ASSERT_EQUAL_MEMORY(large_msg, recv_buffer, received);
 }
 
+// Test handling of socket errors (invalid server address)
+void test_socket_error_handling(void) {
+  struct sockaddr_in bad_addr;
+  memset(&bad_addr, 0, sizeof(bad_addr));
+  bad_addr.sin_family = AF_INET;
+  bad_addr.sin_port   = htons(SERVER_PORT);
+  inet_pton(AF_INET, "192.0.2.1",
+            &bad_addr.sin_addr); // TEST-NET-1, non-routable IP used for testing
+
+  const char *msg = "TEST";
+  ssize_t sent =
+    sendto(test_socket, msg, strlen(msg), 0, (struct sockaddr *) &bad_addr, sizeof(bad_addr));
+  TEST_ASSERT_EQUAL(strlen(msg), sent);
+
+  char buf[256];
+  ssize_t recv_len = recvfrom(test_socket, buf, sizeof(buf), 0, NULL, NULL);
+
+  TEST_ASSERT_EQUAL(-1, recv_len);
+  TEST_ASSERT_EQUAL(EAGAIN, errno); // Expect timeout due to unreachable address
+}
+
+// Test robustness when server is abruptly terminated
+void test_robustness_server_unavailable(void) {
+  // Stop the server first
+  kill(server_pid, SIGTERM);
+  waitpid(server_pid, NULL, 0);
+  server_pid = -1;
+
+  const char *msg = "PING";
+  ssize_t sent =
+    sendto(test_socket, msg, strlen(msg), 0, (struct sockaddr *) &server_addr, sizeof(server_addr));
+  TEST_ASSERT_EQUAL(strlen(msg), sent);
+
+  char buf[256];
+  ssize_t received = recvfrom(test_socket, buf, sizeof(buf), 0, NULL, NULL);
+
+  TEST_ASSERT_EQUAL(-1, received);
+  TEST_ASSERT_EQUAL(EAGAIN, errno); // Expect timeout due to no response
+}
+
+// Test epoll edge-trigger behavior correctness
+void test_epoll_edge_trigger_behavior(void) {
+  const char *messages[] = {"EPOLL1", "EPOLL2", "EPOLL3"};
+  int num_messages       = 3;
+
+  for (int i = 0; i < num_messages; i++) {
+    ssize_t sent = sendto(test_socket, messages[i], strlen(messages[i]), 0,
+                          (struct sockaddr *) &server_addr, sizeof(server_addr));
+    TEST_ASSERT_EQUAL(strlen(messages[i]), sent);
+  }
+
+  // Receive all responses without delay
+  for (int i = 0; i < num_messages; i++) {
+    char buf[256];
+    ssize_t received = recvfrom(test_socket, buf, sizeof(buf), 0, NULL, NULL);
+
+    TEST_ASSERT_NOT_EQUAL(-1, received);
+    TEST_ASSERT_EQUAL(strlen(messages[i]), received);
+    TEST_ASSERT_EQUAL_MEMORY(messages[i], buf, received);
+  }
+
+  // Confirm no more immediate responses (socket now empty)
+  char extra_buf[256];
+  ssize_t extra_received = recvfrom(test_socket, extra_buf, sizeof(extra_buf), 0, NULL, NULL);
+  TEST_ASSERT_EQUAL(-1, extra_received);
+  TEST_ASSERT_EQUAL(EAGAIN, errno);
+}
+
 int main(void) {
   printf("Server Tests\n");
   printf("============\n");
@@ -154,5 +222,8 @@ int main(void) {
   RUN_TEST(test_server_echo_response);
   RUN_TEST(test_server_multiple_packets);
   RUN_TEST(test_server_large_packet);
+  RUN_TEST(test_socket_error_handling);
+  RUN_TEST(test_robustness_server_unavailable);
+  RUN_TEST(test_epoll_edge_trigger_behavior);
   return UNITY_END();
 }
