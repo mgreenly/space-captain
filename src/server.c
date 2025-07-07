@@ -370,12 +370,80 @@ int main() {
             log_debug("Received %zu bytes from %s:%d (DTLS)", bytes_read, addr_str,
                       ntohs(client_addr.sin_port));
 
-            // Echo the data back (for now)
-            size_t bytes_written = 0;
-            result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
-            if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
-              log_error("DTLS write failed: %s", sc_dtls_error_string(result));
-              remove_client(client);
+            // Parse and handle protocol messages
+            if (bytes_read >= sizeof(message_header_t)) {
+              message_header_t *header = (message_header_t *) buffer;
+
+              // Convert header fields from network byte order
+              uint16_t msg_type         = ntohs(header->message_type);
+              uint16_t protocol_version = ntohs(header->protocol_version);
+              uint32_t sequence         = ntohl(header->sequence_number);
+              uint16_t payload_len      = ntohs(header->payload_length);
+
+              log_debug("Received message: type=%s (%d), seq=%u, payload_len=%u",
+                        message_type_to_string(msg_type), msg_type, sequence, payload_len);
+
+              // Validate protocol version - if invalid, just echo back
+              if (protocol_version != 0x0001) {
+                log_debug("Non-protocol message (version 0x%04x), echoing back", protocol_version);
+                size_t bytes_written = 0;
+                result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+                if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+                  log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+                  remove_client(client);
+                }
+                continue;
+              }
+
+              // Validate payload length is reasonable
+              if (payload_len > SOCKET_BUFFER_SIZE - sizeof(message_header_t)) {
+                log_debug("Invalid payload length (%u), echoing back", payload_len);
+                size_t bytes_written = 0;
+                result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+                if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+                  log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+                  remove_client(client);
+                }
+                continue;
+              }
+
+              // Handle different message types
+              if (msg_type == MSG_PING) {
+                // Respond with PONG
+                message_header_t response;
+                response.protocol_version = htons(0x0001);
+                response.message_type     = htons(MSG_PONG);
+                response.sequence_number  = header->sequence_number; // Keep same sequence
+                response.timestamp        = header->timestamp;       // Keep same timestamp
+                response.payload_length   = header->payload_length;  // Keep same payload length
+
+                // Copy the full message (header + payload)
+                memcpy(buffer, &response, sizeof(message_header_t));
+
+                size_t bytes_written = 0;
+                result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+                if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+                  log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+                  remove_client(client);
+                }
+              } else {
+                // For other message types, echo back (for now)
+                size_t bytes_written = 0;
+                result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+                if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+                  log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+                  remove_client(client);
+                }
+              }
+            } else {
+              // Message too small for protocol header - just echo it back
+              log_debug("Received raw data (%zu bytes), echoing back", bytes_read);
+              size_t bytes_written = 0;
+              result = sc_dtls_write(client->dtls_session, buffer, bytes_read, &bytes_written);
+              if (result != DTLS_OK && result != DTLS_ERROR_WOULD_BLOCK) {
+                log_error("DTLS write failed: %s", sc_dtls_error_string(result));
+                remove_client(client);
+              }
             }
           } else if (result == DTLS_ERROR_WOULD_BLOCK) {
             // No data available yet

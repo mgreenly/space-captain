@@ -12,9 +12,11 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <time.h>
+#include <endian.h>
 
 #include "vendor/unity.c"
 #include "../src/config.h"
+#include "../src/message.h"
 #include "../src/dtls.h"
 #include "../src/dtls.c"
 
@@ -296,6 +298,52 @@ void test_dtls_message_ordering(void) {
   }
 }
 
+// Test ping/pong message functionality
+void test_ping_pong_message(void) {
+  // Create a PING message according to the protocol
+  ping_message_t ping_msg;
+  memset(&ping_msg, 0, sizeof(ping_msg));
+
+  // Set up message header
+  ping_msg.header.protocol_version = htons(0x0001); // v0.1.0
+  ping_msg.header.message_type     = htons(MSG_PING);
+  ping_msg.header.sequence_number  = htonl(1);
+  ping_msg.header.timestamp        = htobe64(time(NULL) * 1000); // Unix timestamp in ms
+  ping_msg.header.payload_length   = htons(0);                   // No payload for ping
+
+  // Send PING message via DTLS
+  size_t bytes_written = 0;
+  dtls_result_t result = sc_dtls_write(g_dtls_session, (const uint8_t *) &ping_msg,
+                                       sizeof(message_header_t), &bytes_written);
+  TEST_ASSERT_EQUAL(DTLS_OK, result);
+  TEST_ASSERT_EQUAL(sizeof(message_header_t), bytes_written);
+
+  // Receive PONG response
+  uint8_t recv_buffer[256];
+  size_t bytes_read = 0;
+  time_t start      = time(NULL);
+
+  while ((result = sc_dtls_read(g_dtls_session, recv_buffer, sizeof(recv_buffer), &bytes_read)) ==
+         DTLS_ERROR_WOULD_BLOCK) {
+    if (time(NULL) - start > 2) {
+      TEST_FAIL_MESSAGE("Timeout waiting for PONG response");
+    }
+    usleep(10000); // 10ms
+  }
+
+  // Verify we received a response
+  TEST_ASSERT_EQUAL(DTLS_OK, result);
+  TEST_ASSERT_GREATER_OR_EQUAL(sizeof(message_header_t), bytes_read);
+
+  // Parse response header
+  message_header_t *response = (message_header_t *) recv_buffer;
+
+  // Verify it's a PONG message
+  TEST_ASSERT_EQUAL(MSG_PONG, ntohs(response->message_type));
+  TEST_ASSERT_EQUAL(0x0001, ntohs(response->protocol_version));
+  TEST_ASSERT_EQUAL(0, ntohs(response->payload_length));
+}
+
 int main(void) {
   printf("Server Tests\n");
   printf("============\n");
@@ -308,5 +356,6 @@ int main(void) {
   RUN_TEST(test_dtls_cert_verification);
   RUN_TEST(test_dtls_session_timeout);
   RUN_TEST(test_dtls_message_ordering);
+  RUN_TEST(test_ping_pong_message);
   return UNITY_END();
 }
