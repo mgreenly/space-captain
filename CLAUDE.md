@@ -40,7 +40,7 @@ bin/server_tests
 ### Build Structure - Unified C Compilation
 The project uses a **unified build structure** where source files are included directly into the main compilation unit:
 
-- **Server (`server.c`)**: Includes `queue.c` and `worker.c` after headers but before implementation
+- **Server (`server.c`)**: Includes `queue.c` and other implementation files after headers but before main implementation
 - **Client (`client.c`)**: Self-contained, no additional source includes needed
 - **Tests**: Each test file includes its dependencies directly (e.g., `queue_tests.c` includes `queue.c`)
 - **Benefits**: Faster compilation, better optimization, simpler dependency management
@@ -48,28 +48,29 @@ The project uses a **unified build structure** where source files are included d
 - **Include Order**: System headers → Project headers → Implementation includes (.c files) → Main implementation
 
 ### File Organization
-- **Headers**: message.h, queue.h, state.h, game.h, network.h, config.h, log.h
-- **Sources**: server.c, client.c, worker.c, queue.c
+- **Headers**: message.h, queue.h, dtls.h, server.h, config.h, log.h
+- **Sources**: server.c, client.c, queue.c, message.c, dtls.c
 - **Tests**: Unity framework in tests/*_tests.c
 - **Data**: State files in data/ directory
 
 ### Key Components
-- `server.c` - Main server with epoll event loop
+- `server.c/h` - Main server with epoll event loop
 - `client.c` - Test client
-- `worker.c/h` - Worker thread pool for message processing
 - `queue.c/h` - Thread-safe message queue
+- `message.c/h` - Protocol definitions and message handling
+- `dtls.c/h` - DTLS networking layer with mbedTLS
 - `config.h` - All configuration constants
-- `message.h` - Protocol definitions
+- `log.h` - Logging utilities
 
 ## Development Workflow
 
 ### Before Making Changes
-1. Check requirements in `prds/` folder
+1. Check requirements in `prd/` folder
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 
 ### When Modifying PRDs
-1. **ALWAYS UPDATE prds/README.md** - When making changes to any PRD document in the `prds/` folder, you must also update the corresponding summary in `prds/README.md`
+1. **ALWAYS UPDATE prd/README.md** - When making changes to any PRD document in the `prd/` folder, you must also update the corresponding summary in `prd/README.md`
 2. Ensure the summary accurately reflects the key features and changes
 3. Keep summaries concise (typically 3-5 bullet points per version)
 4. Maintain consistent formatting with other version summaries
@@ -117,10 +118,10 @@ Where `<model>` should be:
 
 ### Add New Message Type
 1. Add enum value to message.h
-2. Add case to message_type_to_string()
-3. Add handler in worker.c
+2. Add case to message_type_to_string() in message.c
+3. Add handler in server.c message processing
 4. Update client.c to send new type
-5. Note: Changes to worker.c will be picked up automatically by server.c
+5. Add tests in message_tests.c
 
 ### Add New Source File
 When adding a new source file that needs to be included:
@@ -142,12 +143,13 @@ Example for server.c:
 #include "config.h"
 #include "message.h"
 #include "queue.h"
-#include "worker.h"
+#include "dtls.h"
 #include "newfile.h"  // Add new header here
 
 // Include implementation files
 #include "queue.c"
-#include "worker.c"
+#include "message.c"
+#include "dtls.c"
 #include "newfile.c"  // Add new implementation here
 
 // Main server implementation starts here

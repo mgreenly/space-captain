@@ -9,6 +9,7 @@ Space Captain: A toy MMO written in C as a learning experiment for Linux network
 4. **ALWAYS RUN AFTER CHANGES** - `make` to verify builds, `make fmt` for formatting
 5. **NEVER COMMIT WITHOUT EXPLICIT REQUEST** - Do not create git commits unless the user explicitly asks you to commit changes. When commits are requested and approved, automatically push to remote.
 6. **ALWAYS INCLUDE HIDDEN FILES** - When using any file operation commands (`ls`, `find`, `glob`, etc.), always include hidden files and directories (those starting with `.`). For `ls`, always use the `-a` flag
+7. **NO BACKGROUND PROCESSES** - Never run processes in the background. Functional tests are responsible for starting and stopping the applications they require
 
 ## Quick Reference
 
@@ -25,7 +26,7 @@ make fmt          # Format code with clang-format
 
 ### Functional Testing
 ```bash
-bin/server_client_tests
+bin/server_tests
 ```
 
 ## Architecture Overview
@@ -65,7 +66,7 @@ The project uses a **unified build structure** where source files are included d
 ### Before Making Changes
 1. Check requirements in `prd/` folder
 2. Understand existing code structure
-3. Run `make clean && make` to ensure clean build
+3. Run `make clean && make` to ensure a clean build
 
 ### When Modifying PRDs
 1. **ALWAYS UPDATE prd/README.md** - When making changes to any PRD document in the `prd/` folder, you must also update the corresponding summary in `prd/README.md`
@@ -98,7 +99,7 @@ co-author: <model>
 ```
 
 Where `<model>` should be:
-- For Agents: `agent-model-general`
+- For Claude: `claude-opus-4-20250514`
 - For Gemini: `gemini-2.5-pro (via aistudio.google.com)`
 
 **Important**: 
@@ -167,8 +168,8 @@ make bump-major    # Increment major version
 
 ## Important Notes
 - Server must handle 5000 concurrent connections at 60 ticks/second
-- All networking is non-blocking
-- Error handling is critical - check all return values
+- Server must handle 1000s of concurrent connections at 60 ticks/second
+- All networking is non-blocking and error handling is critical - check all return values
 - Memory management - no leaks allowed (test with valgrind)
 - State persistence not yet implemented (v0.1.0 scope)
 
