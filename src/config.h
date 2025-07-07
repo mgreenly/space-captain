@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// Protocol Configuration
+#define PROTOCOL_VERSION 0x0001 // Protocol version for v0.1.0
+
 // Server Configuration
 #define SERVER_PORT            19840
 #define EPOLL_MAX_EVENTS       64

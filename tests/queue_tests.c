@@ -8,6 +8,7 @@
 
 #include "vendor/unity.c"
 
+#include "../src/config.h"
 #include "../src/message.h"
 #include "../src/queue.h"
 #include "../src/queue.c"
@@ -25,10 +26,18 @@
 
 // Helper function to create a dynamically allocated message
 static message_t *create_test_message(message_type_t type, const char *body) {
-  message_t *msg     = malloc(sizeof(message_t));
-  msg->header.type   = type;
-  msg->header.length = strlen(body);
-  msg->body          = strdup(body);
+  message_t *msg = malloc(sizeof(message_t));
+
+  // Initialize header fields
+  msg->header.protocol_version = PROTOCOL_VERSION;
+  msg->header.message_type     = type;
+  msg->header.sequence_number  = 0; // For testing, we can use 0
+  msg->header.timestamp        = 0; // For testing, we can use 0
+  msg->header.payload_length   = strlen(body);
+
+  // Allocate and copy payload
+  msg->payload = (uint8_t *) strdup(body);
+
   return msg;
 }
 
@@ -51,7 +60,7 @@ static void test_cleanup_callback(message_t *msg, void *user_data) {
   tracker->cleanup_call_count++;
 
   // Free the message as normal cleanup would do
-  free(msg->body);
+  free(msg->payload);
   free(msg);
 }
 
@@ -98,7 +107,7 @@ void test_queue_add_and_pop_message(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Always use dynamic allocation for messages
-  message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_SIMPLE);
+  message_t *msg = create_test_message(MSG_PING, TEST_MSG_SIMPLE);
 
   sc_queue_ret_val_t result = sc_queue_add(queue, msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
@@ -107,11 +116,11 @@ void test_queue_add_and_pop_message(void) {
   sc_queue_ret_val_t pop_result = sc_queue_pop(queue, &popped_msg);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, pop_result);
   TEST_ASSERT_NOT_NULL(popped_msg);
-  TEST_ASSERT_EQUAL(MSG_ECHO, popped_msg->header.type);
-  TEST_ASSERT_EQUAL_STRING(TEST_MSG_SIMPLE, popped_msg->body);
+  TEST_ASSERT_EQUAL(MSG_PING, popped_msg->header.message_type);
+  TEST_ASSERT_EQUAL_STRING(TEST_MSG_SIMPLE, (char *) popped_msg->payload);
 
   // Clean up dynamically allocated message
-  free(popped_msg->body);
+  free(popped_msg->payload);
   free(popped_msg);
 
   sc_queue_nuke(queue);
@@ -131,7 +140,7 @@ void *producer_thread(void *arg) {
   char buffer[64];
   snprintf(buffer, sizeof(buffer), TEST_MSG_FORMAT, data->test_value);
 
-  message_t *msg = create_test_message(MSG_ECHO, buffer);
+  message_t *msg = create_test_message(MSG_PING, buffer);
 
   sc_queue_add(data->queue, msg);
   // Result could be stored in thread_data if needed for verification
@@ -148,7 +157,7 @@ void *consumer_thread(void *arg) {
   data->test_value = (result == QUEUE_SUCCESS && msg != NULL) ? 1 : 0;
 
   if (msg) {
-    free(msg->body);
+    free(msg->payload);
     free(msg);
   }
 
@@ -181,7 +190,7 @@ void *blocking_producer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
   // Create and add a message
-  message_t *msg = create_test_message(MSG_ECHO, TEST_MSG_BLOCKED);
+  message_t *msg = create_test_message(MSG_PING, TEST_MSG_BLOCKED);
 
   // This should block since queue is full
   sc_queue_ret_val_t result = sc_queue_add(data->queue, msg);
@@ -202,7 +211,7 @@ void *delayed_consumer_thread(void *arg) {
   message_t *msg = NULL;
   sc_queue_pop(data->queue, &msg);
   if (msg) {
-    free(msg->body);
+    free(msg->payload);
     free(msg);
   }
 
@@ -214,8 +223,8 @@ void test_queue_add_blocks_on_full_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill the queue to capacity with dynamically allocated messages
-  message_t *msg1 = create_test_message(MSG_ECHO, TEST_MSG_FILL_1);
-  message_t *msg2 = create_test_message(MSG_ECHO, TEST_MSG_FILL_2);
+  message_t *msg1 = create_test_message(MSG_PING, TEST_MSG_FILL_1);
+  message_t *msg2 = create_test_message(MSG_PING, TEST_MSG_FILL_2);
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
@@ -253,7 +262,7 @@ void test_queue_add_blocks_on_full_queue(void) {
     message_t *remaining = NULL;
     sc_queue_pop(queue, &remaining);
     if (remaining) {
-      free(remaining->body);
+      free(remaining->payload);
       free(remaining);
     }
   }
@@ -266,19 +275,19 @@ void test_queue_try_add_returns_error_on_full(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill the queue to capacity
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
   // Queue is now full, try_add should return QUEUE_ERR_FULL
-  message_t *msg3           = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg3           = create_test_message(MSG_PING, "msg3");
   sc_queue_ret_val_t result = sc_queue_try_add(queue, msg3);
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, result);
 
   // Clean up msg3 since it wasn't added
-  free(msg3->body);
+  free(msg3->payload);
   free(msg3);
 
   // Clean up queue messages
@@ -286,7 +295,7 @@ void test_queue_try_add_returns_error_on_full(void) {
     message_t *msg = NULL;
     sc_queue_pop(queue, &msg);
     if (msg) {
-      free(msg->body);
+      free(msg->payload);
       free(msg);
     }
   }
@@ -298,7 +307,7 @@ void test_queue_try_add_succeeds_with_space(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
-  message_t *msg = create_test_message(MSG_ECHO, "test message");
+  message_t *msg = create_test_message(MSG_PING, "test message");
 
   // Try to add to empty queue, should succeed
   sc_queue_ret_val_t result = sc_queue_try_add(queue, msg);
@@ -308,9 +317,9 @@ void test_queue_try_add_succeeds_with_space(void) {
   message_t *popped = NULL;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_pop(queue, &popped));
   TEST_ASSERT_NOT_NULL(popped);
-  TEST_ASSERT_EQUAL_STRING("test message", popped->body);
+  TEST_ASSERT_EQUAL_STRING("test message", (char *) popped->payload);
 
-  free(popped->body);
+  free(popped->payload);
   free(popped);
 
   sc_queue_nuke(queue);
@@ -333,7 +342,7 @@ void test_queue_try_pop_returns_message(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
-  message_t *msg = create_test_message(MSG_ECHO, "pop test");
+  message_t *msg = create_test_message(MSG_PING, "pop test");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg));
 
   // Try to pop, should get the message
@@ -341,9 +350,9 @@ void test_queue_try_pop_returns_message(void) {
   sc_queue_ret_val_t result = sc_queue_try_pop(queue, &popped);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(popped);
-  TEST_ASSERT_EQUAL_STRING("pop test", popped->body);
+  TEST_ASSERT_EQUAL_STRING("pop test", (char *) popped->payload);
 
-  free(popped->body);
+  free(popped->payload);
   free(popped);
 
   sc_queue_nuke(queue);
@@ -354,40 +363,40 @@ void test_queue_try_operations_mixed(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Add messages using both methods
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
+  message_t *msg3 = create_test_message(MSG_PING, "msg3");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_add(queue, msg3));
 
   // Queue is full now
-  message_t *msg4 = create_test_message(MSG_ECHO, "msg4");
+  message_t *msg4 = create_test_message(MSG_PING, "msg4");
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, sc_queue_try_add(queue, msg4));
-  free(msg4->body);
+  free(msg4->payload);
   free(msg4);
 
   // Pop using both methods
   message_t *p1 = NULL;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_pop(queue, &p1));
   TEST_ASSERT_NOT_NULL(p1);
-  TEST_ASSERT_EQUAL_STRING("msg1", p1->body);
-  free(p1->body);
+  TEST_ASSERT_EQUAL_STRING("msg1", (char *) p1->payload);
+  free(p1->payload);
   free(p1);
 
   message_t *p2 = NULL;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_pop(queue, &p2));
   TEST_ASSERT_NOT_NULL(p2);
-  TEST_ASSERT_EQUAL_STRING("msg2", p2->body);
-  free(p2->body);
+  TEST_ASSERT_EQUAL_STRING("msg2", (char *) p2->payload);
+  free(p2->payload);
   free(p2);
 
   message_t *p3 = NULL;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_pop(queue, &p3));
   TEST_ASSERT_NOT_NULL(p3);
-  TEST_ASSERT_EQUAL_STRING("msg3", p3->body);
-  free(p3->body);
+  TEST_ASSERT_EQUAL_STRING("msg3", (char *) p3->payload);
+  free(p3->payload);
   free(p3);
 
   // Queue should be empty now
@@ -416,7 +425,7 @@ void test_queue_is_empty_after_add_and_pop(void) {
   TEST_ASSERT_TRUE(sc_queue_is_empty(queue));
 
   // Add a message, should not be empty
-  message_t *msg = create_test_message(MSG_ECHO, "test");
+  message_t *msg = create_test_message(MSG_PING, "test");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg));
   TEST_ASSERT_FALSE(sc_queue_is_empty(queue));
 
@@ -426,7 +435,7 @@ void test_queue_is_empty_after_add_and_pop(void) {
   TEST_ASSERT_TRUE(sc_queue_is_empty(queue));
 
   // Clean up
-  free(popped->body);
+  free(popped->payload);
   free(popped);
   sc_queue_nuke(queue);
 }
@@ -476,12 +485,12 @@ void test_queue_is_full_after_filling_queue(void) {
   TEST_ASSERT_FALSE(sc_queue_is_full(queue));
 
   // Add first message, should not be full yet
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_FALSE(sc_queue_is_full(queue));
 
   // Add second message, should now be full
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
   TEST_ASSERT_TRUE(sc_queue_is_full(queue));
 
@@ -491,13 +500,13 @@ void test_queue_is_full_after_filling_queue(void) {
   TEST_ASSERT_FALSE(sc_queue_is_full(queue));
 
   // Clean up
-  free(popped->body);
+  free(popped->payload);
   free(popped);
 
   // Clean up remaining message
   message_t *remaining = NULL;
   sc_queue_pop(queue, &remaining);
-  free(remaining->body);
+  free(remaining->payload);
   free(remaining);
 
   sc_queue_nuke(queue);
@@ -508,9 +517,9 @@ void test_queue_is_full_with_try_operations(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill queue using try_add operations
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
+  message_t *msg3 = create_test_message(MSG_PING, "msg3");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_add(queue, msg1));
   TEST_ASSERT_FALSE(sc_queue_is_full(queue));
@@ -522,12 +531,12 @@ void test_queue_is_full_with_try_operations(void) {
   TEST_ASSERT_TRUE(sc_queue_is_full(queue));
 
   // Try to add another message, should fail since queue is full
-  message_t *msg4 = create_test_message(MSG_ECHO, "msg4");
+  message_t *msg4 = create_test_message(MSG_PING, "msg4");
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, sc_queue_try_add(queue, msg4));
   TEST_ASSERT_TRUE(sc_queue_is_full(queue));
 
   // Clean up unused message
-  free(msg4->body);
+  free(msg4->payload);
   free(msg4);
 
   // Clean up queue
@@ -535,7 +544,7 @@ void test_queue_is_full_with_try_operations(void) {
     message_t *msg = NULL;
     sc_queue_try_pop(queue, &msg);
     if (msg) {
-      free(msg->body);
+      free(msg->payload);
       free(msg);
     }
   }
@@ -561,15 +570,15 @@ void test_queue_get_size_with_add_and_pop(void) {
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
 
   // Add messages and verify size increases
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(1, sc_queue_get_size(queue));
 
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
   TEST_ASSERT_EQUAL(2, sc_queue_get_size(queue));
 
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg3 = create_test_message(MSG_PING, "msg3");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg3));
   TEST_ASSERT_EQUAL(3, sc_queue_get_size(queue));
 
@@ -577,19 +586,19 @@ void test_queue_get_size_with_add_and_pop(void) {
   message_t *popped1 = NULL;
   sc_queue_pop(queue, &popped1);
   TEST_ASSERT_EQUAL(2, sc_queue_get_size(queue));
-  free(popped1->body);
+  free(popped1->payload);
   free(popped1);
 
   message_t *popped2 = NULL;
   sc_queue_pop(queue, &popped2);
   TEST_ASSERT_EQUAL(1, sc_queue_get_size(queue));
-  free(popped2->body);
+  free(popped2->payload);
   free(popped2);
 
   message_t *popped3 = NULL;
   sc_queue_pop(queue, &popped3);
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
-  free(popped3->body);
+  free(popped3->payload);
   free(popped3);
 
   sc_queue_nuke(queue);
@@ -600,9 +609,9 @@ void test_queue_get_size_at_capacity(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill queue to capacity and verify size
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
+  message_t *msg3 = create_test_message(MSG_PING, "msg3");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(1, sc_queue_get_size(queue));
@@ -622,7 +631,7 @@ void test_queue_get_size_at_capacity(void) {
     message_t *msg = NULL;
     sc_queue_pop(queue, &msg);
     if (msg) {
-      free(msg->body);
+      free(msg->payload);
       free(msg);
     }
   }
@@ -637,19 +646,19 @@ void test_queue_get_size_with_try_operations(void) {
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
 
   // Use try_add operations
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_add(queue, msg1));
   TEST_ASSERT_EQUAL(1, sc_queue_get_size(queue));
 
-  message_t *msg2 = create_test_message(MSG_ECHO, "msg2");
+  message_t *msg2 = create_test_message(MSG_PING, "msg2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_add(queue, msg2));
   TEST_ASSERT_EQUAL(2, sc_queue_get_size(queue));
 
   // Queue is full, try_add should fail but size should remain same
-  message_t *msg3 = create_test_message(MSG_ECHO, "msg3");
+  message_t *msg3 = create_test_message(MSG_PING, "msg3");
   TEST_ASSERT_EQUAL(QUEUE_ERR_FULL, sc_queue_try_add(queue, msg3));
   TEST_ASSERT_EQUAL(2, sc_queue_get_size(queue));
-  free(msg3->body);
+  free(msg3->payload);
   free(msg3);
 
   // Use try_pop operations
@@ -657,14 +666,14 @@ void test_queue_get_size_with_try_operations(void) {
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_pop(queue, &popped1));
   TEST_ASSERT_NOT_NULL(popped1);
   TEST_ASSERT_EQUAL(1, sc_queue_get_size(queue));
-  free(popped1->body);
+  free(popped1->payload);
   free(popped1);
 
   message_t *popped2 = NULL;
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_try_pop(queue, &popped2));
   TEST_ASSERT_NOT_NULL(popped2);
   TEST_ASSERT_EQUAL(0, sc_queue_get_size(queue));
-  free(popped2->body);
+  free(popped2->payload);
   free(popped2);
 
   // Queue is empty, try_pop should return error but size should remain 0
@@ -696,7 +705,7 @@ void test_queue_nuke_with_cleanup_single_message(void) {
   queue_t *queue = sc_queue_init(5);
   TEST_ASSERT_NOT_NULL(queue);
 
-  message_t *msg = create_test_message(MSG_ECHO, "cleanup test");
+  message_t *msg = create_test_message(MSG_PING, "cleanup test");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg));
 
   cleanup_tracker_t tracker = {0};
@@ -716,9 +725,9 @@ void test_queue_nuke_with_cleanup_multiple_messages(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Add multiple messages
-  message_t *msg1 = create_test_message(MSG_ECHO, "msg1");
-  message_t *msg2 = create_test_message(MSG_REVERSE, "msg2");
-  message_t *msg3 = create_test_message(MSG_TIME, "msg3");
+  message_t *msg1 = create_test_message(MSG_PING, "msg1");
+  message_t *msg2 = create_test_message(MSG_PONG, "msg2");
+  message_t *msg3 = create_test_message(MSG_HEARTBEAT, "msg3");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
@@ -754,8 +763,8 @@ void test_queue_nuke_with_cleanup_null_callback(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Add messages that won't be cleaned up
-  message_t *msg1 = create_test_message(MSG_ECHO, "leaked1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "leaked2");
+  message_t *msg1 = create_test_message(MSG_PING, "leaked1");
+  message_t *msg2 = create_test_message(MSG_PING, "leaked2");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
@@ -774,9 +783,9 @@ void test_queue_nuke_with_cleanup_partial_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Add messages, pop some, leave others
-  message_t *msg1 = create_test_message(MSG_ECHO, "pop_me");
-  message_t *msg2 = create_test_message(MSG_ECHO, "cleanup_me");
-  message_t *msg3 = create_test_message(MSG_ECHO, "cleanup_me_too");
+  message_t *msg1 = create_test_message(MSG_PING, "pop_me");
+  message_t *msg2 = create_test_message(MSG_PING, "cleanup_me");
+  message_t *msg3 = create_test_message(MSG_PING, "cleanup_me_too");
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
@@ -786,7 +795,7 @@ void test_queue_nuke_with_cleanup_partial_queue(void) {
   message_t *popped = NULL;
   sc_queue_pop(queue, &popped);
   TEST_ASSERT_EQUAL(msg1, popped);
-  free(popped->body);
+  free(popped->payload);
   free(popped);
 
   // Destroy with remaining messages
@@ -867,8 +876,8 @@ void test_queue_add_timeout_on_full_queue(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill the queue to capacity
-  message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+  message_t *msg1 = create_test_message(MSG_PING, "fill1");
+  message_t *msg2 = create_test_message(MSG_PING, "fill2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
@@ -876,7 +885,7 @@ void test_queue_add_timeout_on_full_queue(void) {
   pthread_t thread;
   timeout_thread_data_t thread_data = {0};
   thread_data.queue                 = queue;
-  thread_data.message               = create_test_message(MSG_ECHO, "timeout_msg");
+  thread_data.message               = create_test_message(MSG_PING, "timeout_msg");
 
   pthread_create(&thread, NULL, timeout_add_thread, &thread_data);
   pthread_join(thread, NULL);
@@ -895,14 +904,14 @@ void test_queue_add_timeout_on_full_queue(void) {
   // depending on exact timing, so clean up safely
   message_t *remaining = NULL;
   while (sc_queue_try_pop(queue, &remaining) == QUEUE_SUCCESS) {
-    free(remaining->body);
+    free(remaining->payload);
     free(remaining);
     remaining = NULL;
   }
 
   // Clean up timeout message if it wasn't added
   if (thread_data.message) {
-    free(thread_data.message->body);
+    free(thread_data.message->payload);
     free(thread_data.message);
   }
 
@@ -938,7 +947,7 @@ void test_queue_pop_succeeds_before_timeout(void) {
   TEST_ASSERT_LESS_THAN(timeout_ms, elapsed_ms);
 
   // Clean up message
-  free(pop_data.message->body);
+  free(pop_data.message->payload);
   free(pop_data.message);
 
   sc_queue_nuke(queue);
@@ -949,8 +958,8 @@ void test_queue_add_succeeds_before_timeout(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill queue
-  message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+  message_t *msg1 = create_test_message(MSG_PING, "fill1");
+  message_t *msg2 = create_test_message(MSG_PING, "fill2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
@@ -959,7 +968,7 @@ void test_queue_add_succeeds_before_timeout(void) {
   thread_data_t pop_data         = {queue, 1000, 0}; // Pop after 1 second
 
   add_data.queue   = queue;
-  add_data.message = create_test_message(MSG_ECHO, "add_test");
+  add_data.message = create_test_message(MSG_PING, "add_test");
 
   // Start add thread (will block on full queue)
   pthread_create(&add_thread, NULL, timeout_add_thread, &add_data);
@@ -978,7 +987,7 @@ void test_queue_add_succeeds_before_timeout(void) {
   // Clean up remaining messages
   message_t *remaining = NULL;
   while (sc_queue_try_pop(queue, &remaining) == QUEUE_SUCCESS) {
-    free(remaining->body);
+    free(remaining->payload);
     free(remaining);
     remaining = NULL;
   }
@@ -1020,7 +1029,7 @@ void test_queue_timeout_error_conditions(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Test that timeout doesn't interfere with normal operations
-  message_t *msg = create_test_message(MSG_ECHO, "normal_op");
+  message_t *msg = create_test_message(MSG_PING, "normal_op");
 
   // Add should succeed immediately on empty queue
   long long start           = get_time_ms();
@@ -1040,16 +1049,16 @@ void test_queue_timeout_error_conditions(void) {
   TEST_ASSERT_NOT_NULL(popped);
   TEST_ASSERT_LESS_THAN(1000, elapsed); // Less than 1 second
 
-  free(popped->body);
+  free(popped->payload);
   free(popped);
   sc_queue_nuke(queue);
 }
 
 void test_queue_add_returns_error_on_null_queue(void) {
-  message_t *msg            = create_test_message(MSG_ECHO, "test");
+  message_t *msg            = create_test_message(MSG_PING, "test");
   sc_queue_ret_val_t result = sc_queue_add(NULL, msg);
   TEST_ASSERT_EQUAL(QUEUE_ERR_NULL, result);
-  free(msg->body);
+  free(msg->payload);
   free(msg);
 }
 
@@ -1068,13 +1077,13 @@ void test_queue_add_timeout_returns_error_code(void) {
   TEST_ASSERT_NOT_NULL(queue);
 
   // Fill the queue
-  message_t *msg1 = create_test_message(MSG_ECHO, "fill1");
-  message_t *msg2 = create_test_message(MSG_ECHO, "fill2");
+  message_t *msg1 = create_test_message(MSG_PING, "fill1");
+  message_t *msg2 = create_test_message(MSG_PING, "fill2");
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg1));
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg2));
 
   // Try to add another - should timeout
-  message_t *timeout_msg    = create_test_message(MSG_ECHO, "timeout");
+  message_t *timeout_msg    = create_test_message(MSG_PING, "timeout");
   long long start           = get_time_ms();
   sc_queue_ret_val_t result = sc_queue_add(queue, timeout_msg);
   long long elapsed         = get_time_ms() - start;
@@ -1083,11 +1092,11 @@ void test_queue_add_timeout_returns_error_code(void) {
   TEST_ASSERT_GREATER_OR_EQUAL(2000 - TIMEOUT_MARGIN_MS, elapsed);
 
   // Clean up
-  free(timeout_msg->body);
+  free(timeout_msg->payload);
   free(timeout_msg);
   message_t *remaining = NULL;
   while (sc_queue_try_pop(queue, &remaining) == QUEUE_SUCCESS) {
-    free(remaining->body);
+    free(remaining->payload);
     free(remaining);
     remaining = NULL;
   }
@@ -1192,7 +1201,7 @@ void test_queue_nuke_with_null_returns_error(void) {
 
 void test_queue_pop_with_output_parameter(void) {
   queue_t *queue    = sc_queue_init(5);
-  message_t *msg_in = create_test_message(MSG_ECHO, "test");
+  message_t *msg_in = create_test_message(MSG_PING, "test");
 
   sc_queue_add(queue, msg_in);
 
@@ -1202,10 +1211,10 @@ void test_queue_pop_with_output_parameter(void) {
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(msg_out);
-  TEST_ASSERT_EQUAL_STRING("test", msg_out->body);
+  TEST_ASSERT_EQUAL_STRING("test", (char *) msg_out->payload);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 
-  free(msg_out->body);
+  free(msg_out->payload);
   free(msg_out);
   sc_queue_nuke(queue);
 }
@@ -1248,7 +1257,7 @@ void test_queue_pop_timeout_with_new_api(void) {
 
 void test_queue_try_pop_with_output_parameter(void) {
   queue_t *queue    = sc_queue_init(5);
-  message_t *msg_in = create_test_message(MSG_ECHO, "test");
+  message_t *msg_in = create_test_message(MSG_PING, "test");
   sc_queue_add(queue, msg_in);
 
   message_t *msg_out = NULL;
@@ -1257,10 +1266,10 @@ void test_queue_try_pop_with_output_parameter(void) {
 
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, result);
   TEST_ASSERT_NOT_NULL(msg_out);
-  TEST_ASSERT_EQUAL_STRING("test", msg_out->body);
+  TEST_ASSERT_EQUAL_STRING("test", (char *) msg_out->payload);
   TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 
-  free(msg_out->body);
+  free(msg_out->payload);
   free(msg_out);
   sc_queue_nuke(queue);
 }
@@ -1365,14 +1374,14 @@ void test_queue_init_with_safe_large_capacity(void) {
     TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_get_error());
 
     // Verify basic operations work
-    message_t *msg = create_test_message(MSG_ECHO, "test");
+    message_t *msg = create_test_message(MSG_PING, "test");
     TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_add(queue, msg));
 
     message_t *popped = NULL;
     TEST_ASSERT_EQUAL(QUEUE_SUCCESS, sc_queue_pop(queue, &popped));
     TEST_ASSERT_NOT_NULL(popped);
 
-    free(popped->body);
+    free(popped->payload);
     free(popped);
     sc_queue_nuke(queue);
   } else {

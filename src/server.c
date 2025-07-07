@@ -13,10 +13,12 @@
 
 #include "config.h"
 #include "log.h"
+#include "message.h"
 #include "server.h"
 #include "dtls.h"
 
-// Include DTLS implementation
+// Include implementation files
+#include "message.c"
 #include "dtls.c"
 
 // Server bind addresses
