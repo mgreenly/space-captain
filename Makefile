@@ -32,7 +32,7 @@ DAT_DIR = data
 # ============================================================================
 
 # Source files (excluding main files)
-COMMON_SRCS = $(SRC_DIR)/message.c $(SRC_DIR)/dtls.c $(SRC_DIR)/generic_queue.c
+COMMON_SRCS = $(SRC_DIR)/message.c $(SRC_DIR)/dtls.c $(SRC_DIR)/generic_queue.c $(SRC_DIR)/message_queue.c
 COMMON_OBJS_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/debug/%.o,$(COMMON_SRCS))
 COMMON_OBJS_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/release/%.o,$(COMMON_SRCS))
 
