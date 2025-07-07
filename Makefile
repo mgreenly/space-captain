@@ -32,7 +32,7 @@ DAT_DIR = data
 # ============================================================================
 
 # Source files (excluding main files)
-COMMON_SRCS = $(SRC_DIR)/message.c $(SRC_DIR)/dtls.c $(SRC_DIR)/queue.c
+COMMON_SRCS = $(SRC_DIR)/message.c $(SRC_DIR)/dtls.c $(SRC_DIR)/generic_queue.c
 COMMON_OBJS_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/debug/%.o,$(COMMON_SRCS))
 COMMON_OBJS_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/release/%.o,$(COMMON_SRCS))
 
@@ -144,7 +144,7 @@ $(UNITY_OBJ): $(TST_DIR)/vendor/unity.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
 
 # Test executables with specific dependencies
-$(BIN_DIR)/queue_tests: $(OBJ_DIR)/queue_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/queue.o | $(BIN_DIR)
+$(BIN_DIR)/generic_queue_tests: $(OBJ_DIR)/generic_queue_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/generic_queue.o | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(BIN_DIR)/message_tests: $(OBJ_DIR)/message_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/message.o | $(BIN_DIR)
