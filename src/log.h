@@ -4,9 +4,15 @@
 #include <stdio.h>
 #include <time.h>
 
-// LOG_LEVEL: 0=NONE, 1=ERROR, 2=INFO, 3=DEBUG
+// Log levels - increasing in severity
+// 0: NONE  - No logging is performed
+// 1: FATAL - Critical failures resulting in immediate termination
+// 2: ERROR - Severe issues preventing correct processing
+// 3: WARN  - Non-critical issues indicating potential problems
+// 4: INFO  - Normal operational status messages (default)
+// 5: DEBUG - Detailed diagnostics for debugging sessions
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 3
+#define LOG_LEVEL 4 // INFO is the default log level
 #endif
 
 #define LOG_TIME_FORMAT      "%Y-%m-%d %H:%M:%S"
@@ -34,20 +40,30 @@ static inline void log_timestamp(FILE *stream) {
   } while (0)
 
 #if LOG_LEVEL >= 1
+#define log_fatal(fmt, ...) log_base("FATAL", KRED, stderr, fmt, ##__VA_ARGS__)
+#else
+#define log_fatal(fmt, ...)
+#endif
+
+#if LOG_LEVEL >= 2
 #define log_error(fmt, ...) log_base("ERROR", KRED, stderr, fmt, ##__VA_ARGS__)
 #else
 #define log_error(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 2
-#define log_info(fmt, ...) log_base("INFO ", KGRN, stdout, fmt, ##__VA_ARGS__)
+#if LOG_LEVEL >= 3
 #define log_warn(fmt, ...) log_base("WARN ", KYEL, stdout, fmt, ##__VA_ARGS__)
 #else
-#define log_info(fmt, ...)
 #define log_warn(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 3
+#if LOG_LEVEL >= 4
+#define log_info(fmt, ...) log_base("INFO ", KGRN, stdout, fmt, ##__VA_ARGS__)
+#else
+#define log_info(fmt, ...)
+#endif
+
+#if LOG_LEVEL >= 5
 #define log_debug(fmt, ...) log_base("DEBUG", KBLU, stdout, fmt, ##__VA_ARGS__)
 #else
 #define log_debug(fmt, ...)

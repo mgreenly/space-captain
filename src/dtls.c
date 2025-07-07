@@ -85,9 +85,14 @@ static void debug_callback(void *ctx, int level, const char *file, int line, con
   (void) file;
   (void) line;
 
+#if LOG_LEVEL >= 5
   if (level <= 3) {
     log_debug("mbedtls: %s", str);
   }
+#else
+  (void) level;
+  (void) str;
+#endif
 }
 
 // UDP send callback for mbedtls

@@ -377,11 +377,16 @@ int main() {
               // Convert header fields from network byte order
               uint16_t msg_type         = ntohs(header->message_type);
               uint16_t protocol_version = ntohs(header->protocol_version);
-              uint32_t sequence         = ntohl(header->sequence_number);
               uint16_t payload_len      = ntohs(header->payload_length);
 
+#if LOG_LEVEL >= 5
+              uint32_t sequence = ntohl(header->sequence_number);
               log_debug("Received message: type=%s (%d), seq=%u, payload_len=%u",
                         message_type_to_string(msg_type), msg_type, sequence, payload_len);
+#else
+              log_debug("Received message: type=%s (%d), payload_len=%u",
+                        message_type_to_string(msg_type), msg_type, payload_len);
+#endif
 
               // Validate protocol version - if invalid, just echo back
               if (protocol_version != 0x0001) {
