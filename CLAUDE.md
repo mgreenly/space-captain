@@ -138,6 +138,21 @@ make debug-server  # Run server under GDB
 make debug-client  # Run client under GDB
 ```
 
+### Per-File Log Level Configuration
+The logging system supports per-file log level configuration. To set a custom log level for a specific source file:
+
+1. Define the desired log level **before** including `log.h`
+2. Use one of the predefined constants: `LOG_LEVEL_NONE`, `LOG_LEVEL_FATAL`, `LOG_LEVEL_ERROR`, `LOG_LEVEL_WARN`, `LOG_LEVEL_INFO`, `LOG_LEVEL_DEBUG`
+
+Example:
+```c
+#define LOG_LEVEL LOG_LEVEL_DEBUG  // Enable debug logging for this file
+#include "log.h"
+// ... rest of the file
+```
+
+Files without an explicit `LOG_LEVEL` definition will use the default level (`LOG_LEVEL_INFO`).
+
 ### Version Management
 ```bash
 make bump-patch    # Increment patch version

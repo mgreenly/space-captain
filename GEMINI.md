@@ -1,8 +1,8 @@
-# CLAUDE.md - Space Captain Project Guidelines
+# GEMINI.md - Space Captain Project Guidelines
 
 Space Captain: A toy MMO written in C as a learning experiment for Linux network programming.
 
-## Critical Rules
+## 1. Critical Rules
 1. **NO COMPILER WARNINGS** - All code must compile cleanly. Fix warnings immediately.
 2. **NO CUSTOM TEST SCRIPTS** - Use `bin/server_tests` for functional testing
 3. **ALWAYS USE FORMAT STRINGS** - `log_error("%s", msg)` not `log_error(msg)`
@@ -11,7 +11,18 @@ Space Captain: A toy MMO written in C as a learning experiment for Linux network
 6. **ALWAYS INCLUDE HIDDEN FILES** - When using any file operation commands (`ls`, `find`, `glob`, etc.), always include hidden files and directories (those starting with `.`). For `ls`, always use the `-a` flag
 7. **NO BACKGROUND PROCESSES** - Never run processes in the background. Functional tests are responsible for starting and stopping the applications they require
 
-## Quick Reference
+## 2. Development Plan Summary (from prds/)
+
+The project follows a quarterly release cycle. Future plans are speculative.
+
+*   **v0.1.0 (Active)**: Core infrastructure, reliable-UDP, server-authoritative architecture, and a CLI/ncurses client for 2D space combat.
+*   **v0.2.0 (Planned)**: TLS security, OIDC authentication, and cross-platform CLI support.
+*   **v0.3.0 (Planned)**: Linux graphical client with Vulkan.
+*   **v0.4.0 (Planned)**: macOS graphical client with Metal.
+*   **v0.5.0 (Planned)**: Windows graphical client with DirectX.
+*   **v0.6.0 (Planned)**: Foundations for a persistent world, including crew, economy, and manufacturing.
+
+## 3. Quick Reference
 
 ### Build & Run
 ```bash
@@ -29,7 +40,7 @@ make fmt          # Format code with clang-format
 bin/server_tests
 ```
 
-## Architecture Overview
+## 4. Architecture Overview
 
 ### Network Architecture
 - **Server**: Epoll-based event loop, edge-triggered mode, handles 1000s of concurrent connections
@@ -62,10 +73,10 @@ The project uses a **traditional build structure** where each source file compil
 - `config.h` - All configuration constants
 - `log.h` - Logging utilities
 
-## Development Workflow
+## 5. Development Workflow
 
 ### Before Making Changes
-1. Check requirements in `prd/` folder
+1. Check requirements in `prds/` folder
 2. Understand existing code structure
 3. Run `make clean && make` to ensure clean build
 
@@ -108,13 +119,13 @@ Where `<model>` should be:
 2. Wait for user approval of the commit message
 3. After creating a commit with user approval, automatically run `git push` to push the changes to the remote repository
 
-## Testing Strategy
+## 6. Testing Strategy
 - **Unit tests**: Individual component testing (queue_tests.c)
 - **Functional tests**: Full system testing (server_tests.c)
 - **Manual testing**: Use `make run-server` and `make run-client`
 - **Performance testing**: Monitor with 50+ clients
 
-## Common Tasks
+## 7. Common Tasks
 
 ### Add New Message Type
 1. Add enum value to message.h
@@ -138,6 +149,21 @@ make debug-server  # Run server under GDB
 make debug-client  # Run client under GDB
 ```
 
+### Per-File Log Level Configuration
+The logging system supports per-file log level configuration. To set a custom log level for a specific source file:
+
+1. Define the desired log level **before** including `log.h`
+2. Use one of the predefined constants: `LOG_LEVEL_NONE`, `LOG_LEVEL_FATAL`, `LOG_LEVEL_ERROR`, `LOG_LEVEL_WARN`, `LOG_LEVEL_INFO`, `LOG_LEVEL_DEBUG`
+
+Example:
+```c
+#define LOG_LEVEL LOG_LEVEL_DEBUG  // Enable debug logging for this file
+#include "log.h"
+// ... rest of the file
+```
+
+Files without an explicit `LOG_LEVEL` definition will use the default level (`LOG_LEVEL_INFO`).
+
 ### Version Management
 ```bash
 make bump-patch    # Increment patch version
@@ -145,12 +171,9 @@ make bump-minor    # Increment minor version
 make bump-major    # Increment major version
 ```
 
-## Important Notes
+## 8. Important Notes
 - Server must handle 1000s of concurrent connections at 60 ticks/second
 - All networking is non-blocking
 - Error handling is critical - check all return values
 - Memory management - no leaks allowed (test with valgrind)
 - State persistence not yet implemented (v0.1.0 scope)
-
-
-@docs/code-style.md

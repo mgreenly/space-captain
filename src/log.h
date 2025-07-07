@@ -4,15 +4,18 @@
 #include <stdio.h>
 #include <time.h>
 
-// Log levels - increasing in severity
-// 0: NONE  - No logging is performed
-// 1: FATAL - Critical failures resulting in immediate termination
-// 2: ERROR - Severe issues preventing correct processing
-// 3: WARN  - Non-critical issues indicating potential problems
-// 4: INFO  - Normal operational status messages (default)
-// 5: DEBUG - Detailed diagnostics for debugging sessions
+// Define log level constants
+#define LOG_LEVEL_NONE  0
+#define LOG_LEVEL_FATAL 1
+#define LOG_LEVEL_ERROR 2
+#define LOG_LEVEL_WARN  3
+#define LOG_LEVEL_INFO  4
+#define LOG_LEVEL_DEBUG 5
+
+// If LOG_LEVEL is not already defined by a .c file, set a default.
+// This must come AFTER the level constants are defined.
 #ifndef LOG_LEVEL
-#define LOG_LEVEL 4 // INFO is the default log level
+#define LOG_LEVEL LOG_LEVEL_INFO
 #endif
 
 #define LOG_TIME_FORMAT      "%Y-%m-%d %H:%M:%S"
@@ -39,31 +42,31 @@ static inline void log_timestamp(FILE *stream) {
     fprintf(stream, "%s" level ": " KNRM fmt "\n", color, ##__VA_ARGS__);                          \
   } while (0)
 
-#if LOG_LEVEL >= 1
+#if LOG_LEVEL >= LOG_LEVEL_FATAL
 #define log_fatal(fmt, ...) log_base("FATAL", KRED, stderr, fmt, ##__VA_ARGS__)
 #else
 #define log_fatal(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 2
+#if LOG_LEVEL >= LOG_LEVEL_ERROR
 #define log_error(fmt, ...) log_base("ERROR", KRED, stderr, fmt, ##__VA_ARGS__)
 #else
 #define log_error(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 3
+#if LOG_LEVEL >= LOG_LEVEL_WARN
 #define log_warn(fmt, ...) log_base("WARN ", KYEL, stdout, fmt, ##__VA_ARGS__)
 #else
 #define log_warn(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 4
+#if LOG_LEVEL >= LOG_LEVEL_INFO
 #define log_info(fmt, ...) log_base("INFO ", KGRN, stdout, fmt, ##__VA_ARGS__)
 #else
 #define log_info(fmt, ...)
 #endif
 
-#if LOG_LEVEL >= 5
+#if LOG_LEVEL >= LOG_LEVEL_DEBUG
 #define log_debug(fmt, ...) log_base("DEBUG", KBLU, stdout, fmt, ##__VA_ARGS__)
 #else
 #define log_debug(fmt, ...)
