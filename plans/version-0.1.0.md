@@ -28,7 +28,7 @@ This document presents the final, restructured work plan for implementing Space 
         *   Configure the DTLS context to prioritize performant cipher suites, specifically `AES-GCM`.
     *   [x] **2.2: Secure Handshake:** Integrate the DTLS handshake into the main server loop for new connections.
         *   Implement a 30-second timeout for the handshake and for ongoing connections that have not sent a heartbeat.
-    *   [ ] **2.3: Core Protocol:** Define the `MessageHeader` and a basic `PING`/`PONG` message set. Implement the necessary serialization/deserialization.
+    *   [x] **2.3: Core Protocol:** Define the `MessageHeader` and a basic `PING`/`PONG` message set. Implement the necessary serialization/deserialization.
     *   [ ] **2.4: Functional Connection Test:** Create `tests/connection_test.c` which uses the mock client to automate and verify the secure connection and ping/pong exchange.
 
 ---
