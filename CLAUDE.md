@@ -37,15 +37,15 @@ bin/server_tests
 - **Message Types**: MSG_ECHO (0), MSG_REVERSE (1), MSG_TIME (2)
 - **Optimizations**: TCP_NODELAY, connection pooling, adaptive timeouts, EPOLLRDHUP
 
-### Build Structure - Unified C Compilation
-The project uses a **unified build structure** where source files are included directly into the main compilation unit:
+### Build Structure - Traditional C Compilation
+The project uses a **traditional build structure** where each source file compiles to its own object file:
 
-- **Server (`server.c`)**: Includes `queue.c` and other implementation files after headers but before main implementation
-- **Client (`client.c`)**: Self-contained, no additional source includes needed
-- **Tests**: Each test file includes its dependencies directly (e.g., `queue_tests.c` includes `queue.c`)
-- **Benefits**: Faster compilation, better optimization, simpler dependency management
+- **Server**: Links `server.o`, `message.o`, and `dtls.o`
+- **Client**: Links only `client.o` (self-contained)
+- **Tests**: Each test links with Unity framework and required object files
+- **Benefits**: Better incremental builds, clearer dependencies, standard C practice
 - **Makefile**: Uses `-MMD -MP` flags for automatic dependency tracking
-- **Include Order**: System headers → Project headers → Implementation includes (.c files) → Main implementation
+- **Performance**: Clean build ~0.2s, incremental builds ~0.04s per changed file
 
 ### File Organization
 - **Headers**: message.h, queue.h, dtls.h, server.h, config.h, log.h
@@ -124,36 +124,13 @@ Where `<model>` should be:
 5. Add tests in message_tests.c
 
 ### Add New Source File
-When adding a new source file that needs to be included:
-1. Create the .c and .h files
-2. Add `#include "newfile.h"` with other header includes
-3. Add `#include "newfile.c"` after all headers but before the main implementation
-4. Follow this order: system headers → project headers → implementation includes → main code
-5. Update the Makefile only if creating a new executable target
-6. The build system will automatically track dependencies via -MMD -MP flags
-
-Example for server.c:
-```c
-// System headers
-#include <stdio.h>
-#include <stdlib.h>
-// ... other system headers
-
-// Project headers
-#include "config.h"
-#include "message.h"
-#include "queue.h"
-#include "dtls.h"
-#include "newfile.h"  // Add new header here
-
-// Include implementation files
-#include "queue.c"
-#include "message.c"
-#include "dtls.c"
-#include "newfile.c"  // Add new implementation here
-
-// Main server implementation starts here
-```
+When adding a new source file:
+1. Create the .c and .h files in the src/ directory
+2. Add `#include "newfile.h"` to files that need the interface
+3. Update the Makefile if the new file needs to be linked:
+   - Add to `COMMON_SRCS` if used by multiple executables
+   - Add to specific `*_OBJS_DEBUG/RELEASE` variables as needed
+4. The build system will automatically track dependencies via -MMD -MP flags
 
 ### Debug Issues
 ```bash

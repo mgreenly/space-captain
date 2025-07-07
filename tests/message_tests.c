@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "vendor/unity.c"
+#include "vendor/unity.h"
 
 #include "../src/message.h"
-#include "../src/message.c"
 
 // Test that message_type_to_string returns correct strings
 void test_message_type_to_string(void) {

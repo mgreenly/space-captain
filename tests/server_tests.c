@@ -14,11 +14,10 @@
 #include <time.h>
 #include <endian.h>
 
-#include "vendor/unity.c"
+#include "vendor/unity.h"
 #include "../src/config.h"
 #include "../src/message.h"
 #include "../src/dtls.h"
-#include "../src/dtls.c"
 
 // Test globals
 static int test_socket = -1;

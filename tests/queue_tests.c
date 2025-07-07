@@ -6,12 +6,11 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "vendor/unity.c"
+#include "vendor/unity.h"
 
 #include "../src/config.h"
 #include "../src/message.h"
 #include "../src/queue.h"
-#include "../src/queue.c"
 
 // Define all test strings at the top
 #define TEST_MSG_SIMPLE  "This is the test message"

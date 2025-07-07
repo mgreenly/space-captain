@@ -17,9 +17,7 @@
 #include "server.h"
 #include "dtls.h"
 
-// Include implementation files
-#include "message.c"
-#include "dtls.c"
+// Implementation files now compiled separately
 
 // Server bind addresses
 const char *LISTEN_ADDRESSES[] = {

@@ -3,9 +3,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "vendor/unity.c"
-#include "dtls.h"
-#include "dtls.c"
+#include "vendor/unity.h"
+#include "../src/dtls.h"
 
 void setUp(void) {
   // Setup for each test

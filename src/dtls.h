@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 
 // Forward declaration to hide implementation details
 typedef struct dtls_context dtls_context_t;
