@@ -200,16 +200,16 @@ certs:
 # Update CLI tools
 .PHONY: update-tools
 update-tools:
-	npm upgrade -l @google/gemini-cli
-	npm upgrade -l @anthropic-ai/claude-code
-	npm upgrade -l @openai/codex
+	npm upgrade -g @google/gemini-cli
+	npm upgrade -g @anthropic-ai/claude-code
+	npm upgrade -g @openai/codex
 
 # Install CLI tools
 .PHONY: install-tools
 install-tools:
-	npm install -l @google/gemini-cli
-	npm install -l @anthropic-ai/claude-code
-	npm install -l @openai/codex
+	npm install -g @google/gemini-cli
+	npm install -g @anthropic-ai/claude-code
+	npm install -g @openai/codex
 
 # Architecture diagram
 # Regenerate when any source files change
