@@ -4,7 +4,6 @@ FROM amazonlinux:2023
 RUN yum update -y && yum install -y \
     gcc \
     make \
-    pkgconfig \
     openssl-devel \
     rpm-build \
     tar \
@@ -15,7 +14,7 @@ RUN yum update -y && yum install -y \
 
 # Build and install mbedTLS from source since it's not in AL2023 repos
 RUN cd /tmp && \
-    git clone --depth 1 --branch v3.5.1 https://github.com/Mbed-TLS/mbedtls.git && \
+    git clone --depth 1 --branch v2.28.3 https://github.com/Mbed-TLS/mbedtls.git && \
     cd mbedtls && \
     cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On . && \
     make -j$(nproc) && \

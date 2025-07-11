@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: mbedcrypto
+Description: mbed TLS cryptography library
+Version: 2.28.3
+Libs: -L${libdir} -lmbedcrypto
+Cflags: -I${includedir}

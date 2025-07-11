@@ -9,11 +9,11 @@
 
 # Compiler settings
 CC = gcc
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP $(shell pkg-config --cflags mbedtls)
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP -I/usr/local/include
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
-LDFLAGS = -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
+LDFLAGS = -L/usr/local/lib -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
 
 # Build settings
 TAG ?= pre
@@ -275,7 +275,7 @@ install: release
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR) pkg/out
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 # ============================================================================
 # Docker Targets
@@ -422,7 +422,10 @@ package-rpm: release
 	ARCH=$$(uname -m); \
 	echo "Creating RPM package version $$VERSION for $$ARCH"; \
 	mkdir -p pkg/out; \
-	mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}; \
+	\
+	# Use a temporary directory for rpmbuild \
+	RPMBUILD_DIR=$$(mktemp -d); \
+	mkdir -p "$$RPMBUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}; \
 	\
 	# Create tarball of the release binaries \
 	SERVER_BINARY=$$(readlink -f $(BIN_DIR)/sc-server-release); \
@@ -437,7 +440,7 @@ package-rpm: release
 	cp "$$SERVER_BINARY" "$$TMPDIR/space-captain-$$VERSION/usr/bin/"; \
 	\
 	# Create the source tarball \
-	cd "$$TMPDIR" && tar czf ~/rpmbuild/SOURCES/space-captain-$$VERSION.tar.gz space-captain-$$VERSION; \
+	cd "$$TMPDIR" && tar czf "$$RPMBUILD_DIR/SOURCES/space-captain-$$VERSION.tar.gz" space-captain-$$VERSION; \
 	cd - >/dev/null; \
 	\
 	# Create the spec file \
@@ -465,17 +468,17 @@ package-rpm: release
 	echo "%changelog"; \
 	echo "* $$(date +\"%a %b %d %Y\") Space Captain Team - $$VERSION-1"; \
 	echo "- Automated RPM build"; \
-	} > ~/rpmbuild/SPECS/space-captain.spec
+	} > "$$RPMBUILD_DIR/SPECS/space-captain.spec"; \
 	\
 	# Build the RPM \
-	rpmbuild -bb ~/rpmbuild/SPECS/space-captain.spec; \
+	rpmbuild --define "_topdir $$RPMBUILD_DIR" -bb "$$RPMBUILD_DIR/SPECS/space-captain.spec"; \
 	\
 	# Copy the built RPM to pkg/out \
-	cp ~/rpmbuild/RPMS/$$ARCH/space-captain-server-$$VERSION-1*.rpm pkg/out/; \
+	cp "$$RPMBUILD_DIR"/RPMS/$$ARCH/space-captain-server-$$VERSION-1*.rpm pkg/out/; \
 	\
 	# Clean up \
 	rm -rf "$$TMPDIR"; \
-	rm -rf ~/rpmbuild; \
+	rm -rf "$$RPMBUILD_DIR"; \
 	\
 	echo "RPM package created in pkg/out/"
 
@@ -490,50 +493,50 @@ help:
 	@echo "===================="
 	@echo ""
 	@echo "Primary Targets:"
-	@echo "  make                Build debug server and client (default)"
-	@echo "  make server         Build debug server only"
-	@echo "  make client         Build debug client only"
-	@echo "  make release        Build release versions (auto-detects OS)"
-	@echo "  make release-debian Build native release for Debian systems"
+	@echo "  make                 Build debug server and client (default)"
+	@echo "  make server          Build debug server only"
+	@echo "  make client          Build debug client only"
+	@echo "  make release         Build release versions (auto-detects OS)"
+	@echo "  make release-debian  Build native release for Debian systems"
 	@echo "  make release-generic Build generic release (fallback)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make tests          Build all test executables"
-	@echo "  make run-tests      Build and run all tests"
+	@echo "  make tests           Build all test executables"
+	@echo "  make run-tests       Build and run all tests"
 	@echo ""
 	@echo "Development:"
-	@echo "  make run-server     Build and run debug server"
-	@echo "  make run-client     Build and run debug client"
-	@echo "  make debug-server   Debug server with GDB"
-	@echo "  make debug-client   Debug client with GDB"
-	@echo "  make fmt            Format all code with clang-format"
+	@echo "  make run-server      Build and run debug server"
+	@echo "  make run-client      Build and run debug client"
+	@echo "  make debug-server    Debug server with GDB"
+	@echo "  make debug-client    Debug client with GDB"
+	@echo "  make fmt             Format all code with clang-format"
 	@echo ""
 	@echo "Maintenance:"
-	@echo "  make clean          Remove all build artifacts"
-	@echo "  make install        Install release versions to PREFIX"
-	@echo "  make package        Build Debian package (.deb file)"
-	@echo "  make package-rpm    Build RPM package (.rpm file)"
-	@echo "  make dot            Generate architecture diagram"
-	@echo "  make install-tools  Install CLI tools (gemini, claude, codex)"
-	@echo "  make update-tools   Update CLI tools to latest versions"
+	@echo "  make clean           Remove all build artifacts"
+	@echo "  make install         Install release versions to PREFIX"
+	@echo "  make package         Build Debian package (.deb file)"
+	@echo "  make package-rpm     Build RPM package (.rpm file)"
+	@echo "  make dot             Generate architecture diagram"
+	@echo "  make install-tools   Install CLI tools (gemini, claude, codex)"
+	@echo "  make update-tools    Update CLI tools to latest versions"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make pull-amazon            Pull Amazon Linux 2023 Docker image"
-	@echo "  make pull-debian            Pull Debian slim Docker image"
-	@echo "  make builder-debian         Build Debian builder image"
-	@echo "  make builder-amazon         Build Amazon Linux builder image"
-	@echo "  make package-debian         Build Debian package using Docker"
-	@echo "  make package-amazon         Build RPM package using Docker"
+	@echo "  make pull-amazon     Pull Amazon Linux 2023 Docker image"
+	@echo "  make pull-debian     Pull Debian slim Docker image"
+	@echo "  make builder-debian  Build Debian builder image"
+	@echo "  make builder-amazon  Build Amazon Linux builder image"
+	@echo "  make package-debian  Build Debian package using Docker"
+	@echo "  make package-amazon  Build RPM package using Docker"
 	@echo ""
 	@echo "Version Management:"
-	@echo "  make version        Display current version"
-	@echo "  make bump-patch     Increment patch version (0.0.X)"
-	@echo "  make bump-minor     Increment minor version (0.X.0)"
-	@echo "  make bump-major     Increment major version (X.0.0)"
+	@echo "  make version         Display current version"
+	@echo "  make bump-patch      Increment patch version (0.0.X)"
+	@echo "  make bump-minor      Increment minor version (0.X.0)"
+	@echo "  make bump-major      Increment major version (X.0.0)"
 	@echo ""
 	@echo "Environment Variables:"
-	@echo "  TAG=<tag>           Set build tag (default: pre)"
-	@echo "  PREFIX=<path>       Set installation prefix (default: ~/.local)"
+	@echo "  TAG=<tag>            Set build tag (default: pre)"
+	@echo "  PREFIX=<path>        Set installation prefix (default: ~/.local)"
 
 # ============================================================================
 # Directory Creation
