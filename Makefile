@@ -275,7 +275,55 @@ install: release
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR) pkg/out
+
+# ============================================================================
+# Docker Targets
+# ============================================================================
+
+# ECR configuration
+ECR_REGISTRY = public.ecr.aws
+ECR_REPO = amazonlinux
+
+.PHONY: pull-amazon
+pull-amazon:
+	@echo "Logging in to Amazon ECR Public..."
+	@aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(ECR_REGISTRY)
+	@echo "Pulling Amazon Linux 2023 image..."
+	@docker pull $(ECR_REGISTRY)/$(ECR_REPO)/amazonlinux:2023
+	@echo "Tagging as amazonlinux:2023..."
+	@docker tag $(ECR_REGISTRY)/$(ECR_REPO)/amazonlinux:2023 amazonlinux:2023
+	@echo "Amazon Linux 2023 image pulled successfully"
+
+.PHONY: pull-debian
+pull-debian:
+	@echo "Pulling Debian slim image from Docker Hub..."
+	@docker pull debian:stable-slim
+	@echo "Debian slim image pulled successfully"
+
+.PHONY: builder-debian
+builder-debian:
+	@echo "Building Space Captain Debian builder image..."
+	@docker build -f Dockerfile.debian -t space-captain-debian-builder .
+	@echo "Builder image created successfully"
+
+.PHONY: package-debian
+package-debian:
+	@echo "Building Debian package using Docker..."
+	@docker run --rm -v $(PWD):/workspace -u $(shell id -u):$(shell id -g) space-captain-debian-builder make package
+	@echo "Debian package build complete - check pkg/out/"
+
+.PHONY: builder-amazon
+builder-amazon:
+	@echo "Building Space Captain Amazon Linux builder image..."
+	@docker build -f Dockerfile.amazon -t space-captain-amazon-builder .
+	@echo "Builder image created successfully"
+
+.PHONY: package-amazon
+package-amazon:
+	@echo "Building RPM package using Docker..."
+	@docker run --rm -v $(PWD):/workspace -u $(shell id -u):$(shell id -g) space-captain-amazon-builder make package-rpm
+	@echo "RPM package build complete - check pkg/out/"
 
 # ============================================================================
 # Version Management
@@ -366,6 +414,71 @@ package: release
 	\
 	echo "Package created: pkg/out/$$PKG_NAME.deb"
 
+# RPM package for Amazon Linux / RHEL systems
+.PHONY: package-rpm
+package-rpm: release
+	@echo "Building RPM package..."
+	@VERSION=$$(cat .VERSION); \
+	ARCH=$$(uname -m); \
+	echo "Creating RPM package version $$VERSION for $$ARCH"; \
+	mkdir -p pkg/out; \
+	mkdir -p ~/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}; \
+	\
+	# Create tarball of the release binaries \
+	SERVER_BINARY=$$(readlink -f $(BIN_DIR)/sc-server-release); \
+	if [ ! -f "$$SERVER_BINARY" ]; then \
+		echo "Error: Server binary not found. Run 'make release' first."; \
+		exit 1; \
+	fi; \
+	\
+	# Create a temporary directory for the tarball \
+	TMPDIR=$$(mktemp -d); \
+	mkdir -p "$$TMPDIR/space-captain-$$VERSION/usr/bin"; \
+	cp "$$SERVER_BINARY" "$$TMPDIR/space-captain-$$VERSION/usr/bin/"; \
+	\
+	# Create the source tarball \
+	cd "$$TMPDIR" && tar czf ~/rpmbuild/SOURCES/space-captain-$$VERSION.tar.gz space-captain-$$VERSION; \
+	cd - >/dev/null; \
+	\
+	# Create the spec file \
+	{ \
+	echo "Name:           space-captain-server"; \
+	echo "Version:        $$VERSION"; \
+	echo "Release:        1%{?dist}"; \
+	echo "Summary:        Space Captain MMO Server"; \
+	echo "License:        MIT"; \
+	echo "Source0:        space-captain-%{version}.tar.gz"; \
+	echo ""; \
+	echo "%description"; \
+	echo "Space Captain: A toy MMO server written in C as a learning experiment for Linux network programming."; \
+	echo ""; \
+	echo "%prep"; \
+	echo "%setup -q -n space-captain-%{version}"; \
+	echo ""; \
+	echo "%install"; \
+	echo "mkdir -p %{buildroot}/usr/bin"; \
+	echo "cp usr/bin/* %{buildroot}/usr/bin/"; \
+	echo ""; \
+	echo "%files"; \
+	echo "/usr/bin/*"; \
+	echo ""; \
+	echo "%changelog"; \
+	echo "* $$(date +\"%a %b %d %Y\") Space Captain Team - $$VERSION-1"; \
+	echo "- Automated RPM build"; \
+	} > ~/rpmbuild/SPECS/space-captain.spec
+	\
+	# Build the RPM \
+	rpmbuild -bb ~/rpmbuild/SPECS/space-captain.spec; \
+	\
+	# Copy the built RPM to pkg/out \
+	cp ~/rpmbuild/RPMS/$$ARCH/space-captain-server-$$VERSION-1*.rpm pkg/out/; \
+	\
+	# Clean up \
+	rm -rf "$$TMPDIR"; \
+	rm -rf ~/rpmbuild; \
+	\
+	echo "RPM package created in pkg/out/"
+
 
 # ============================================================================
 # Help Target
@@ -399,9 +512,18 @@ help:
 	@echo "  make clean          Remove all build artifacts"
 	@echo "  make install        Install release versions to PREFIX"
 	@echo "  make package        Build Debian package (.deb file)"
+	@echo "  make package-rpm    Build RPM package (.rpm file)"
 	@echo "  make dot            Generate architecture diagram"
 	@echo "  make install-tools  Install CLI tools (gemini, claude, codex)"
 	@echo "  make update-tools   Update CLI tools to latest versions"
+	@echo ""
+	@echo "Docker:"
+	@echo "  make pull-amazon            Pull Amazon Linux 2023 Docker image"
+	@echo "  make pull-debian            Pull Debian slim Docker image"
+	@echo "  make builder-debian         Build Debian builder image"
+	@echo "  make builder-amazon         Build Amazon Linux builder image"
+	@echo "  make package-debian         Build Debian package using Docker"
+	@echo "  make package-amazon         Build RPM package using Docker"
 	@echo ""
 	@echo "Version Management:"
 	@echo "  make version        Display current version"

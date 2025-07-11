@@ -1,0 +1,31 @@
+FROM amazonlinux:2023
+
+# Install build dependencies for Space Captain
+RUN yum update -y && yum install -y \
+    gcc \
+    make \
+    pkgconfig \
+    openssl-devel \
+    rpm-build \
+    tar \
+    gzip \
+    git \
+    cmake \
+    && yum clean all
+
+# Build and install mbedTLS from source since it's not in AL2023 repos
+RUN cd /tmp && \
+    git clone --depth 1 --branch v3.5.1 https://github.com/Mbed-TLS/mbedtls.git && \
+    cd mbedtls && \
+    cmake -DUSE_SHARED_MBEDTLS_LIBRARY=On . && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    cd / && \
+    rm -rf /tmp/mbedtls
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command - just keep container available
+CMD ["/bin/bash"]
