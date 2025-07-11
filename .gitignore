@@ -12,3 +12,4 @@ pkg/out/
 pkg/tmp/
 prompt*.txt
 tags
+deps/

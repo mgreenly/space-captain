@@ -5,12 +5,26 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
     make \
-    libmbedtls-dev \
+    cmake \
+    python3 \
     dpkg-dev \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
-WORKDIR /workspace
+# Create entrypoint script to handle user creation
+RUN echo '#!/bin/bash' > /entrypoint.sh && \
+    echo 'USER_ID=${USER_ID:-1000}' >> /entrypoint.sh && \
+    echo 'GROUP_ID=${GROUP_ID:-1000}' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo 'echo "Creating user with UID=$USER_ID and GID=$GROUP_ID"' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Create group and user with matching IDs' >> /entrypoint.sh && \
+    echo 'groupadd -g $GROUP_ID -o builduser 2>/dev/null || true' >> /entrypoint.sh && \
+    echo 'useradd -u $USER_ID -g $GROUP_ID -o -m -s /bin/bash builduser 2>/dev/null || true' >> /entrypoint.sh && \
+    echo '' >> /entrypoint.sh && \
+    echo '# Run command as builduser' >> /entrypoint.sh && \
+    echo 'exec su builduser -c "cd /workspace && $*"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
-# Default command - just keep container available
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/bin/bash"]

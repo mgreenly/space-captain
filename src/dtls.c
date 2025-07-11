@@ -34,6 +34,11 @@ struct dtls_context {
   uint8_t *pinned_cert_hash;
   size_t pinned_cert_hash_len;
   bool initialized;
+  bool rng_initialized;
+  bool config_initialized;
+  bool cert_initialized;
+  bool pkey_initialized;
+  bool cookie_initialized;
 };
 
 struct dtls_session {
@@ -226,6 +231,7 @@ dtls_context_t *sc_dtls_context_create(dtls_role_t role, const char *cert_path,
   // Initialize RNG
   mbedtls_entropy_init(&ctx->entropy);
   mbedtls_ctr_drbg_init(&ctx->ctr_drbg);
+  ctx->rng_initialized = true;
 
   const char *pers = "space_captain_dtls";
   ret              = mbedtls_ctr_drbg_seed(&ctx->ctr_drbg, mbedtls_entropy_func, &ctx->entropy,
@@ -237,6 +243,7 @@ dtls_context_t *sc_dtls_context_create(dtls_role_t role, const char *cert_path,
 
   // Initialize SSL config
   mbedtls_ssl_config_init(&ctx->conf);
+  ctx->config_initialized = true;
 
   ret = mbedtls_ssl_config_defaults(
     &ctx->conf, role == DTLS_ROLE_CLIENT ? MBEDTLS_SSL_IS_CLIENT : MBEDTLS_SSL_IS_SERVER,
@@ -257,7 +264,9 @@ dtls_context_t *sc_dtls_context_create(dtls_role_t role, const char *cert_path,
     }
 
     mbedtls_x509_crt_init(&ctx->cert);
+    ctx->cert_initialized = true;
     mbedtls_pk_init(&ctx->pkey);
+    ctx->pkey_initialized = true;
 
     ret = mbedtls_x509_crt_parse_file(&ctx->cert, cert_path);
     if (ret != 0) {
@@ -279,6 +288,7 @@ dtls_context_t *sc_dtls_context_create(dtls_role_t role, const char *cert_path,
 
     // Initialize cookie for DoS protection
     mbedtls_ssl_cookie_init(&ctx->cookie_ctx);
+    ctx->cookie_initialized = true;
     ret = mbedtls_ssl_cookie_setup(&ctx->cookie_ctx, mbedtls_ctr_drbg_random, &ctx->ctr_drbg);
     if (ret != 0) {
       log_error("Failed to setup cookie context: %d", ret);
@@ -328,13 +338,24 @@ void sc_dtls_context_destroy(dtls_context_t *ctx) {
   if (!ctx)
     return;
 
-  if (ctx->initialized) {
+  // Free SSL config if initialized
+  if (ctx->config_initialized) {
     mbedtls_ssl_config_free(&ctx->conf);
-    if (ctx->role == DTLS_ROLE_SERVER) {
-      mbedtls_x509_crt_free(&ctx->cert);
-      mbedtls_pk_free(&ctx->pkey);
-      mbedtls_ssl_cookie_free(&ctx->cookie_ctx);
-    }
+  }
+
+  // Free server-specific resources
+  if (ctx->cert_initialized) {
+    mbedtls_x509_crt_free(&ctx->cert);
+  }
+  if (ctx->pkey_initialized) {
+    mbedtls_pk_free(&ctx->pkey);
+  }
+  if (ctx->cookie_initialized) {
+    mbedtls_ssl_cookie_free(&ctx->cookie_ctx);
+  }
+
+  // Free RNG resources
+  if (ctx->rng_initialized) {
     mbedtls_ctr_drbg_free(&ctx->ctr_drbg);
     mbedtls_entropy_free(&ctx->entropy);
   }

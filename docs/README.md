@@ -11,7 +11,8 @@ This directory contains documentation and detailed explanations about various as
 - [Worker Thread Pool](worker-thread-pool.md) - In-depth look at the worker thread pool and message processing
 
 ### Build System
-- [Traditional Build System](build-system.md) - Explains the traditional object-based build system
+- [Traditional Build System](build-system.md) - Comprehensive guide to the build system, including tool checking, packaging, and Docker integration
+- [Vendored Libraries](vendored-libraries.md) - How mbedTLS is bundled and isolated in packages
 
 ### Development Guidelines
 - [Code Style Guidelines](code-style.md) - Coding standards and naming conventions

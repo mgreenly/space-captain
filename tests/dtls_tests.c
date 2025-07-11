@@ -6,51 +6,44 @@
 #include "vendor/unity.h"
 #include "../src/dtls.h"
 
+static bool g_dtls_test_initialized = false;
+
 void setUp(void) {
-  // Setup for each test
+  // Initialize DTLS once for all tests
+  if (!g_dtls_test_initialized) {
+    sc_dtls_init();
+    g_dtls_test_initialized = true;
+  }
 }
 
 void tearDown(void) {
-  // Cleanup after each test
+  // Cleanup will be done in main after all tests
 }
 
 void test_dtls_init_cleanup(void) {
+  // Test that init is idempotent (already initialized in setUp)
   dtls_result_t result = sc_dtls_init();
   TEST_ASSERT_EQUAL(DTLS_OK, result);
-
-  // Second init should also succeed (idempotent)
-  result = sc_dtls_init();
-  TEST_ASSERT_EQUAL(DTLS_OK, result);
-
-  sc_dtls_cleanup();
 }
 
 void test_dtls_context_creation_server(void) {
-  sc_dtls_init();
-
   // Server context requires cert and key
   dtls_context_t *ctx =
     sc_dtls_context_create(DTLS_ROLE_SERVER, "certs/server.crt", "certs/server.key", NULL, 0);
   TEST_ASSERT_NOT_NULL(ctx);
 
   sc_dtls_context_destroy(ctx);
-  sc_dtls_cleanup();
 }
 
 void test_dtls_context_creation_client(void) {
-  sc_dtls_init();
-
   // Client context without pinning
   dtls_context_t *ctx = sc_dtls_context_create(DTLS_ROLE_CLIENT, NULL, NULL, NULL, 0);
   TEST_ASSERT_NOT_NULL(ctx);
 
   sc_dtls_context_destroy(ctx);
-  sc_dtls_cleanup();
 }
 
 void test_dtls_cert_hash(void) {
-  sc_dtls_init();
-
   uint8_t hash[32];
   dtls_result_t result = sc_dtls_cert_hash("certs/server.crt", hash);
   TEST_ASSERT_EQUAL(DTLS_OK, result);
@@ -64,8 +57,6 @@ void test_dtls_cert_hash(void) {
     }
   }
   TEST_ASSERT_FALSE(all_zeros);
-
-  sc_dtls_cleanup();
 }
 
 void test_dtls_error_strings(void) {
@@ -77,8 +68,6 @@ void test_dtls_error_strings(void) {
 }
 
 void test_dtls_session_creation(void) {
-  sc_dtls_init();
-
   // Create a UDP socket
   int fd = socket(AF_INET, SOCK_DGRAM, 0);
   TEST_ASSERT_NOT_EQUAL(-1, fd);
@@ -108,7 +97,6 @@ void test_dtls_session_creation(void) {
   sc_dtls_session_destroy(session);
   sc_dtls_context_destroy(ctx);
   close(fd);
-  sc_dtls_cleanup();
 }
 
 int main(void) {
@@ -121,5 +109,10 @@ int main(void) {
   RUN_TEST(test_dtls_error_strings);
   RUN_TEST(test_dtls_session_creation);
 
-  return UNITY_END();
+  int result = UNITY_END();
+
+  // Cleanup DTLS after all tests
+  sc_dtls_cleanup();
+
+  return result;
 }

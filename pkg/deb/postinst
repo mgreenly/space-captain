@@ -5,15 +5,6 @@ set -e
 
 case "$1" in
     configure)
-        # Find the versioned binary that was installed
-        VERSIONED_BINARY=$(ls -1 /usr/bin/sc-server-* 2>/dev/null | head -n1)
-        
-        if [ -n "$VERSIONED_BINARY" ]; then
-            # Create unversioned symlink
-            ln -sf "$(basename "$VERSIONED_BINARY")" /usr/bin/space-captain-server
-            echo "Created symlink: /usr/bin/space-captain-server -> $(basename "$VERSIONED_BINARY")"
-        fi
-        
         # Create data directory if it doesn't exist
         if [ ! -d /var/lib/space-captain ]; then
             mkdir -p /var/lib/space-captain

@@ -2,7 +2,7 @@ Package: space-captain-server
 Version: @VERSION@
 Architecture: @ARCH@
 Maintainer: Space Captain Development Team <dev@spacecaptain.io>
-Depends: libc6, libmbedtls14
+Depends: libc6
 Section: games
 Priority: optional
 Homepage: https://github.com/mgreenly/space-captain

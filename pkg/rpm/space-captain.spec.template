@@ -1,0 +1,68 @@
+Name:           space-captain-server
+Version:        @VERSION@
+Release:        1%{?dist}
+Summary:        Space Captain MMO Server
+License:        MIT
+URL:            https://github.com/mgreenly/space-captain
+Source0:        space-captain-%{version}.tar.gz
+
+BuildRequires:  gcc
+BuildRequires:  make
+BuildRequires:  cmake
+
+# No mbedtls requires - we bundle it
+
+%description
+Space Captain is a toy MMO written in C as a learning experiment
+for Linux network programming. This package contains the server
+component that handles multiple concurrent client connections
+using an epoll-based event loop with DTLS encryption.
+
+%prep
+%setup -q -n space-captain-%{version}
+
+%install
+mkdir -p %{buildroot}/usr/bin
+mkdir -p %{buildroot}/usr/lib/systemd/system
+mkdir -p %{buildroot}/usr/lib/space-captain
+cp usr/bin/* %{buildroot}/usr/bin/
+cp usr/lib/* %{buildroot}/usr/lib/space-captain/
+install -m 644 space-captain-server.service %{buildroot}/usr/lib/systemd/system/
+
+# Move all binaries to lib directory and create wrapper script
+mv %{buildroot}/usr/bin/* %{buildroot}/usr/lib/space-captain/
+cat > %{buildroot}/usr/bin/space-captain-server << 'EOF'
+#!/bin/bash
+export LD_LIBRARY_PATH=/usr/lib/space-captain:$LD_LIBRARY_PATH
+exec /usr/lib/space-captain/sc-server-* "$@"
+EOF
+chmod 755 %{buildroot}/usr/bin/space-captain-server
+
+%files
+%defattr(-,root,root,-)
+/usr/bin/space-captain-server
+/usr/lib/space-captain/*
+/usr/lib/systemd/system/space-captain-server.service
+
+%post
+# Create working directory
+mkdir -p /var/lib/space-captain
+chown nobody:nobody /var/lib/space-captain
+
+# Reload systemd
+systemctl daemon-reload
+
+%preun
+# Stop service before uninstall
+if [ $1 -eq 0 ]; then
+    systemctl stop space-captain-server.service >/dev/null 2>&1 || true
+    systemctl disable space-captain-server.service >/dev/null 2>&1 || true
+fi
+
+%postun
+# Reload systemd after uninstall
+systemctl daemon-reload
+
+%changelog
+* @DATE@ Space Captain Team <dev@spacecaptain.io> - @VERSION@-1
+- Automated RPM build
