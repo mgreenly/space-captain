@@ -314,6 +314,58 @@ bump-major:
 	echo "$$NEW_MAJOR.0.0" > .VERSION; \
 	echo "Version bumped to $$(cat .VERSION)"
 
+# ============================================================================
+# Packaging
+# ============================================================================
+
+# Architecture detection
+ARCH := $(shell dpkg --print-architecture 2>/dev/null || echo "amd64")
+
+.PHONY: package
+package: release
+	@echo "Building Debian package..."
+	@VERSION=$$(cat .VERSION); \
+	ARCH=$(ARCH); \
+	PKG_NAME="space-captain-server_$${VERSION}_$$ARCH"; \
+	PKG_DIR="/tmp/space-captain-server-$$VERSION-$$ARCH"; \
+	echo "Creating package: pkg/out/$$PKG_NAME.deb"; \
+	mkdir -p pkg/out; \
+	\
+	# Clean up any previous build \
+	rm -rf "$$PKG_DIR"; \
+	mkdir -p "$$PKG_DIR/DEBIAN"; \
+	mkdir -p "$$PKG_DIR/usr/bin"; \
+	mkdir -p "$$PKG_DIR/usr/lib/systemd/system"; \
+	\
+	# Find and copy the versioned server binary \
+	SERVER_BINARY=$$(readlink -f $(BIN_DIR)/sc-server-release); \
+	if [ ! -f "$$SERVER_BINARY" ]; then \
+		echo "Error: Server binary not found. Run 'make release' first."; \
+		exit 1; \
+	fi; \
+	cp "$$SERVER_BINARY" "$$PKG_DIR/usr/bin/"; \
+	chmod 755 "$$PKG_DIR/usr/bin/$$(basename $$SERVER_BINARY)"; \
+	\
+	# Generate control file from template \
+	sed -e "s/@VERSION@/$$VERSION/" \
+	    -e "s/@ARCH@/$$ARCH/" \
+	    pkg/deb/control.template > "$$PKG_DIR/DEBIAN/control"; \
+	\
+	# Copy post-install script \
+	cp pkg/deb/postinst "$$PKG_DIR/DEBIAN/"; \
+	chmod 755 "$$PKG_DIR/DEBIAN/postinst"; \
+	\
+	# Copy systemd service file \
+	cp pkg/deb/space-captain-server.service "$$PKG_DIR/usr/lib/systemd/system/"; \
+	\
+	# Build the package \
+	dpkg-deb --build "$$PKG_DIR" "pkg/out/$$PKG_NAME.deb"; \
+	\
+	# Clean up \
+	rm -rf "$$PKG_DIR"; \
+	\
+	echo "Package created: pkg/out/$$PKG_NAME.deb"
+
 
 # ============================================================================
 # Help Target
@@ -346,6 +398,7 @@ help:
 	@echo "Maintenance:"
 	@echo "  make clean          Remove all build artifacts"
 	@echo "  make install        Install release versions to PREFIX"
+	@echo "  make package        Build Debian package (.deb file)"
 	@echo "  make dot            Generate architecture diagram"
 	@echo "  make install-tools  Install CLI tools (gemini, claude, codex)"
 	@echo "  make update-tools   Update CLI tools to latest versions"
