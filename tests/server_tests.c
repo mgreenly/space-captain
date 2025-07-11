@@ -50,7 +50,7 @@ void setUp(void) {
       dup2(devnull, STDERR_FILENO);
       close(devnull);
     }
-    execl("bin/server", "server", NULL);
+    execl("bin/sc-server", "sc-server", NULL);
     // If execl fails
     exit(1);
   }

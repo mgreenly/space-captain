@@ -65,7 +65,7 @@ CLIENT_OBJS_RELEASE = $(CLIENT_OBJ_RELEASE)
 
 # Test files
 TEST_SRCS = $(wildcard $(TST_DIR)/*_tests.c)
-TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/%,$(TEST_SRCS))
+TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/sc-%,$(TEST_SRCS))
 TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/%.o,$(TEST_SRCS))
 
 # Unity test framework
@@ -87,10 +87,10 @@ all: server client
 
 # Build individual debug targets
 .PHONY: server
-server: $(BIN_DIR)/server
+server: $(BIN_DIR)/sc-server
 
 .PHONY: client
-client: $(BIN_DIR)/client
+client: $(BIN_DIR)/sc-client
 
 # Build release versions
 .PHONY: release
@@ -109,10 +109,10 @@ endif
 # ============================================================================
 
 # Debug executables
-$(BIN_DIR)/server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR)
+$(BIN_DIR)/sc-server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BIN_DIR)/client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR)
+$(BIN_DIR)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # Debug object files - generic rule
@@ -124,19 +124,19 @@ $(OBJ_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/debug
 # ============================================================================
 
 # Release executables (with versioning)
-$(BIN_DIR)/server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR)
+$(BIN_DIR)/sc-server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
 	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
 	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
-	$(CC) -o $(BIN_DIR)/server-$$FULL_VERSION $^ $(LDFLAGS); \
-	ln -sf server-$$FULL_VERSION $@
+	$(CC) -o $(BIN_DIR)/sc-server-$$FULL_VERSION $^ $(LDFLAGS); \
+	ln -sf sc-server-$$FULL_VERSION $@
 
-$(BIN_DIR)/client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR)
+$(BIN_DIR)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR)
 	@VERSION=$$(cat .VERSION); \
 	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
 	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
-	$(CC) -o $(BIN_DIR)/client-$$FULL_VERSION $^ $(LDFLAGS); \
-	ln -sf client-$$FULL_VERSION $@
+	$(CC) -o $(BIN_DIR)/sc-client-$$FULL_VERSION $^ $(LDFLAGS); \
+	ln -sf sc-client-$$FULL_VERSION $@
 
 # Release object files - generic rule
 $(OBJ_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/release
@@ -147,16 +147,16 @@ $(OBJ_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/release
 release-debian:
 	@echo "Building native Debian release..."
 	@$(MAKE) clean
-	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR)/server-release $(BIN_DIR)/client-release
+	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR)/sc-server-release $(BIN_DIR)/sc-client-release
 	@echo "Debian release build complete"
-	@echo "Binaries: $(BIN_DIR)/server-release -> $$(readlink $(BIN_DIR)/server-release)"
-	@echo "          $(BIN_DIR)/client-release -> $$(readlink $(BIN_DIR)/client-release)"
+	@echo "Binaries: $(BIN_DIR)/sc-server-release -> $$(readlink $(BIN_DIR)/sc-server-release)"
+	@echo "          $(BIN_DIR)/sc-client-release -> $$(readlink $(BIN_DIR)/sc-client-release)"
 
 # Generic release build (preserves current behavior)
 .PHONY: release-generic
 release-generic:
 	@$(MAKE) clean
-	@$(MAKE) $(BIN_DIR)/server-release $(BIN_DIR)/client-release
+	@$(MAKE) $(BIN_DIR)/sc-server-release $(BIN_DIR)/sc-client-release
 
 # ============================================================================
 # Test Targets
@@ -177,16 +177,16 @@ $(UNITY_OBJ): $(TST_DIR)/vendor/unity.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
 
 # Test executables with specific dependencies
-$(BIN_DIR)/generic_queue_tests: $(OBJ_DIR)/generic_queue_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/generic_queue.o | $(BIN_DIR)
+$(BIN_DIR)/sc-generic_queue_tests: $(OBJ_DIR)/generic_queue_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/generic_queue.o | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BIN_DIR)/message_tests: $(OBJ_DIR)/message_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/message.o | $(BIN_DIR)
+$(BIN_DIR)/sc-message_tests: $(OBJ_DIR)/message_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/message.o | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BIN_DIR)/dtls_tests: $(OBJ_DIR)/dtls_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/dtls.o | $(BIN_DIR)
+$(BIN_DIR)/sc-dtls_tests: $(OBJ_DIR)/dtls_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/dtls.o | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BIN_DIR)/server_tests: $(OBJ_DIR)/server_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/dtls.o | $(BIN_DIR)
+$(BIN_DIR)/sc-server_tests: $(OBJ_DIR)/server_tests.o $(UNITY_OBJ) $(OBJ_DIR)/debug/dtls.o | $(BIN_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # Test object files
@@ -200,20 +200,20 @@ $(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)
 # Run targets
 .PHONY: run-server
 run-server: server | $(DAT_DIR)
-	$(BIN_DIR)/server
+	$(BIN_DIR)/sc-server
 
 .PHONY: run-client
 run-client: client
-	$(BIN_DIR)/client
+	$(BIN_DIR)/sc-client
 
 # Debug with GDB
 .PHONY: debug-server
 debug-server: server
-	gdb $(BIN_DIR)/server
+	gdb $(BIN_DIR)/sc-server
 
 .PHONY: debug-client
 debug-client: client
-	gdb $(BIN_DIR)/client
+	gdb $(BIN_DIR)/sc-client
 
 # Code formatting
 .PHONY: fmt
@@ -262,8 +262,8 @@ docs/arch.png: arch.dot $(SRC_FILES)
 install: release
 	@echo "Installing Space Captain to $(PREFIX)/bin"
 	@install -d $(PREFIX)/bin
-	@SERVER_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/server-release)) && \
-	CLIENT_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/client-release)) && \
+	@SERVER_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/sc-server-release)) && \
+	CLIENT_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/sc-client-release)) && \
 	echo "Installing server: $$SERVER_VERSIONED" && \
 	install -m 755 $(BIN_DIR)/$$SERVER_VERSIONED $(PREFIX)/bin/$$SERVER_VERSIONED && \
 	echo "Installing client: $$CLIENT_VERSIONED" && \
