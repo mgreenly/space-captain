@@ -28,6 +28,17 @@ BIN_DIR = bin
 DAT_DIR = data
 
 # ============================================================================
+# OS Detection
+# ============================================================================
+OS_RELEASE_FILE = /etc/os-release
+ifneq ($(wildcard $(OS_RELEASE_FILE)),)
+    OS_ID := $(shell grep '^ID=' $(OS_RELEASE_FILE) | cut -d= -f2 | tr -d '"')
+    OS_VERSION_ID := $(shell grep '^VERSION_ID=' $(OS_RELEASE_FILE) | cut -d= -f2 | tr -d '"')
+else
+    OS_ID := unknown
+endif
+
+# ============================================================================
 # File Definitions
 # ============================================================================
 
@@ -84,8 +95,14 @@ client: $(BIN_DIR)/client
 # Build release versions
 .PHONY: release
 release:
-	@$(MAKE) clean
-	@$(MAKE) $(BIN_DIR)/server-release $(BIN_DIR)/client-release
+ifeq ($(OS_ID),debian)
+	@echo "Detected Debian system, building native release..."
+	@$(MAKE) release-debian
+else
+	@echo "OS '$(OS_ID)' detected. Currently only Debian native builds are supported."
+	@echo "Falling back to generic release build..."
+	@$(MAKE) release-generic
+endif
 
 # ============================================================================
 # Build Rules - Debug
@@ -124,6 +141,22 @@ $(BIN_DIR)/client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR)
 # Release object files - generic rule
 $(OBJ_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/release
 	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
+
+# Native Debian release build
+.PHONY: release-debian
+release-debian:
+	@echo "Building native Debian release..."
+	@$(MAKE) clean
+	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR)/server-release $(BIN_DIR)/client-release
+	@echo "Debian release build complete"
+	@echo "Binaries: $(BIN_DIR)/server-release -> $$(readlink $(BIN_DIR)/server-release)"
+	@echo "          $(BIN_DIR)/client-release -> $$(readlink $(BIN_DIR)/client-release)"
+
+# Generic release build (preserves current behavior)
+.PHONY: release-generic
+release-generic:
+	@$(MAKE) clean
+	@$(MAKE) $(BIN_DIR)/server-release $(BIN_DIR)/client-release
 
 # ============================================================================
 # Test Targets
@@ -295,7 +328,9 @@ help:
 	@echo "  make                Build debug server and client (default)"
 	@echo "  make server         Build debug server only"
 	@echo "  make client         Build debug client only"
-	@echo "  make release        Build release versions with versioning"
+	@echo "  make release        Build release versions (auto-detects OS)"
+	@echo "  make release-debian Build native release for Debian systems"
+	@echo "  make release-generic Build generic release (fallback)"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make tests          Build all test executables"
