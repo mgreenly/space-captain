@@ -10,20 +10,19 @@ Space Captain uses mbedTLS for DTLS encryption. Since mbedTLS is not consistentl
 
 ### Source Management
 
-- mbedTLS source code is cloned to `vendor/mbedtls/` (git-ignored)
+- mbedTLS source code is cloned to `deps/src/mbedtls/` (git-ignored)
 - Version is controlled by `MBEDTLS_VERSION` in the Makefile (currently v2.28.3)
-- The `vendor-mbedtls` make target ensures source availability on the host system
+- The `clone-mbedtls` make target ensures source availability on the host system
 
 ### Platform-Specific Builds
 
 mbedTLS is built separately for each platform to avoid cross-contamination:
 
-- **Debian**: Built to `.local/debian/`
-- **Amazon Linux**: Built to `.local/amazon/`
-- **Generic/Other**: Built to `.local/generic/`
+- **Debian**: Built to `deps/build/debian/`
+- **Amazon Linux**: Built to `deps/build/amazon/`
 
 The build process:
-1. Host system clones mbedTLS source via `make vendor-mbedtls`
+1. Host system clones mbedTLS source via `make clone-mbedtls`
 2. Docker containers or local builds compile mbedTLS to platform-specific directories
 3. Binaries are linked against the platform-specific libraries
 
@@ -72,18 +71,18 @@ Two Docker builder images handle compilation:
 
 ### Build Flow
 
-1. Host system ensures mbedTLS source exists: `make vendor-mbedtls`
+1. Host system ensures mbedTLS source exists: `make clone-mbedtls`
 2. Docker container is launched with project mounted at `/workspace`
 3. Container runs with host user's UID/GID for proper file ownership
-4. mbedTLS is built inside container to `.local/<platform>/`
+4. mbedTLS is built inside container to `deps/build/<platform>/`
 5. Package is created with bundled libraries
 
 ### Library Path Resolution
 
 During Docker builds:
-- Compile time: `-I.local/<platform>/include` (CFLAGS)
-- Link time: `-L.local/<platform>/lib` (LDFLAGS)
-- Runtime: `LD_LIBRARY_PATH=/workspace/.local/<platform>/lib` (Docker environment)
+- Compile time: `-Ideps/build/<platform>/include` (CFLAGS)
+- Link time: `-Ldeps/build/<platform>/lib` (LDFLAGS)
+- Runtime: RPATH set to `deps/build/<platform>/lib` via `-Wl,-rpath`
 
 ## Library Isolation and Collision Prevention
 
@@ -118,6 +117,23 @@ The bundled libraries are isolated from system libraries through several mechani
 - Each application uses its own version without interference
 - Dynamic linker respects each process's library path configuration
 
+## Directory Structure
+
+The project uses a unified dependency structure:
+
+```
+deps/
+├── src/              # Third-party source code
+│   └── mbedtls/     # mbedTLS source from git
+└── build/           # Built libraries
+    ├── debian/      # Debian-specific builds
+    │   ├── include/ # Header files
+    │   └── lib/     # Shared libraries
+    └── amazon/      # Amazon Linux builds
+        ├── include/ # Header files
+        └── lib/     # Shared libraries
+```
+
 ## Benefits
 
 1. **Self-contained packages**: No external mbedTLS dependency required
@@ -126,6 +142,7 @@ The bundled libraries are isolated from system libraries through several mechani
 4. **Simple deployment**: Single package installation with no dependency hunting
 5. **No system pollution**: System library paths remain clean
 6. **Version independence**: Can use different mbedTLS version than system
+7. **Clear organization**: All dependencies in one `deps/` directory
 
 ## Maintenance Notes
 
@@ -138,8 +155,8 @@ The bundled libraries are isolated from system libraries through several mechani
 ### Adding New Platforms
 
 1. Create new Docker builder image (e.g., `Dockerfile.fedora`)
-2. Add platform detection in `OS_DIR` logic in Makefile
-3. Create platform-specific make targets
+2. Add platform detection in OS-specific settings in Makefile
+3. Add architecture mappings if needed
 4. Ensure wrapper script pattern is followed
 
 ### Troubleshooting
@@ -147,3 +164,11 @@ The bundled libraries are isolated from system libraries through several mechani
 - **Library not found**: Check wrapper script and `LD_LIBRARY_PATH`
 - **Version mismatch**: Ensure clean builds with `make clean-all`
 - **Permission issues**: Verify Docker UID/GID mapping
+- **Build failures**: Check that `deps/src/mbedtls` exists via `make clone-mbedtls`
+
+### Make Targets
+
+- `make clone-mbedtls` - Clone mbedTLS source to `deps/src/mbedtls`
+- `make mbedtls` - Build mbedTLS for current platform
+- `make clean-all` - Remove all artifacts including `deps/`
+- `make package-<os>` - Build package using Docker (debian/amazon)
