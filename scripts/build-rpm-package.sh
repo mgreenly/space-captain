@@ -33,10 +33,19 @@ fi
 TMPDIR=$(mktemp -d)
 mkdir -p "$TMPDIR/space-captain-$VERSION/usr/bin"
 mkdir -p "$TMPDIR/space-captain-$VERSION/usr/lib"
+mkdir -p "$TMPDIR/space-captain-$VERSION/etc/space-captain"
 cp "$SERVER_BINARY" "$TMPDIR/space-captain-$VERSION/usr/bin/"
 
 # Copy mbedTLS libraries
 cp deps/build/amazon/lib/*.so* "$TMPDIR/space-captain-$VERSION/usr/lib/" 2>/dev/null || true
+
+# Copy certificate files
+if [ -f "certs/server.crt" ] && [ -f "certs/server.key" ]; then
+    cp certs/server.crt "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
+    cp certs/server.key "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
+else
+    echo "Warning: Certificate files not found in certs/ directory"
+fi
 
 # Copy systemd service file to tarball
 cp pkg/rpm/space-captain-server.service "$TMPDIR/space-captain-$VERSION/"
@@ -47,15 +56,17 @@ cd - >/dev/null
 
 # Generate spec file from template
 DATE=$(date +'%a %b %d %Y')
+RELEASE=$(cat .RELEASE)
 sed -e "s/@VERSION@/$VERSION/g" \
     -e "s/@DATE@/$DATE/g" \
+    -e "s/@RELEASE@/$RELEASE/g" \
     pkg/rpm/space-captain.spec.template > "$RPMBUILD_DIR/SPECS/space-captain.spec"
 
 # Build the RPM
 rpmbuild --define "_topdir $RPMBUILD_DIR" -bb "$RPMBUILD_DIR/SPECS/space-captain.spec"
 
 # Copy the built RPM to pkg/out
-cp "$RPMBUILD_DIR"/RPMS/$ARCH/space-captain-server-$VERSION-1*.rpm pkg/out/
+cp "$RPMBUILD_DIR"/RPMS/$ARCH/space-captain-server-$VERSION-$RELEASE*.rpm pkg/out/
 
 # Clean up
 rm -rf "$TMPDIR"

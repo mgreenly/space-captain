@@ -510,7 +510,7 @@ clean:
 
 .PHONY: clean-all
 clean-all: clean
-	rm -rf $(DEPS_DIR)
+	rm -rf $(DEPS_DIR) $(PACKAGE_OUT_DIR)
 
 .PHONY: clean-certs
 clean-certs:
@@ -571,7 +571,7 @@ builder-%:
 
 # Pattern rule for Docker-based package building
 .PHONY: package-%
-package-%: clone-mbedtls builder-%
+package-%: clone-mbedtls builder-% certs
 	@$(MAKE) package-docker OS=$* PACKAGE_TYPE=$($*_PACKAGE_TYPE) PACKAGE_CMD=$($*_PACKAGE_CMD)
 
 # Common docker packaging target
@@ -637,26 +637,35 @@ bump-minor:
 bump-major:
 	$(call bump-version,NEW_MAJOR=$$(($$MAJOR + 1)); echo "$$NEW_MAJOR.0.0" > .VERSION)
 
+.PHONY: bump-release
+bump-release:
+	@CURRENT_RELEASE=$$(cat .RELEASE 2>/dev/null || echo 0); \
+	NEW_RELEASE=$$(($$CURRENT_RELEASE + 1)); \
+	echo "$$NEW_RELEASE" > .RELEASE; \
+	echo "Release bumped from $$CURRENT_RELEASE to $$NEW_RELEASE"
+
 # ============================================================================
 # Packaging
 # ============================================================================
 
 .PHONY: package-deb
-package-deb: release
+package-deb: release certs
 	$(check-package-prereqs)
 	$(call check-tool,dpkg-deb,Install with: sudo apt-get install dpkg-dev)
 	@echo "Building Debian package v$(PACKAGE_VERSION) for $(DEB_ARCH)..."
 	@scripts/build-deb-package.sh "$(PACKAGE_VERSION)" "$(DEB_ARCH)" "$(BIN_DIR)"
-	@echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)_$(DEB_ARCH).deb"
+	@RELEASE=$$(cat .RELEASE 2>/dev/null || echo 1); \
+	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)-$$RELEASE_$(DEB_ARCH).deb"
 
 # RPM package for Amazon Linux / RHEL systems
 .PHONY: package-rpm
-package-rpm: release
+package-rpm: release certs
 	$(check-package-prereqs)
 	$(call check-tool,rpmbuild,Install with: sudo yum install rpm-build)
 	@echo "Building RPM package v$(PACKAGE_VERSION) for $(RPM_ARCH)..."
 	@scripts/build-rpm-package.sh "$(PACKAGE_VERSION)" "$(RPM_ARCH)" "$(BIN_DIR)"
-	@echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-*.rpm"
+	@RELEASE=$$(cat .RELEASE 2>/dev/null || echo 1); \
+	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-$$RELEASE.$(RPM_DIST).$(RPM_ARCH).rpm"
 
 
 # ============================================================================

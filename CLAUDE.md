@@ -160,10 +160,15 @@ Files without an explicit `LOG_LEVEL` definition will use the default level (`LO
 
 ### Version Management
 ```bash
-make bump-patch    # Increment patch version
-make bump-minor    # Increment minor version
-make bump-major    # Increment major version
+make bump-patch    # Increment patch version (0.1.0 -> 0.1.1)
+make bump-minor    # Increment minor version (0.1.0 -> 0.2.0)
+make bump-major    # Increment major version (0.1.0 -> 1.0.0)
+make bump-release  # Increment release number (1 -> 2)
 ```
+
+Package versions follow the pattern:
+- RPM: `name-version-release.dist.arch.rpm` (e.g., `space-captain-server-0.1.1-1.amzn2023.x86_64.rpm`)
+- DEB: `name_version-release_arch.deb` (e.g., `space-captain-server_0.1.1-1_amd64.deb`)
 
 ## Important Notes
 - Server must handle 1000s of concurrent connections at 60 ticks/second
@@ -171,6 +176,24 @@ make bump-major    # Increment major version
 - Error handling is critical - check all return values
 - Memory management - no leaks allowed (test with valgrind)
 - State persistence not yet implemented (v0.1.0 scope)
+
+## Certificate Configuration
+
+The server looks for TLS certificates in the following order:
+1. Environment variables: `SC_SERVER_CRT` and `SC_SERVER_KEY`
+2. System location: `/etc/space-captain/server.crt` and `/etc/space-captain/server.key`
+3. Local directory: `certs/server.crt` and `certs/server.key`
+
+Example usage:
+```bash
+# Use custom certificate locations
+export SC_SERVER_CRT=/path/to/my/cert.pem
+export SC_SERVER_KEY=/path/to/my/key.pem
+./bin/sc-server
+
+# Use default locations (checks /etc/space-captain/ then certs/)
+./bin/sc-server
+```
 
 
 @docs/code-style.md

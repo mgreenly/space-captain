@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -203,9 +204,28 @@ int main() {
     return 1;
   }
 
+  // Determine certificate paths - check environment variables first
+  const char* cert_path = getenv("SC_SERVER_CRT");
+  const char* key_path = getenv("SC_SERVER_KEY");
+  
+  // Fall back to /etc/space-captain if env vars not set
+  if (!cert_path || !key_path) {
+    cert_path = cert_path ? cert_path : "/etc/space-captain/server.crt";
+    key_path = key_path ? key_path : "/etc/space-captain/server.key";
+    
+    // Check if /etc/space-captain files exist, otherwise try local certs/
+    struct stat st;
+    if (stat(cert_path, &st) != 0 || stat(key_path, &st) != 0) {
+      cert_path = "certs/server.crt";
+      key_path = "certs/server.key";
+    }
+  }
+  
+  log_info("Using certificate: %s", cert_path);
+  log_info("Using private key: %s", key_path);
+
   // Create DTLS context for server
-  g_dtls_ctx =
-    sc_dtls_context_create(DTLS_ROLE_SERVER, "certs/server.crt", "certs/server.key", NULL, 0);
+  g_dtls_ctx = sc_dtls_context_create(DTLS_ROLE_SERVER, cert_path, key_path, NULL, 0);
   if (!g_dtls_ctx) {
     log_error("%s", "Failed to create DTLS context");
     sc_dtls_cleanup();

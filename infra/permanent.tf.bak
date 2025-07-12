@@ -1,0 +1,43 @@
+# Permanent resources that persist across infrastructure teardowns
+
+# SSH Key
+resource "aws_key_pair" "space_captain" {
+  key_name   = "space-captain-key-${data.aws_caller_identity.current.account_id}"
+  public_key = file("${path.module}/../certs/space-captain.pub")
+}
+
+# S3 Bucket
+resource "aws_s3_bucket" "space_captain" {
+  bucket = "space-captain.metaspot.org"
+}
+
+resource "aws_s3_bucket_public_access_block" "space_captain" {
+  bucket = aws_s3_bucket.space_captain.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+resource "aws_s3_bucket_policy" "space_captain" {
+  bucket = aws_s3_bucket.space_captain.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.space_captain.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.space_captain]
+}
+
+# Data source needed by SSH key
+data "aws_caller_identity" "current" {}

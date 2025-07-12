@@ -15,8 +15,9 @@ case "$1" in
         # Enable and start the systemd service
         if [ -d /run/systemd/system ]; then
             systemctl daemon-reload
-            systemctl enable space-captain-server.service
-            echo "Space Captain Server service enabled. Start with: systemctl start space-captain-server"
+            systemctl enable space-captain-server.service >/dev/null 2>&1 || true
+            systemctl start space-captain-server.service >/dev/null 2>&1 || true
+            echo "Space Captain Server service enabled and started"
         fi
         ;;
     

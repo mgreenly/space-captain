@@ -4,6 +4,7 @@ FROM amazonlinux:2023
 RUN yum update -y && yum install -y \
     gcc \
     make \
+    openssl \
     openssl-devel \
     rpm-build \
     tar \

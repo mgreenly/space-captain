@@ -1,5 +1,5 @@
 Package: space-captain-server
-Version: @VERSION@
+Version: @VERSION@-@RELEASE@
 Architecture: @ARCH@
 Maintainer: Space Captain Development Team <dev@spacecaptain.io>
 Depends: libc6
