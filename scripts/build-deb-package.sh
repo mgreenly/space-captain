@@ -2,16 +2,20 @@
 set -e
 
 # Build Debian package for Space Captain
-# Usage: build-deb-package.sh <version> <arch> <bin_dir>
+# Usage: build-deb-package.sh <version> <arch> <bin_dir> [git_sha]
 
 VERSION=$1
 ARCH=$2
 BIN_DIR=$3
+GIT_SHA=$4
 
 if [ -z "$VERSION" ] || [ -z "$ARCH" ] || [ -z "$BIN_DIR" ]; then
-    echo "Usage: $0 <version> <arch> <bin_dir>"
+    echo "Usage: $0 <version> <arch> <bin_dir> [git_sha]"
     exit 1
 fi
+
+# If git SHA wasn't provided, it will be included in VERSION already
+# This maintains backward compatibility
 
 RELEASE=$(cat .vRELEASE)
 PKG_NAME="space-captain-server_${VERSION}-${RELEASE}_${ARCH}"

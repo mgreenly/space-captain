@@ -39,7 +39,11 @@ define get-version
 	MINOR=$$(cat .vMINOR); \
 	PATCH=$$(cat .vPATCH); \
 	PRE=$$(cat .vPRE 2>/dev/null || true); \
-	GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	if [ -n "$$HOST_GIT_SHA" ]; then \
+		GIT_SHA="$$HOST_GIT_SHA"; \
+	else \
+		GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	fi; \
 	VERSION="$$MAJOR.$$MINOR.$$PATCH"; \
 	if [ -n "$$PRE" ]; then VERSION="$$VERSION-pre$$PRE"; fi; \
 	VERSION="$$VERSION+$$GIT_SHA"; \
@@ -595,7 +599,8 @@ package-docker:
 		echo "Error: Builder image 'space-captain-$(OS)-builder' not found. Run 'make builder-$(OS)' first."; \
 		exit 1; \
 	fi
-	@docker run $(DOCKER_RUN_OPTS) space-captain-$(OS)-builder make mbedtls $(PACKAGE_CMD)
+	@HOST_GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	docker run $(DOCKER_RUN_OPTS) -e HOST_GIT_SHA="$$HOST_GIT_SHA" space-captain-$(OS)-builder make mbedtls $(PACKAGE_CMD)
 	@echo "$(PACKAGE_TYPE) package build complete - check $(PACKAGE_OUT_DIR)/"
 
 # ============================================================================
@@ -683,20 +688,26 @@ rel-reset:
 package-deb: release certs
 	$(check-package-prereqs)
 	$(call check-tool,dpkg-deb,Install with: sudo apt-get install dpkg-dev)
-	@echo "Building Debian package v$(PACKAGE_VERSION) for $(DEB_ARCH)..."
-	@scripts/build-deb-package.sh "$(PACKAGE_VERSION_SAFE)" "$(DEB_ARCH)" "$(BIN_DIR)"
-	@RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
-	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION_SAFE)-$$RELEASE_$(DEB_ARCH).deb"
+	@GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	FULL_VERSION=$$($(get-version)); \
+	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
+	echo "Building Debian package v$$FULL_VERSION for $(DEB_ARCH)..."; \
+	scripts/build-deb-package.sh "$$SAFE_VERSION" "$(DEB_ARCH)" "$(BIN_DIR)" "$$GIT_SHA"; \
+	RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$$SAFE_VERSION-$$RELEASE_$(DEB_ARCH).deb"
 
 # RPM package for Amazon Linux / RHEL systems
 .PHONY: package-rpm
 package-rpm: release certs
 	$(check-package-prereqs)
 	$(call check-tool,rpmbuild,Install with: sudo yum install rpm-build)
-	@echo "Building RPM package v$(PACKAGE_VERSION) for $(RPM_ARCH)..."
-	@scripts/build-rpm-package.sh "$(PACKAGE_VERSION_SAFE)" "$(RPM_ARCH)" "$(BIN_DIR)"
-	@RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
-	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION_SAFE)-$$RELEASE.$(RPM_ARCH).rpm"
+	@GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	FULL_VERSION=$$($(get-version)); \
+	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
+	echo "Building RPM package v$$FULL_VERSION for $(RPM_ARCH)..."; \
+	scripts/build-rpm-package.sh "$$SAFE_VERSION" "$(RPM_ARCH)" "$(BIN_DIR)" "$$GIT_SHA"; \
+	RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$$SAFE_VERSION-$$RELEASE.$(RPM_ARCH).rpm"
 
 
 # ============================================================================
