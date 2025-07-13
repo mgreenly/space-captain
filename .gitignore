@@ -14,3 +14,4 @@ prompt*.txt
 tags
 deps/
 infra/.terraform/
+.secrets
