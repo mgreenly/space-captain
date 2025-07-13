@@ -28,12 +28,17 @@ This directory contains documentation about the current state of the Space Capta
 - [Speed Table](speed-table.md) - Logarithmic speed scale reference and implementation
 
 ### Research Papers
-See [research/](research/) directory for:
-- Architecture research and proposals
-- Security and authentication studies
-- Network protocol analysis
-- UI/UX exploration
-- Speculative designs and future features
+- [Research Overview](research/README.md) - Index of all research documentation
+- [Authenticated Messages over UDP](research/authenticated-messages-over-udp.md) - Security considerations for UDP messaging
+- [Balanced Continuous Graph Partition Problem](research/balanced-continous-graph-partition-problem.md) - Algorithm research for game world partitioning
+- [DTLS Research](research/dtls-research.md) - Datagram TLS protocol analysis
+- [mbedTLS Research](research/mbed-tls-research.md) - TLS library evaluation and implementation notes
+- [MMO Architecture Research](research/mmo-architecture-research.md) - Scalable multiplayer architecture patterns
+- [MMO State Management Protocols](research/mmo-state-management-protocols.md) - State synchronization approaches
+- [ncurses Research](research/ncurses-research.md) - Terminal UI library exploration
+- [Network Worker Pool Architecture](research/net-worker-pool-architecture.md) - Concurrent network processing design
+- [OIDC for CLI Research](research/oidc-for-cli-research.md) - Authentication flow for command-line clients
+- [OpenSSL Research](research/openssl-research.md) - TLS library comparison and analysis
 
 ## Contributing
 
