@@ -87,6 +87,19 @@ The project uses a **traditional build structure** where each source file compil
 4. Follow the existing format: `- [Link Text](filename.md) - Brief description`
 5. Create new category sections if needed for better organization
 
+### Documentation Organization
+1. **docs/** - Contains current project documentation that must be kept up-to-date with code changes
+   - Architecture diagrams and current implementation details
+   - Build system and deployment documentation
+   - Active development guidelines and standards
+2. **docs/research/** - Contains research papers, speculative designs, and exploratory documentation
+   - Research documents do NOT need to be updated when code changes
+   - May contain unimplemented ideas, proposals, and future considerations
+   - Historical research and technology evaluations
+3. When adding documentation, consider:
+   - Is this about the current state of the project? → Place in `docs/`
+   - Is this research, speculation, or planning? → Place in `docs/research/`
+
 ### After Making Changes
 1. Run `make` to check for warnings
 2. Run `make fmt` to format code
