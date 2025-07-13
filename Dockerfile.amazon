@@ -18,23 +18,9 @@ RUN yum update -y && yum install -y \
 # Set library path to include .local/amazon/lib
 ENV LD_LIBRARY_PATH=/workspace/.local/amazon/lib
 
-# Create entrypoint script to handle user creation
-RUN echo '#!/bin/bash' > /entrypoint.sh && \
-    echo 'USER_ID=${USER_ID:-1000}' >> /entrypoint.sh && \
-    echo 'GROUP_ID=${GROUP_ID:-1000}' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo 'echo "Creating user with UID=$USER_ID and GID=$GROUP_ID"' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Create group and user with matching IDs' >> /entrypoint.sh && \
-    echo 'groupadd -g $GROUP_ID -o builduser 2>/dev/null || true' >> /entrypoint.sh && \
-    echo 'useradd -u $USER_ID -g $GROUP_ID -o -m -s /bin/bash builduser 2>/dev/null || true' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Export LD_LIBRARY_PATH for the user' >> /entrypoint.sh && \
-    echo 'export LD_LIBRARY_PATH=/workspace/.local/amazon/lib' >> /entrypoint.sh && \
-    echo '' >> /entrypoint.sh && \
-    echo '# Run command as builduser' >> /entrypoint.sh && \
-    echo 'exec runuser -u builduser -- bash -c "cd /workspace && LD_LIBRARY_PATH=/workspace/.local/amazon/lib $*"' >> /entrypoint.sh && \
-    chmod +x /entrypoint.sh
+# Copy entrypoint script
+COPY scripts/docker-entrypoint-amazon.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/bin/bash"]
