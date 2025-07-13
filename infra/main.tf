@@ -22,7 +22,7 @@ data "aws_caller_identity" "current" {}
 
 # Compute the RPM filename
 locals {
-  computed_rpm_filename = var.server_rpm_filename != "" ? var.server_rpm_filename : "space-captain-server-${var.server_version}-${var.server_release}.amzn2023.x86_64.rpm"
+  computed_rpm_filename = var.server_rpm_filename != "" ? var.server_rpm_filename : "space-captain-server-${var.server_version}-${var.server_release}.x86_64.rpm"
 }
 
 # Dynamic resources that can be torn down and recreated

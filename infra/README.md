@@ -85,7 +85,7 @@ The infrastructure uses cloud-init scripts to automatically configure instances 
 ### Customizing the Server RPM
 
 The `sync-version.sh` script automates version management:
-- Reads version from `../.VERSION` and release from `../.RELEASE`
+- Reads version from `../.VERSION` and release from `../.vRELEASE`
 - Updates `terraform.tfvars` with the correct values
 - Uploads the RPM to S3 bucket
 
@@ -97,10 +97,10 @@ The `sync-version.sh` script automates version management:
 terraform apply -var="server_version=0.2.0" -var="server_release=1"
 
 # Manual override: Use specific RPM filename
-terraform apply -var="server_rpm_filename=space-captain-server-0.2.0-1.amzn2023.x86_64.rpm"
+terraform apply -var="server_rpm_filename=space-captain-server-0.2.0-1.x86_64.rpm"
 ```
 
-The RPM filename follows the pattern: `space-captain-server-<version>-<release>.amzn2023.x86_64.rpm`
+The RPM filename follows the pattern: `space-captain-server-<version>-<release>.x86_64.rpm`
 
 ### Checking Cloud-Init Status
 

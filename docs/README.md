@@ -13,6 +13,7 @@ This directory contains documentation and detailed explanations about various as
 ### Build System
 - [Traditional Build System](build-system.md) - Comprehensive guide to the build system, including tool checking, packaging, and Docker integration
 - [Vendored Libraries](vendored-libraries.md) - How mbedTLS is bundled and isolated in packages
+- [Versioning Guide](versioning.md) - Semantic versioning and package naming conventions
 
 ### Development Guidelines
 - [Code Style Guidelines](code-style.md) - Coding standards and naming conventions

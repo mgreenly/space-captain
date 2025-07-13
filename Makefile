@@ -33,8 +33,22 @@ DEPS_BUILD_DIR = $(DEPS_DIR)/build
 # ============================================================================
 # Version and Build Settings
 # ============================================================================
-PACKAGE_VERSION := $(shell cat .VERSION)
-TAG ?= pre
+# Function to construct version string with optional pre-release and git metadata
+define get-version
+	MAJOR=$$(cat .vMAJOR); \
+	MINOR=$$(cat .vMINOR); \
+	PATCH=$$(cat .vPATCH); \
+	PRE=$$(cat .vPRE 2>/dev/null || true); \
+	GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
+	VERSION="$$MAJOR.$$MINOR.$$PATCH"; \
+	if [ -n "$$PRE" ]; then VERSION="$$VERSION-pre$$PRE"; fi; \
+	VERSION="$$VERSION+$$GIT_SHA"; \
+	echo "$$VERSION"
+endef
+
+PACKAGE_VERSION := $(shell $(get-version))
+# Package-safe version with '-' replaced by '~' for deb/rpm filenames
+PACKAGE_VERSION_SAFE := $(shell $(get-version) | sed 's/-/~/g')
 MBEDTLS_VERSION = v2.28.3
 
 # ============================================================================
@@ -122,8 +136,8 @@ endif
 
 # Common package build prerequisites check
 define check-package-prereqs
-	@if [ ! -f ".VERSION" ]; then \
-		echo "Error: .VERSION file not found"; \
+	@if [ ! -f ".vMAJOR" ] || [ ! -f ".vMINOR" ] || [ ! -f ".vPATCH" ]; then \
+		echo "Error: Version files (.vMAJOR, .vMINOR, .vPATCH) not found"; \
 		exit 1; \
 	fi
 	@if [ ! -d "$(BIN_DIR)" ]; then \
@@ -315,11 +329,9 @@ $(OBJ_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/debug
 
 # Release binary versioning helper
 define build-release-binary
-	@VERSION=$$(cat .VERSION); \
-	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
-	FULL_VERSION="$$VERSION-$(TAG).$$DATETIME"; \
-	$(CC) -o $(BIN_DIR)/$(1)-$$FULL_VERSION $(2) $(LDFLAGS); \
-	ln -sf $(1)-$$FULL_VERSION $(BIN_DIR)/$(1)-release
+	@VERSION=$$($(get-version)); \
+	$(CC) -o $(BIN_DIR)/$(1)-$$VERSION $(2) $(LDFLAGS); \
+	ln -sf $(1)-$$VERSION $(BIN_DIR)/$(1)-release
 endef
 
 # Release executables (with versioning)
@@ -592,9 +604,7 @@ package-docker:
 
 .PHONY: version
 version:
-	@VERSION=$$(cat .VERSION); \
-	DATETIME=$$(date +%Y%m%dT%H%M%S%z); \
-	echo "$$VERSION-$(TAG).$$DATETIME"
+	@$(get-version)
 
 .PHONY: package-info
 package-info:
@@ -617,32 +627,53 @@ package-info:
 
 # Version bump helper function
 define bump-version
-	@VERSION=$$(cat .VERSION); \
-	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
-	MINOR=$$(echo $$VERSION | cut -d. -f2); \
-	PATCH=$$(echo $$VERSION | cut -d. -f3); \
+	@MAJOR=$$(cat .vMAJOR); \
+	MINOR=$$(cat .vMINOR); \
+	PATCH=$$(cat .vPATCH); \
 	$(1); \
-	echo "Version bumped to $$(cat .VERSION)"
+	echo "Version bumped to $$($(get-version))"
 endef
 
-.PHONY: bump-patch
-bump-patch:
-	$(call bump-version,NEW_PATCH=$$(($$PATCH + 1)); echo "$$MAJOR.$$MINOR.$$NEW_PATCH" > .VERSION)
+.PHONY: major-bump
+major-bump:
+	$(call bump-version,NEW_MAJOR=$$(($$MAJOR + 1)); echo $$NEW_MAJOR > .vMAJOR; echo 0 > .vMINOR; echo 0 > .vPATCH; echo "" > .vPRE)
 
-.PHONY: bump-minor
-bump-minor:
-	$(call bump-version,NEW_MINOR=$$(($$MINOR + 1)); echo "$$MAJOR.$$NEW_MINOR.0" > .VERSION)
+.PHONY: minor-bump
+minor-bump:
+	$(call bump-version,NEW_MINOR=$$(($$MINOR + 1)); echo $$NEW_MINOR > .vMINOR; echo 0 > .vPATCH; echo "" > .vPRE)
 
-.PHONY: bump-major
-bump-major:
-	$(call bump-version,NEW_MAJOR=$$(($$MAJOR + 1)); echo "$$NEW_MAJOR.0.0" > .VERSION)
+.PHONY: patch-bump
+patch-bump:
+	$(call bump-version,NEW_PATCH=$$(($$PATCH + 1)); echo $$NEW_PATCH > .vPATCH)
 
-.PHONY: bump-release
-bump-release:
-	@CURRENT_RELEASE=$$(cat .RELEASE 2>/dev/null || echo 0); \
-	NEW_RELEASE=$$(($$CURRENT_RELEASE + 1)); \
-	echo "$$NEW_RELEASE" > .RELEASE; \
-	echo "Release bumped from $$CURRENT_RELEASE to $$NEW_RELEASE"
+.PHONY: pre-bump
+pre-bump:
+	@PRE=$$(cat .vPRE 2>/dev/null || true); \
+	if [ -z "$$PRE" ]; then PRE=0; fi; \
+	NEW_PRE=$$(($$PRE + 1)); \
+	echo "$$NEW_PRE" > .vPRE; \
+	echo "Pre-release version bumped to $$NEW_PRE"; \
+	echo "New version: $$($(get-version))"
+
+.PHONY: pre-reset
+pre-reset:
+	@echo "" > .vPRE; \
+	echo "Pre-release version reset"; \
+	echo "New version: $$($(get-version))"
+
+.PHONY: rel-bump
+rel-bump:
+	@RELEASE=$$(cat .vRELEASE 2>/dev/null || true); \
+	if [ -z "$$RELEASE" ]; then RELEASE=0; fi; \
+	NEW_RELEASE=$$(($$RELEASE + 1)); \
+	echo "$$NEW_RELEASE" > .vRELEASE; \
+	echo "Release bumped to $$NEW_RELEASE"
+
+.PHONY: rel-reset
+rel-reset:
+	@echo "1" > .vRELEASE; \
+	echo "Release reset to 1"
+
 
 # ============================================================================
 # Packaging
@@ -653,9 +684,9 @@ package-deb: release certs
 	$(check-package-prereqs)
 	$(call check-tool,dpkg-deb,Install with: sudo apt-get install dpkg-dev)
 	@echo "Building Debian package v$(PACKAGE_VERSION) for $(DEB_ARCH)..."
-	@scripts/build-deb-package.sh "$(PACKAGE_VERSION)" "$(DEB_ARCH)" "$(BIN_DIR)"
-	@RELEASE=$$(cat .RELEASE 2>/dev/null || echo 1); \
-	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION)-$$RELEASE_$(DEB_ARCH).deb"
+	@scripts/build-deb-package.sh "$(PACKAGE_VERSION_SAFE)" "$(DEB_ARCH)" "$(BIN_DIR)"
+	@RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$(PACKAGE_VERSION_SAFE)-$$RELEASE_$(DEB_ARCH).deb"
 
 # RPM package for Amazon Linux / RHEL systems
 .PHONY: package-rpm
@@ -663,9 +694,9 @@ package-rpm: release certs
 	$(check-package-prereqs)
 	$(call check-tool,rpmbuild,Install with: sudo yum install rpm-build)
 	@echo "Building RPM package v$(PACKAGE_VERSION) for $(RPM_ARCH)..."
-	@scripts/build-rpm-package.sh "$(PACKAGE_VERSION)" "$(RPM_ARCH)" "$(BIN_DIR)"
-	@RELEASE=$$(cat .RELEASE 2>/dev/null || echo 1); \
-	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION)-$$RELEASE.$(RPM_DIST).$(RPM_ARCH).rpm"
+	@scripts/build-rpm-package.sh "$(PACKAGE_VERSION_SAFE)" "$(RPM_ARCH)" "$(BIN_DIR)"
+	@RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$(PACKAGE_VERSION_SAFE)-$$RELEASE.$(RPM_ARCH).rpm"
 
 
 # ============================================================================
@@ -721,12 +752,15 @@ help:
 	@echo ""
 	@echo "Version Management:"
 	@echo "  make version         Display current version"
-	@echo "  make bump-patch      Increment patch version (0.0.X)"
-	@echo "  make bump-minor      Increment minor version (0.X.0)"
-	@echo "  make bump-major      Increment major version (X.0.0)"
+	@echo "  make major-bump      Increment major version (X.0.0)"
+	@echo "  make minor-bump      Increment minor version (0.X.0)"
+	@echo "  make patch-bump      Increment patch version (0.0.X)"
+	@echo "  make pre-bump        Increment pre-release version"
+	@echo "  make pre-reset       Reset pre-release version"
+	@echo "  make rel-bump        Increment the package release number"
+	@echo "  make rel-reset       Reset the package release number"
 	@echo ""
 	@echo "Environment Variables:"
-	@echo "  TAG=<tag>            Set build tag (default: pre)"
 	@echo "  PREFIX=<path>        Set installation prefix (default: ~/.local)"
 
 # ============================================================================

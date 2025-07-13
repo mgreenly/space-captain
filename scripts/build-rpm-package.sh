@@ -56,7 +56,7 @@ cd - >/dev/null
 
 # Generate spec file from template
 DATE=$(date +'%a %b %d %Y')
-RELEASE=$(cat .RELEASE)
+RELEASE=$(cat .vRELEASE)
 sed -e "s/@VERSION@/$VERSION/g" \
     -e "s/@DATE@/$DATE/g" \
     -e "s/@RELEASE@/$RELEASE/g" \

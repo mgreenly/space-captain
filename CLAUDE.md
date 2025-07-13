@@ -160,15 +160,20 @@ Files without an explicit `LOG_LEVEL` definition will use the default level (`LO
 
 ### Version Management
 ```bash
-make bump-patch    # Increment patch version (0.1.0 -> 0.1.1)
-make bump-minor    # Increment minor version (0.1.0 -> 0.2.0)
-make bump-major    # Increment major version (0.1.0 -> 1.0.0)
-make bump-release  # Increment release number (1 -> 2)
+make major-bump    # Increment major version (0.1.0 -> 1.0.0)
+make minor-bump    # Increment minor version (0.1.0 -> 0.2.0)
+make patch-bump    # Increment patch version (0.1.0 -> 0.1.1)
+make pre-bump      # Increment pre-release version (0.1.0 -> 0.1.0-pre1)
+make pre-reset     # Clear pre-release version
+make rel-bump      # Increment release number (1 -> 2)
+make rel-reset     # Reset release number to 1
 ```
 
 Package versions follow the pattern:
-- RPM: `name-version-release.dist.arch.rpm` (e.g., `space-captain-server-0.1.1-1.amzn2023.x86_64.rpm`)
+- RPM: `name-version-release.arch.rpm` (e.g., `space-captain-server-0.1.1-1.x86_64.rpm`)
 - DEB: `name_version-release_arch.deb` (e.g., `space-captain-server_0.1.1-1_amd64.deb`)
+
+Note: Pre-release versions use `~` in package filenames (e.g., `space-captain-server-0.1.1~pre1-1.x86_64.rpm`)
 
 ## Important Notes
 - Server must handle 1000s of concurrent connections at 60 ticks/second

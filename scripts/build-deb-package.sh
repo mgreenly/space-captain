@@ -13,7 +13,7 @@ if [ -z "$VERSION" ] || [ -z "$ARCH" ] || [ -z "$BIN_DIR" ]; then
     exit 1
 fi
 
-RELEASE=$(cat .RELEASE)
+RELEASE=$(cat .vRELEASE)
 PKG_NAME="space-captain-server_${VERSION}-${RELEASE}_${ARCH}"
 PKG_DIR="/tmp/space-captain-server-${VERSION}-${RELEASE}-${ARCH}"
 
@@ -63,7 +63,7 @@ EOF
 chmod 755 "$PKG_DIR/usr/bin/space-captain-server"
 
 # Generate control file from template
-RELEASE=$(cat .RELEASE)
+RELEASE=$(cat .vRELEASE)
 sed -e "s/@VERSION@/$VERSION/" \
     -e "s/@ARCH@/$ARCH/" \
     -e "s/@RELEASE@/$RELEASE/" \

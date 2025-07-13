@@ -3,16 +3,28 @@
 
 set -e
 
-VERSION=$(cat ../.VERSION)
-RELEASE=$(cat ../.RELEASE)
-RPM_FILENAME="space-captain-server-${VERSION}-${RELEASE}.amzn2023.x86_64.rpm"
+# Read version components
+MAJOR=$(cat ../.vMAJOR)
+MINOR=$(cat ../.vMINOR)
+PATCH=$(cat ../.vPATCH)
+PRE=$(cat ../.vPRE 2>/dev/null || true)
+RELEASE=$(cat ../.vRELEASE)
+
+# Construct version string
+VERSION="${MAJOR}.${MINOR}.${PATCH}"
+if [ -n "$PRE" ]; then
+    # Replace - with ~ for package-safe version
+    VERSION="${VERSION}~pre${PRE}"
+fi
+
+RPM_FILENAME="space-captain-server-${VERSION}-${RELEASE}.x86_64.rpm"
 RPM_PATH="../pkg/out/${RPM_FILENAME}"
 
 echo "Syncing version $VERSION-$RELEASE to terraform.tfvars"
 
 # Create or update terraform.tfvars
 cat > terraform.tfvars <<EOF
-# Auto-generated from .VERSION and .RELEASE files
+# Auto-generated from version component files
 server_version = "$VERSION"
 server_release = "$RELEASE"
 EOF

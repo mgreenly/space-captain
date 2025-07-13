@@ -1,6 +1,6 @@
 Name:           space-captain-server
 Version:        @VERSION@
-Release:        @RELEASE@%{?dist}
+Release:        @RELEASE@
 Summary:        Space Captain MMO Server
 License:        MIT
 URL:            https://github.com/mgreenly/space-captain
