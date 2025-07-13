@@ -17,6 +17,9 @@ This directory contains research papers, speculative designs, and exploratory do
 - [OpenSSL Integration Research](openssl-research.md) - Analysis of integrating OpenSSL for TLS encryption with certificate pinning
 - [OIDC Authentication Research](oidc-for-cli-research.md) - OAuth 2.0 + OIDC authentication integration for CLI clients
 
+### Monitoring & Observability
+- [Monitoring with Grafana, Loki, and Prometheus](grafana-loki-prometheus-stack.md) - Research on a recommended monitoring stack for the server and client fleet.
+
 ### User Interface
 - [NCurses Research](ncurses-research.md) - Comprehensive guide to NCurses for terminal UI development
 

@@ -1,3 +1,8 @@
+output "instance_id" {
+  description = "Instance ID of the server"
+  value       = aws_instance.server.id
+}
+
 output "server_public_ip" {
   description = "Public IP address of the server"
   value       = aws_instance.server.public_ip

@@ -20,12 +20,6 @@
 
 // Implementation files now compiled separately
 
-// Server bind addresses
-const char *LISTEN_ADDRESSES[] = {
-  "127.0.0.1", // localhost
-  NULL         // NULL terminator
-};
-
 // Client session structure
 typedef struct client_session {
   struct sockaddr_in addr;
@@ -205,22 +199,22 @@ int main() {
   }
 
   // Determine certificate paths - check environment variables first
-  const char* cert_path = getenv("SC_SERVER_CRT");
-  const char* key_path = getenv("SC_SERVER_KEY");
-  
+  const char *cert_path = getenv("SC_SERVER_CRT");
+  const char *key_path  = getenv("SC_SERVER_KEY");
+
   // Fall back to /etc/space-captain if env vars not set
   if (!cert_path || !key_path) {
     cert_path = cert_path ? cert_path : "/etc/space-captain/server.crt";
-    key_path = key_path ? key_path : "/etc/space-captain/server.key";
-    
+    key_path  = key_path ? key_path : "/etc/space-captain/server.key";
+
     // Check if /etc/space-captain files exist, otherwise try local .secrets/certs/
     struct stat st;
     if (stat(cert_path, &st) != 0 || stat(key_path, &st) != 0) {
       cert_path = ".secrets/certs/server.crt";
-      key_path = ".secrets/certs/server.key";
+      key_path  = ".secrets/certs/server.key";
     }
   }
-  
+
   log_info("Using certificate: %s", cert_path);
   log_info("Using private key: %s", key_path);
 
@@ -246,6 +240,10 @@ int main() {
     return 1;
   }
 
+  // Always bind to all interfaces
+  const char *bind_address = "0.0.0.0";
+  log_info("Server binding to all interfaces: %s", bind_address);
+
   // Create epoll instance
   int epoll_fd = epoll_create1(0);
   if (epoll_fd < 0) {
@@ -253,44 +251,30 @@ int main() {
     return 1;
   }
 
-  // Create UDP sockets for all listen addresses
-  int num_sockets = 0;
-  int sockets[10]; // Max 10 addresses
-
-  for (int i = 0; LISTEN_ADDRESSES[i] != NULL && i < 10; i++) {
-    int sock = create_udp_socket(LISTEN_ADDRESSES[i]);
-    if (sock < 0) {
-      // Clean up already created sockets
-      for (int j = 0; j < num_sockets; j++) {
-        close(sockets[j]);
-      }
-      close(epoll_fd);
-      return 1;
-    }
-
-    // Add socket to epoll
-    struct epoll_event ev;
-    ev.events  = EPOLLIN | EPOLLET; // Edge-triggered
-    ev.data.fd = sock;
-    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
-      log_error("Failed to add socket to epoll: %s", strerror(errno));
-      for (int j = 0; j <= num_sockets; j++) {
-        close(sockets[j]);
-      }
-      close(epoll_fd);
-      return 1;
-    }
-
-    sockets[num_sockets++] = sock;
-  }
-
-  if (num_sockets == 0) {
-    log_error("%s", "No sockets created");
+  // Create UDP socket
+  int sock = create_udp_socket(bind_address);
+  if (sock < 0) {
     close(epoll_fd);
     return 1;
   }
 
-  log_info("Server initialized with %d sockets", num_sockets);
+  log_info("Server listening on %s:%d", bind_address, SERVER_PORT);
+
+  // Add socket to epoll
+  struct epoll_event ev;
+  ev.events  = EPOLLIN | EPOLLET; // Edge-triggered
+  ev.data.fd = sock;
+  if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sock, &ev) < 0) {
+    log_error("Failed to add socket to epoll: %s", strerror(errno));
+    close(sock);
+    close(epoll_fd);
+    return 1;
+  }
+
+  int num_sockets = 1;
+  int sockets[1]  = {sock};
+
+  log_info("%s", "Server initialized successfully");
 
   // Main event loop
   struct epoll_event events[EPOLL_MAX_EVENTS];

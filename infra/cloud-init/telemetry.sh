@@ -9,9 +9,20 @@ echo "Starting Space Captain Telemetry initialization at $(date)" | tee /var/log
 echo "Updating all installed packages..." | tee -a /var/log/space-captain-init.log
 sudo yum update -y
 
-# Install Docker
-echo "Installing Docker..." | tee -a /var/log/space-captain-init.log
-sudo yum install -y docker
+# Install useful system packages
+echo "Installing system packages..." | tee -a /var/log/space-captain-init.log
+sudo yum install -y \
+    htop \
+    tmux \
+    vim \
+    git \
+    jq \
+    strace \
+    tcpdump \
+    netcat \
+    bind-utils \
+    sysstat \
+    docker
 sudo systemctl enable docker
 sudo systemctl start docker
 

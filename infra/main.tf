@@ -20,9 +20,52 @@ resource "aws_key_pair" "space_captain" {
 # Data source needed by SSH key
 data "aws_caller_identity" "current" {}
 
-# Compute the RPM filename
-locals {
-  computed_rpm_filename = var.server_rpm_filename != "" ? var.server_rpm_filename : "space-captain-server-${var.server_version}-${var.server_release}.x86_64.rpm"
+
+# IAM role for EC2 instances
+resource "aws_iam_role" "ec2_s3_access" {
+  name = "space-captain-ec2-s3-access"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+# IAM policy for S3 bucket access
+resource "aws_iam_role_policy" "s3_bucket_access" {
+  name = "space-captain-s3-bucket-access"
+  role = aws_iam_role.ec2_s3_access.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          "arn:aws:s3:::space-captain.metaspot.org",
+          "arn:aws:s3:::space-captain.metaspot.org/*"
+        ]
+      }
+    ]
+  })
+}
+
+# IAM instance profile
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "space-captain-ec2-profile"
+  role = aws_iam_role.ec2_s3_access.name
 }
 
 # Dynamic resources that can be torn down and recreated
@@ -34,10 +77,9 @@ resource "aws_instance" "server" {
   key_name      = aws_key_pair.space_captain.key_name
   
   vpc_security_group_ids = [aws_security_group.server.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   
-  user_data = templatefile("${path.module}/cloud-init/server.sh.tpl", {
-    rpm_filename = local.computed_rpm_filename
-  })
+  user_data = file("${path.module}/cloud-init/server.sh")
   
   tags = {
     Name = "space-captain-server"
@@ -54,6 +96,10 @@ resource "aws_launch_template" "client" {
   key_name      = aws_key_pair.space_captain.key_name
   
   vpc_security_group_ids = [aws_security_group.client.id]
+  
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_profile.name
+  }
   
   user_data = base64encode(file("${path.module}/cloud-init/client.sh"))
   
@@ -87,6 +133,7 @@ resource "aws_instance" "telemetry" {
   key_name      = aws_key_pair.space_captain.key_name
   
   vpc_security_group_ids = [aws_security_group.telemetry.id]
+  iam_instance_profile   = aws_iam_instance_profile.ec2_profile.name
   
   user_data = file("${path.module}/cloud-init/telemetry.sh")
   
@@ -143,13 +190,6 @@ resource "aws_security_group" "server" {
     description = "SSH access from my IP only"
   }
   
-  ingress {
-    from_port       = 4242
-    to_port         = 4242
-    protocol        = "tcp"
-    security_groups = [aws_security_group.client.id]
-  }
-  
   egress {
     from_port   = 0
     to_port     = 0
@@ -192,17 +232,51 @@ resource "aws_security_group" "telemetry" {
     description = "SSH access from my IP only"
   }
   
-  ingress {
-    from_port       = 9090
-    to_port         = 9090
-    protocol        = "tcp"
-    security_groups = [aws_security_group.server.id, aws_security_group.client.id]
-  }
-  
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+# Security Group Rules (added separately to avoid circular dependencies)
+resource "aws_security_group_rule" "server_game_traffic" {
+  type                     = "ingress"
+  from_port                = 19840
+  to_port                  = 19840
+  protocol                 = "udp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = aws_security_group.client.id
+  description              = "Game traffic from clients"
+}
+
+resource "aws_security_group_rule" "server_game_traffic_telemetry" {
+  type                     = "ingress"
+  from_port                = 19840
+  to_port                  = 19840
+  protocol                 = "udp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = aws_security_group.telemetry.id
+  description              = "Game traffic from telemetry"
+}
+
+resource "aws_security_group_rule" "telemetry_prometheus_server" {
+  type                     = "ingress"
+  from_port                = 9090
+  to_port                  = 9090
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.telemetry.id
+  source_security_group_id = aws_security_group.server.id
+  description              = "Prometheus access from server"
+}
+
+resource "aws_security_group_rule" "telemetry_prometheus_client" {
+  type                     = "ingress"
+  from_port                = 9090
+  to_port                  = 9090
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.telemetry.id
+  source_security_group_id = aws_security_group.client.id
+  description              = "Prometheus access from clients"
 }

@@ -668,15 +668,15 @@ pre-reset:
 
 .PHONY: rel-bump
 rel-bump:
-	@RELEASE=$$(cat .vRELEASE 2>/dev/null || true); \
+	@RELEASE=$$(cat .vREL 2>/dev/null || true); \
 	if [ -z "$$RELEASE" ]; then RELEASE=0; fi; \
 	NEW_RELEASE=$$(($$RELEASE + 1)); \
-	echo "$$NEW_RELEASE" > .vRELEASE; \
+	echo "$$NEW_RELEASE" > .vREL; \
 	echo "Release bumped to $$NEW_RELEASE"
 
 .PHONY: rel-reset
 rel-reset:
-	@echo "1" > .vRELEASE; \
+	@echo "1" > .vREL; \
 	echo "Release reset to 1"
 
 
@@ -693,7 +693,7 @@ package-deb: release certs
 	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
 	echo "Building Debian package v$$FULL_VERSION for $(DEB_ARCH)..."; \
 	scripts/build-deb-package.sh "$$SAFE_VERSION" "$(DEB_ARCH)" "$(BIN_DIR)" "$$GIT_SHA"; \
-	RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	RELEASE=$$(cat .vREL 2>/dev/null || echo 1); \
 	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$$SAFE_VERSION-$$RELEASE_$(DEB_ARCH).deb"
 
 # RPM package for Amazon Linux / RHEL systems
@@ -706,8 +706,47 @@ package-rpm: release certs
 	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
 	echo "Building RPM package v$$FULL_VERSION for $(RPM_ARCH)..."; \
 	scripts/build-rpm-package.sh "$$SAFE_VERSION" "$(RPM_ARCH)" "$(BIN_DIR)" "$$GIT_SHA"; \
-	RELEASE=$$(cat .vRELEASE 2>/dev/null || echo 1); \
+	RELEASE=$$(cat .vREL 2>/dev/null || echo 1); \
 	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$$SAFE_VERSION-$$RELEASE.$(RPM_ARCH).rpm"
+
+
+# ============================================================================
+# Infrastructure Targets
+# ============================================================================
+
+.PHONY: infra-up
+infra-up:
+	@echo "Deploying infrastructure..."
+	cd infra && terraform apply
+
+.PHONY: infra-down
+infra-down:
+	@echo "Destroying infrastructure..."
+	cd infra && terraform destroy
+
+.PHONY: deploy-server
+deploy-server:
+	@echo "Deploying latest RPM to server..."
+	./infra/bin/deploy-server
+
+.PHONY: deploy-clients
+deploy-clients:
+	@echo "TODO: Client deployment not yet implemented"
+	@echo "      Need to create infra/bin/deploy-clients script"
+
+.PHONY: deploy-telemetry
+deploy-telemetry:
+	@echo "TODO: Telemetry deployment not yet implemented"
+	@echo "      Need to create infra/bin/deploy-telemetry script"
+
+.PHONY: deploy-all
+deploy-all: deploy-server deploy-clients deploy-telemetry
+	@echo "All deployments complete!"
+
+.PHONY: infra-status
+infra-status:
+	@echo "Checking infrastructure status..."
+	./infra/bin/ssh-info
 
 
 # ============================================================================
@@ -770,6 +809,17 @@ help:
 	@echo "  make pre-reset       Reset pre-release version"
 	@echo "  make rel-bump        Increment the package release number"
 	@echo "  make rel-reset       Reset the package release number"
+	@echo ""
+	@echo "Infrastructure:"
+	@echo "  make infra-up        Deploy infrastructure with Terraform"
+	@echo "  make infra-down      Destroy infrastructure with Terraform"
+	@echo "  make infra-status    Show SSH connection info for all instances"
+	@echo ""
+	@echo "Deployment:"
+	@echo "  make deploy-all      Deploy to all instances"
+	@echo "  make deploy-server   Deploy latest RPM to running server"
+	@echo "  make deploy-clients  Deploy latest RPM to running clients (TODO)"
+	@echo "  make deploy-telemetry Deploy telemetry stack (TODO)"
 	@echo ""
 	@echo "Environment Variables:"
 	@echo "  PREFIX=<path>        Set installation prefix (default: ~/.local)"

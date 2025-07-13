@@ -53,10 +53,17 @@ chmod 755 %{buildroot}/usr/bin/space-captain-server
 %config(noreplace) /etc/space-captain/server.crt
 %config(noreplace) /etc/space-captain/server.key
 
+%pre
+# Create space-captain user and group if they don't exist
+getent group space-captain >/dev/null || groupadd -r space-captain
+getent passwd space-captain >/dev/null || \
+    useradd -r -g space-captain -d /var/lib/space-captain -s /sbin/nologin \
+    -c "Space Captain Server" space-captain
+
 %post
 # Create working directory
 mkdir -p /var/lib/space-captain
-chown nobody:nobody /var/lib/space-captain
+chown space-captain:space-captain /var/lib/space-captain
 
 # Reload systemd
 systemctl daemon-reload

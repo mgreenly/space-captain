@@ -8,8 +8,8 @@ Type=simple
 ExecStart=/usr/bin/space-captain-server
 Restart=on-failure
 RestartSec=5
-User=nobody
-Group=nobody
+User=space-captain
+Group=space-captain
 WorkingDirectory=/var/lib/space-captain
 
 # Security hardening

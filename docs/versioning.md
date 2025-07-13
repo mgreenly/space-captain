@@ -24,7 +24,7 @@ Version components are stored in separate files:
 - `.vMINOR` - Minor version number
 - `.vPATCH` - Patch version number
 - `.vPRE` - Pre-release number (empty for stable releases)
-- `.vRELEASE` - Package release number
+- `.vREL` - Package release number
 
 The git commit SHA is automatically appended as build metadata.
 
@@ -95,7 +95,7 @@ space-captain-server-1.0.0-2.aarch64.rpm
 ### Package Version Components
 
 - **Version**: Follows SemVer without the git SHA metadata
-- **Release**: Package-specific release number (stored in `.vRELEASE`)
+- **Release**: Package-specific release number (stored in `.vREL`)
   - Incremented when rebuilding the same version
   - Reset to 1 when version changes
 

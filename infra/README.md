@@ -12,8 +12,8 @@ This directory uses a two-file Terraform strategy to manage AWS resources:
 # Build the RPM package
 cd .. && make package-amazon && cd infra
 
-# Sync version and upload RPM to S3
-./sync-version.sh
+# Upload RPM to S3
+./bin/upload-rpm
 
 # Deploy infrastructure
 terraform apply
@@ -78,20 +78,19 @@ The following resources have been removed from state and exist in permanent.tf.b
 
 The infrastructure uses cloud-init scripts to automatically configure instances on startup:
 
-- **Server** (`cloud-init/server.sh.tpl`): Downloads and installs the server RPM from S3
+- **Server** (`cloud-init/server.sh`): Downloads and installs the server RPM from S3
 - **Client** (`cloud-init/client.sh`): Finds server IP and configures client connection
 - **Telemetry** (`cloud-init/telemetry.sh`): Installs Docker and runs Prometheus
 
 ### Customizing the Server RPM
 
-The `sync-version.sh` script automates version management:
-- Reads version from `../.VERSION` and release from `../.vRELEASE`
-- Updates `terraform.tfvars` with the correct values
+The `bin/upload-rpm` script automates RPM deployment:
+- Reads version from `../.VERSION` and release from `../.vREL`
 - Uploads the RPM to S3 bucket
 
 ```bash
-# Recommended: Use sync script to automate version management
-./sync-version.sh
+# Recommended: Use upload script to deploy RPM
+./bin/upload-rpm
 
 # Manual override: Use specific version and release
 terraform apply -var="server_version=0.2.0" -var="server_release=1"
@@ -111,6 +110,17 @@ To verify cloud-init ran successfully on an instance:
 sudo cat /var/log/cloud-init-output.log    # Full cloud-init output
 cat /var/log/space-captain-init.log        # Our custom init log
 ```
+
+## Scripts
+
+All executable scripts are located in the `bin/` directory:
+
+- `bin/upload-rpm` - Upload RPM packages to S3
+- `bin/deploy-server` - Deploy a new server RPM to the running infrastructure
+- `bin/server-status` - Check the status of the Space Captain server service
+- `bin/ssh-server` - SSH into the server instance
+- `bin/ssh-client` - SSH into a client instance
+- `bin/ssh-telemetry` - SSH into the telemetry instance
 
 ## Example Workflow
 

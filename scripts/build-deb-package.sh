@@ -17,7 +17,7 @@ fi
 # If git SHA wasn't provided, it will be included in VERSION already
 # This maintains backward compatibility
 
-RELEASE=$(cat .vRELEASE)
+RELEASE=$(cat .vREL)
 PKG_NAME="space-captain-server_${VERSION}-${RELEASE}_${ARCH}"
 PKG_DIR="/tmp/space-captain-server-${VERSION}-${RELEASE}-${ARCH}"
 
@@ -67,7 +67,7 @@ EOF
 chmod 755 "$PKG_DIR/usr/bin/space-captain-server"
 
 # Generate control file from template
-RELEASE=$(cat .vRELEASE)
+RELEASE=$(cat .vREL)
 sed -e "s/@VERSION@/$VERSION/" \
     -e "s/@ARCH@/$ARCH/" \
     -e "s/@RELEASE@/$RELEASE/" \

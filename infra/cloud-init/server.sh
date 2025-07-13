@@ -1,9 +1,9 @@
 #!/bin/bash
-# Space Captain Client initialization script
+# Space Captain Server initialization script
 
 set -e
 
-echo "Starting Space Captain Client initialization at $(date)" | tee /var/log/space-captain-init.log
+echo "Starting Space Captain Server initialization at $(date)" | tee /var/log/space-captain-init.log
 
 # Update all installed packages
 echo "Updating all installed packages..." | tee -a /var/log/space-captain-init.log
@@ -21,7 +21,6 @@ sudo yum install -y \
     tcpdump \
     netcat \
     bind-utils \
-    sysstat \
-    aws-cli
+    sysstat
 
-echo "Client initialization complete at $(date)" | tee -a /var/log/space-captain-init.log
+echo "Server initialization complete at $(date)" | tee -a /var/log/space-captain-init.log
