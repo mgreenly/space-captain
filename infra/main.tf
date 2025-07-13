@@ -14,7 +14,7 @@ provider "aws" {
 # SSH Key (permanent resource)
 resource "aws_key_pair" "space_captain" {
   key_name   = "space-captain-key-${data.aws_caller_identity.current.account_id}"
-  public_key = file("${path.module}/../certs/space-captain.pub")
+  public_key = file("${path.module}/../.secrets/ssh/space-captain.pub")
 }
 
 # Data source needed by SSH key

@@ -425,23 +425,23 @@ fmt:
 .PHONY: certs
 certs:
 	$(call check-tool,openssl,Please install OpenSSL for certificate generation)
-	@if [ -f "certs/server.key" ] && [ -f "certs/server.crt" ]; then \
-		echo "Certificates already exist in certs/ (delete them to regenerate)"; \
+	@if [ -f ".secrets/certs/server.key" ] && [ -f ".secrets/certs/server.crt" ]; then \
+		echo "Certificates already exist in .secrets/certs/ (delete them to regenerate)"; \
 	else \
 		echo "Generating self-signed certificates..."; \
-		mkdir -p certs; \
-		openssl req -x509 -newkey rsa:4096 -keyout certs/server.key -out certs/server.crt -sha256 -days 365 -nodes -subj "/CN=localhost"; \
-		echo "Certificates generated in certs/"; \
-		echo "  - certs/server.key (private key)"; \
-		echo "  - certs/server.crt (certificate)"; \
+		mkdir -p .secrets/certs; \
+		openssl req -x509 -newkey rsa:4096 -keyout .secrets/certs/server.key -out .secrets/certs/server.crt -sha256 -days 365 -nodes -subj "/CN=localhost"; \
+		echo "Certificates generated in .secrets/certs/"; \
+		echo "  - .secrets/certs/server.key (private key)"; \
+		echo "  - .secrets/certs/server.crt (certificate)"; \
 	fi
 
 # Show certificate information
 .PHONY: certs-info
 certs-info:
-	@if [ -f "certs/server.crt" ]; then \
+	@if [ -f ".secrets/certs/server.crt" ]; then \
 		echo "Certificate information:"; \
-		openssl x509 -in certs/server.crt -noout -subject -dates -fingerprint | sed 's/^/  /'; \
+		openssl x509 -in .secrets/certs/server.crt -noout -subject -dates -fingerprint | sed 's/^/  /'; \
 	else \
 		echo "No certificates found. Run 'make certs' to generate them."; \
 	fi
@@ -531,7 +531,7 @@ clean-all: clean
 .PHONY: clean-certs
 clean-certs:
 	@echo "Removing certificates..."
-	@rm -f certs/server.key certs/server.crt
+	@rm -f .secrets/certs/server.key .secrets/certs/server.crt
 	@rmdir certs 2>/dev/null || true
 
 # ============================================================================

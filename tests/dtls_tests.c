@@ -29,7 +29,7 @@ void test_dtls_init_cleanup(void) {
 void test_dtls_context_creation_server(void) {
   // Server context requires cert and key
   dtls_context_t *ctx =
-    sc_dtls_context_create(DTLS_ROLE_SERVER, "certs/server.crt", "certs/server.key", NULL, 0);
+    sc_dtls_context_create(DTLS_ROLE_SERVER, ".secrets/certs/server.crt", ".secrets/certs/server.key", NULL, 0);
   TEST_ASSERT_NOT_NULL(ctx);
 
   sc_dtls_context_destroy(ctx);
@@ -45,7 +45,7 @@ void test_dtls_context_creation_client(void) {
 
 void test_dtls_cert_hash(void) {
   uint8_t hash[32];
-  dtls_result_t result = sc_dtls_cert_hash("certs/server.crt", hash);
+  dtls_result_t result = sc_dtls_cert_hash(".secrets/certs/server.crt", hash);
   TEST_ASSERT_EQUAL(DTLS_OK, result);
 
   // Hash should not be all zeros
@@ -74,7 +74,7 @@ void test_dtls_session_creation(void) {
 
   // Create server context
   dtls_context_t *ctx =
-    sc_dtls_context_create(DTLS_ROLE_SERVER, "certs/server.crt", "certs/server.key", NULL, 0);
+    sc_dtls_context_create(DTLS_ROLE_SERVER, ".secrets/certs/server.crt", ".secrets/certs/server.key", NULL, 0);
   TEST_ASSERT_NOT_NULL(ctx);
 
   // Create session

@@ -34,7 +34,7 @@ void setUp(void) {
     TEST_ASSERT_EQUAL(DTLS_OK, sc_dtls_init());
 
     // Calculate server certificate hash for pinning
-    TEST_ASSERT_EQUAL(DTLS_OK, sc_dtls_cert_hash("certs/server.crt", g_server_cert_hash));
+    TEST_ASSERT_EQUAL(DTLS_OK, sc_dtls_cert_hash(".secrets/certs/server.crt", g_server_cert_hash));
 
     dtls_initialized = 1;
   }

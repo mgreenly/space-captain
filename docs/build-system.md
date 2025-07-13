@@ -34,7 +34,7 @@ space-captain/
 │   ├── rpm/          # RPM package templates
 │   └── out/          # Built packages
 ├── scripts/          # Build and package scripts
-├── certs/            # Generated certificates
+├── .secrets/certs/   # Generated certificates
 └── deps/             # Dependencies
     ├── src/          # Third-party source code
     │   └── mbedtls/  # mbedTLS source

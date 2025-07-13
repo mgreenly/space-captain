@@ -213,11 +213,11 @@ int main() {
     cert_path = cert_path ? cert_path : "/etc/space-captain/server.crt";
     key_path = key_path ? key_path : "/etc/space-captain/server.key";
     
-    // Check if /etc/space-captain files exist, otherwise try local certs/
+    // Check if /etc/space-captain files exist, otherwise try local .secrets/certs/
     struct stat st;
     if (stat(cert_path, &st) != 0 || stat(key_path, &st) != 0) {
-      cert_path = "certs/server.crt";
-      key_path = "certs/server.key";
+      cert_path = ".secrets/certs/server.crt";
+      key_path = ".secrets/certs/server.key";
     }
   }
   

@@ -27,6 +27,12 @@ This directory contains documentation about the current state of the Space Capta
 - [Coordinate System Precision](coordinate-precision.md) - Analysis of double-precision coordinates for the game world
 - [Speed Table](speed-table.md) - Logarithmic speed scale reference and implementation
 
+### Product Requirements
+- [Product Requirements Overview](prd/README.md) - Index of all product requirement documents
+
+### Planning
+- [Planning Overview](plan/README.md) - Index of all planning documents
+
 ### Research Papers
 - [Research Overview](research/README.md) - Index of all research documentation
 - [Authenticated Messages over UDP](research/authenticated-messages-over-udp.md) - Security considerations for UDP messaging

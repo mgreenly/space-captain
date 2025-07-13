@@ -44,11 +44,11 @@ cp "$SERVER_BINARY" "$TMPDIR/space-captain-$VERSION/usr/bin/"
 cp deps/build/amazon/lib/*.so* "$TMPDIR/space-captain-$VERSION/usr/lib/" 2>/dev/null || true
 
 # Copy certificate files
-if [ -f "certs/server.crt" ] && [ -f "certs/server.key" ]; then
-    cp certs/server.crt "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
-    cp certs/server.key "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
+if [ -f ".secrets/certs/server.crt" ] && [ -f ".secrets/certs/server.key" ]; then
+    cp .secrets/certs/server.crt "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
+    cp .secrets/certs/server.key "$TMPDIR/space-captain-$VERSION/etc/space-captain/"
 else
-    echo "Warning: Certificate files not found in certs/ directory"
+    echo "Warning: Certificate files not found in .secrets/certs/ directory"
 fi
 
 # Copy systemd service file to tarball

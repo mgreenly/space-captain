@@ -1,3 +1,6 @@
+# AI Agent Context
+This file contains additional context for AI agents working on the Space Captain project. The main shared context for all AI agents is in AGENTS.md, which both CLAUDE.md and GEMINI.md are symlinked to.
+
 # Command Definitions
 - `read FILE`: Load the specified FILE into the prompt context without execution.
 - `eval FILE`: Execute the specified FILE explicitly as a prompt.
@@ -104,9 +107,7 @@ Always use this exact commit template:
 co-author: <model>
 ```
 
-Where `<model>` should be:
-- For Claude: `claude-opus-4-20250514`
-- For Gemini: `gemini-2.5-pro (via aistudio.google.com)`
+Where `<model>` should be the AI model that helped with the commit.
 
 **Important**: 
 1. Always show the exact commit message to the user BEFORE running `git commit`

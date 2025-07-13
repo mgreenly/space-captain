@@ -49,13 +49,13 @@ if [ -d "deps/build/debian/lib" ]; then
 fi
 
 # Copy certificate files
-if [ -f "certs/server.crt" ] && [ -f "certs/server.key" ]; then
-    cp certs/server.crt "$PKG_DIR/etc/space-captain/"
-    cp certs/server.key "$PKG_DIR/etc/space-captain/"
+if [ -f ".secrets/certs/server.crt" ] && [ -f ".secrets/certs/server.key" ]; then
+    cp .secrets/certs/server.crt "$PKG_DIR/etc/space-captain/"
+    cp .secrets/certs/server.key "$PKG_DIR/etc/space-captain/"
     chmod 644 "$PKG_DIR/etc/space-captain/server.crt"
     chmod 600 "$PKG_DIR/etc/space-captain/server.key"
 else
-    echo "Warning: Certificate files not found in certs/ directory"
+    echo "Warning: Certificate files not found in .secrets/certs/ directory"
 fi
 
 # Create wrapper script
