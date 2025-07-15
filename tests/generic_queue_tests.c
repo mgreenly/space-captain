@@ -10,6 +10,75 @@
 
 #include "../src/generic_queue.h"
 
+// Unity test framework functions
+void setUp(void);
+void tearDown(void);
+
+// Thread functions
+void *producer_thread(void *arg);
+void *consumer_thread(void *arg);
+void *blocking_producer_thread(void *arg);
+void *delayed_consumer_thread(void *arg);
+void *timeout_pop_thread(void *arg);
+void *timeout_add_thread(void *arg);
+void *thread_local_error_test(void *arg);
+
+// Test functions
+void test_queue_add_and_pop_item(void);
+void test_queue_pop_blocks_until_push(void);
+void test_queue_add_blocks_on_full_queue(void);
+void test_queue_try_add_returns_error_on_full(void);
+void test_queue_try_add_succeeds_with_space(void);
+void test_queue_try_pop_returns_null_on_empty(void);
+void test_queue_try_pop_returns_message(void);
+void test_queue_try_operations_mixed(void);
+void test_queue_is_empty_on_new_queue(void);
+void test_queue_is_empty_after_add_and_pop(void);
+void test_queue_is_empty_thread_safety(void);
+void test_queue_is_full_on_new_queue(void);
+void test_queue_is_full_after_filling_queue(void);
+void test_queue_is_full_with_try_operations(void);
+void test_queue_get_size_on_new_queue(void);
+void test_queue_get_size_with_add_and_pop(void);
+void test_queue_get_size_at_capacity(void);
+void test_queue_get_size_with_try_operations(void);
+void test_queue_nuke_with_cleanup_empty_queue(void);
+void test_queue_nuke_with_cleanup_single_item(void);
+void test_queue_nuke_with_cleanup_multiple_items(void);
+void test_queue_nuke_with_cleanup_null_callback(void);
+void test_queue_nuke_with_cleanup_partial_queue(void);
+void test_queue_nuke_with_cleanup_thread_safety(void);
+void test_queue_pop_timeout_on_empty_queue(void);
+void test_queue_add_timeout_on_full_queue(void);
+void test_queue_pop_succeeds_before_timeout(void);
+void test_queue_add_succeeds_before_timeout(void);
+void test_queue_timeout_thread_safety(void);
+void test_queue_timeout_error_conditions(void);
+void test_queue_add_returns_error_on_null_queue(void);
+void test_queue_add_returns_error_on_null_item(void);
+void test_queue_add_timeout_returns_error_code(void);
+void test_queue_get_error_initial_state(void);
+void test_queue_get_error_after_null_parameter(void);
+void test_queue_clear_error_resets_state(void);
+void test_queue_strerror_returns_correct_messages(void);
+void test_queue_errno_is_thread_local(void);
+void test_queue_init_with_zero_capacity(void);
+void test_queue_nuke_returns_success(void);
+void test_queue_nuke_with_null_returns_error(void);
+void test_queue_pop_with_output_parameter(void);
+void test_queue_pop_with_null_parameters(void);
+void test_queue_pop_timeout_with_new_api(void);
+void test_queue_try_pop_with_output_parameter(void);
+void test_queue_try_add_null_parameters(void);
+void test_queue_try_pop_null_parameters(void);
+void test_queue_is_empty_with_null_queue(void);
+void test_queue_is_full_with_null_queue(void);
+void test_queue_get_size_with_null_queue(void);
+void test_queue_init_with_overflow_capacity(void);
+void test_queue_init_with_max_capacity(void);
+void test_queue_init_with_safe_large_capacity(void);
+void test_queue_init_memory_allocation_failure(void);
+
 // Test data structure for generic queue testing
 typedef struct {
   int id;
@@ -23,8 +92,12 @@ typedef struct {
 // Helper function to create test data
 static TestData *create_test_data(int id, const char *data_str) {
   TestData *td = malloc(sizeof(TestData));
+  TEST_ASSERT_NOT_NULL_MESSAGE(td, "Failed to allocate TestData");
+  
   td->id       = id;
   td->data     = strdup(data_str);
+  TEST_ASSERT_NOT_NULL_MESSAGE(td->data, "Failed to allocate data string");
+  
   return td;
 }
 
@@ -129,7 +202,7 @@ typedef struct {
 void *producer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
-  usleep(data->delay_ms * 1000);
+  usleep((unsigned int)(data->delay_ms * 1000));
 
   char buffer[64];
   snprintf(buffer, sizeof(buffer), "Test data %d", data->test_value);
@@ -198,7 +271,7 @@ void *delayed_consumer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
   // Wait before consuming to ensure producer blocks
-  usleep(data->delay_ms * 1000);
+  usleep((unsigned int)(data->delay_ms * 1000));
 
   // Pop one item to make space
   TestData *td = NULL;

@@ -6,6 +6,18 @@
 #include "vendor/unity.h"
 #include "../src/dtls.h"
 
+// Unity framework functions
+void setUp(void);
+void tearDown(void);
+
+// Test function prototypes
+void test_dtls_init_cleanup(void);
+void test_dtls_context_creation_server(void);
+void test_dtls_context_creation_client(void);
+void test_dtls_cert_hash(void);
+void test_dtls_error_strings(void);
+void test_dtls_session_creation(void);
+
 static bool g_dtls_test_initialized = false;
 
 void setUp(void) {

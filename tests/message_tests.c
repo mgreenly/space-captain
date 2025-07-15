@@ -6,6 +6,14 @@
 
 #include "../src/message.h"
 
+// Function prototypes
+void setUp(void);
+void tearDown(void);
+void test_message_type_to_string(void);
+void test_message_header_size(void);
+void test_ping_pong_message_size(void);
+void test_message_type_ranges(void);
+
 // Test that message_type_to_string returns correct strings
 void test_message_type_to_string(void) {
   // Test Client-to-Server messages

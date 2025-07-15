@@ -69,7 +69,7 @@ static client_session_t *add_client(const struct sockaddr_in *addr, socklen_t ad
 
   // Create DTLS session
   client->dtls_session =
-    sc_dtls_session_create(g_dtls_ctx, sock, (struct sockaddr *) addr, addr_len);
+    sc_dtls_session_create(g_dtls_ctx, sock, (const struct sockaddr *) addr, addr_len);
   if (!client->dtls_session) {
     log_error("%s", "Failed to create DTLS session");
     free(client);
@@ -189,7 +189,7 @@ static int create_udp_socket(const char *address) {
   return sock;
 }
 
-int main() {
+int main(void) {
   log_info("%s", "Space Captain Server starting...");
 
   // Initialize DTLS
@@ -304,14 +304,14 @@ int main() {
 
     // Process events
     for (int i = 0; i < nfds; i++) {
-      int sock = events[i].data.fd;
+      int event_fd = events[i].data.fd;
 
       // Read all available datagrams (edge-triggered mode)
       while (1) {
         client_len = sizeof(client_addr);
 
         // Peek at the packet to see which client it's from
-        ssize_t peek_len = recvfrom(sock, buffer, sizeof(buffer), MSG_PEEK,
+        ssize_t peek_len = recvfrom(event_fd, buffer, sizeof(buffer), MSG_PEEK,
                                     (struct sockaddr *) &client_addr, &client_len);
 
         if (peek_len < 0) {
@@ -326,10 +326,10 @@ int main() {
         client_session_t *client = find_client(&client_addr);
         if (!client) {
           // New client - create session
-          client = add_client(&client_addr, client_len, sock);
+          client = add_client(&client_addr, client_len, event_fd);
           if (!client) {
             // Failed to create session, discard packet
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
             continue;
           }
         }
@@ -349,14 +349,14 @@ int main() {
             log_info("DTLS handshake completed for %s:%d", addr_str, ntohs(client_addr.sin_port));
 
             // Consume the packet that triggered handshake completion
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
           } else if (result == DTLS_ERROR_WOULD_BLOCK) {
             // Handshake in progress, consume packet
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
           } else {
             // Handshake failed
             log_error("DTLS handshake failed: %s", sc_dtls_error_string(result));
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
             remove_client(client);
           }
         } else {
@@ -454,14 +454,14 @@ int main() {
             }
           } else if (result == DTLS_ERROR_WOULD_BLOCK) {
             // No data available yet
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
           } else if (result == DTLS_ERROR_PEER_CLOSED) {
             // Client closed connection
             remove_client(client);
           } else {
             // Read error
             log_error("DTLS read failed: %s", sc_dtls_error_string(result));
-            recvfrom(sock, buffer, sizeof(buffer), 0, NULL, NULL);
+            recvfrom(event_fd, buffer, sizeof(buffer), 0, NULL, NULL);
             remove_client(client);
           }
         }

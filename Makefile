@@ -65,7 +65,7 @@ PREFIX ?= $(HOME)/.local
 # Compiler Settings
 # ============================================================================
 CC = gcc
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -Wall -Wextra -g -MMD -MP -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug

@@ -19,6 +19,17 @@
 #include "../src/message.h"
 #include "../src/dtls.h"
 
+// Function prototypes
+void setUp(void);
+void tearDown(void);
+void test_server_echo_response(void);
+void test_server_multiple_packets(void);
+void test_server_large_packet(void);
+void test_dtls_cert_verification(void);
+void test_dtls_session_timeout(void);
+void test_dtls_message_ordering(void);
+void test_ping_pong_message(void);
+
 // Test globals
 static int test_socket = -1;
 static struct sockaddr_in server_addr;
@@ -307,7 +318,7 @@ void test_ping_pong_message(void) {
   ping_msg.header.protocol_version = htons(0x0001); // v0.1.0
   ping_msg.header.message_type     = htons(MSG_PING);
   ping_msg.header.sequence_number  = htonl(1);
-  ping_msg.header.timestamp        = htobe64(time(NULL) * 1000); // Unix timestamp in ms
+  ping_msg.header.timestamp        = htobe64((uint64_t)time(NULL) * 1000); // Unix timestamp in ms
   ping_msg.header.payload_length   = htons(0);                   // No payload for ping
 
   // Send PING message via DTLS
