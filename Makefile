@@ -67,50 +67,50 @@ PREFIX ?= $(HOME)/.local
 CC = gcc
 
 # Compiler flags explanation:
-# -D_DEFAULT_SOURCE      Enable default set of feature test macros
-# -D_FORTIFY_SOURCE=2   Runtime buffer overflow detection
-# -std=c18              Use C18 standard
-# -pedantic             Strict ISO C compliance
-# -fanalyzer            Enable static analysis
-# -Wshadow              Warn when a local shadows another variable
-# -Wstrict-prototypes   Warn about functions without prototypes
-# -Wmissing-prototypes  Warn about missing prototypes
-# -Wwrite-strings       Warn about deprecated writable string literals
-# -Werror               Treat warnings as errors
-# -Wall                 Enable most warning messages
-# -Wextra               Enable extra warning messages
-# -Wformat=2            Enhanced format string checking
-# -Wconversion          Warn about type conversions that may alter values
-# -Wcast-qual           Warn about casts that remove qualifiers
-# -Wundef               Warn about undefined macros in #if
-# -g                    Generate debug information
-# -MMD                  Generate dependency files
-# -MP                   Add phony targets for headers
-# -fstack-protector-strong  Stack smashing protection
-# -fPIE                 Position independent code for ASLR
-# -fstack-clash-protection  Prevent stack clash attacks
-# -Wimplicit-fallthrough    Catch missing break statements
-# -Walloca              Warn about alloca usage
-# -Wvla                 Warn about variable length arrays
-# -Wformat-signedness   Format string sign mismatches
-# -Wduplicated-cond     Duplicated conditions in if-else chains
-# -Wduplicated-branches Identical branches in if-else
-# -Wnull-dereference    Potential null pointer dereferences
-# -Wdouble-promotion    Float to double promotions
-# -I$(DEPS_BUILD_DIR)   Include path for mbedTLS headers
+# -D_DEFAULT_SOURCE           Enable default set of feature test macros
+# -D_FORTIFY_SOURCE=2         Runtime buffer overflow detection
+# -std=c18                    Use C18 standard
+# -pedantic                   Strict ISO C compliance
+# -fanalyzer                  Enable static analysis
+# -Wshadow                    Warn when a local shadows another variable
+# -Wstrict-prototypes         Warn about functions without prototypes
+# -Wmissing-prototypes        Warn about missing prototypes
+# -Wwrite-strings             Warn about deprecated writable string literals
+# -Werror                     Treat warnings as errors
+# -Wall                       Enable most warning messages
+# -Wextra                     Enable extra warning messages
+# -Wformat=2                  Enhanced format string checking
+# -Wconversion                Warn about type conversions that may alter values
+# -Wcast-qual                 Warn about casts that remove qualifiers
+# -Wundef                     Warn about undefined macros in #if
+# -g                          Generate debug information
+# -MMD                        Generate dependency files
+# -MP                         Add phony targets for headers
+# -fstack-protector-strong    Stack smashing protection
+# -fPIE                       Position independent code for ASLR
+# -fstack-clash-protection    Prevent stack clash attacks
+# -Wimplicit-fallthrough      Catch missing break statements
+# -Walloca                    Warn about alloca usage
+# -Wvla                       Warn about variable length arrays
+# -Wformat-signedness         Format string sign mismatches
+# -Wduplicated-cond           Duplicated conditions in if-else chains
+# -Wduplicated-branches       Identical branches in if-else
+# -Wnull-dereference          Potential null pointer dereferences
+# -Wdouble-promotion          Float to double promotions
+# -I$(DEPS_BUILD_DIR)         Include path for mbedTLS headers
 CFLAGS_COMMON = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -fstack-protector-strong -fPIE -fstack-clash-protection -Wimplicit-fallthrough -Walloca -Wvla -Wformat-signedness -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
 
 # Debug-specific flags:
-# -Og                   Optimization for debugging (enables FORTIFY_SOURCE)
-# -fsanitize=address    Enable AddressSanitizer for memory error detection
-# -fsanitize=undefined  Enable UndefinedBehaviorSanitizer
+# -Og                      Optimization for debugging (enables FORTIFY_SOURCE)
+# -fsanitize=address       Enable AddressSanitizer for memory error detection
+# -fsanitize=undefined     Enable UndefinedBehaviorSanitizer
 # -fno-omit-frame-pointer  Better stack traces in sanitizers
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -Og -fsanitize=address,undefined -fno-omit-frame-pointer
 
 # Release-specific flags:
-# -O2                   Security-recommended optimization level
-# -DNDEBUG              Define NDEBUG to disable assertions
-# -flto                 Enable Link Time Optimization
+# -O2                      Security-recommended optimization level
+# -DNDEBUG                 Define NDEBUG to disable assertions
+# -flto                    Enable Link Time Optimization
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -O2 -DNDEBUG -flto
 
 # ThreadSanitizer flags:

@@ -57,7 +57,7 @@ void test_dtls_context_creation_client(void) {
 
 void test_dtls_cert_hash(void) {
   uint8_t hash[32];
-  dtls_result_t result = sc_dtls_cert_hash(".secrets/certs/server.crt", hash);
+  dtls_result_t result = sc_dtls_cert_hash(".secrets/certs/server.crt", &hash);
   TEST_ASSERT_EQUAL(DTLS_OK, result);
 
   // Hash should not be all zeros

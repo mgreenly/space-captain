@@ -546,7 +546,7 @@ bool sc_dtls_is_handshake_complete(dtls_session_t *session) {
   return session ? session->handshake_complete : false;
 }
 
-dtls_result_t sc_dtls_cert_hash(const char *cert_path, uint8_t *hash) {
+dtls_result_t sc_dtls_cert_hash(const char *cert_path, uint8_t (*hash)[32]) {
   if (!cert_path || !hash)
     return DTLS_ERROR_INVALID_PARAMS;
 
@@ -563,7 +563,7 @@ dtls_result_t sc_dtls_cert_hash(const char *cert_path, uint8_t *hash) {
   mbedtls_sha256_init(&sha_ctx);
   mbedtls_sha256_starts_ret(&sha_ctx, 0);
   mbedtls_sha256_update_ret(&sha_ctx, cert.raw.p, cert.raw.len);
-  mbedtls_sha256_finish_ret(&sha_ctx, hash);
+  mbedtls_sha256_finish_ret(&sha_ctx, *hash); // Dereference pointer to pass the array
   mbedtls_sha256_free(&sha_ctx);
 
   mbedtls_x509_crt_free(&cert);

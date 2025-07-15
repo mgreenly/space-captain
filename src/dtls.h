@@ -107,8 +107,8 @@ const char *sc_dtls_error_string(dtls_result_t result);
 // Calculate SHA256 hash of a certificate file (for pinning)
 // Parameters:
 //   cert_path: Path to certificate file
-//   hash: Buffer to store hash (must be at least 32 bytes)
+//   hash: Pointer to a 32-byte array to store the hash
 // Returns: DTLS_OK on success, error code on failure
-dtls_result_t sc_dtls_cert_hash(const char *cert_path, uint8_t *hash);
+dtls_result_t sc_dtls_cert_hash(const char *cert_path, uint8_t (*hash)[32]);
 
 #endif // DTLS_H
