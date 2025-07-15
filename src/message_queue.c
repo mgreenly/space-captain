@@ -22,7 +22,7 @@ sc_generic_queue_ret_val_t sc_message_queue_nuke(sc_message_queue_t *queue) {
 // @param msg Pointer to the message to add (must not be NULL).
 // @return SC_MESSAGE_QUEUE_SUCCESS on success, or an error code on failure.
 sc_message_queue_ret_val_t sc_message_queue_add(sc_message_queue_t *queue, message_t *msg) {
-  return (sc_message_queue_ret_val_t)sc_generic_queue_add(queue, (void *)msg);
+  return (sc_message_queue_ret_val_t) sc_generic_queue_add(queue, (void *) msg);
 }
 
 // Attempts to add a message to the queue without blocking.
@@ -31,7 +31,7 @@ sc_message_queue_ret_val_t sc_message_queue_add(sc_message_queue_t *queue, messa
 // @return SC_MESSAGE_QUEUE_SUCCESS on success, SC_MESSAGE_QUEUE_ERR_FULL if full,
 //         or another error code on failure.
 sc_message_queue_ret_val_t sc_message_queue_try_add(sc_message_queue_t *queue, message_t *msg) {
-  return (sc_message_queue_ret_val_t)sc_generic_queue_try_add(queue, (void *)msg);
+  return (sc_message_queue_ret_val_t) sc_generic_queue_try_add(queue, (void *) msg);
 }
 
 // Removes and returns a message from the queue, blocking if empty.
@@ -40,7 +40,7 @@ sc_message_queue_ret_val_t sc_message_queue_try_add(sc_message_queue_t *queue, m
 // @param msg Pointer to store the removed message (must not be NULL).
 // @return SC_MESSAGE_QUEUE_SUCCESS on success, or an error code on failure.
 sc_message_queue_ret_val_t sc_message_queue_pop(sc_message_queue_t *queue, message_t **msg) {
-  return (sc_message_queue_ret_val_t)sc_generic_queue_pop(queue, (void **)msg);
+  return (sc_message_queue_ret_val_t) sc_generic_queue_pop(queue, (void **) msg);
 }
 
 // Attempts to remove and return a message from the queue without blocking.
@@ -49,7 +49,7 @@ sc_message_queue_ret_val_t sc_message_queue_pop(sc_message_queue_t *queue, messa
 // @return SC_MESSAGE_QUEUE_SUCCESS on success, SC_MESSAGE_QUEUE_ERR_EMPTY if empty,
 //         or another error code on failure.
 sc_message_queue_ret_val_t sc_message_queue_try_pop(sc_message_queue_t *queue, message_t **msg) {
-  return (sc_message_queue_ret_val_t)sc_generic_queue_try_pop(queue, (void **)msg);
+  return (sc_message_queue_ret_val_t) sc_generic_queue_try_pop(queue, (void **) msg);
 }
 
 // Checks if the queue is empty (thread-safe).

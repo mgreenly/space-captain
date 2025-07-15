@@ -1,0 +1,12 @@
+# Ignore external dependencies
+deps/
+
+# Ignore vendored test framework
+tests/vendor/
+
+# Ignore build directories
+obj/
+bin/
+
+# Ignore package output
+pkg/

@@ -65,15 +65,87 @@ PREFIX ?= $(HOME)/.local
 # Compiler Settings
 # ============================================================================
 CC = gcc
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
-CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0 -fsanitize=address
-CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3 -DNDEBUG -flto
-CFLAGS_TSAN = $(CFLAGS_COMMON) -O2 -fsanitize=thread
+
+# Compiler flags explanation:
+# -D_DEFAULT_SOURCE      Enable default set of feature test macros
+# -D_FORTIFY_SOURCE=2   Runtime buffer overflow detection
+# -std=c18              Use C18 standard
+# -pedantic             Strict ISO C compliance
+# -fanalyzer            Enable static analysis
+# -Wshadow              Warn when a local shadows another variable
+# -Wstrict-prototypes   Warn about functions without prototypes
+# -Wmissing-prototypes  Warn about missing prototypes
+# -Wwrite-strings       Warn about deprecated writable string literals
+# -Werror               Treat warnings as errors
+# -Wall                 Enable most warning messages
+# -Wextra               Enable extra warning messages
+# -Wformat=2            Enhanced format string checking
+# -Wconversion          Warn about type conversions that may alter values
+# -Wcast-qual           Warn about casts that remove qualifiers
+# -Wundef               Warn about undefined macros in #if
+# -g                    Generate debug information
+# -MMD                  Generate dependency files
+# -MP                   Add phony targets for headers
+# -fstack-protector-strong  Stack smashing protection
+# -fPIE                 Position independent code for ASLR
+# -fstack-clash-protection  Prevent stack clash attacks
+# -Wimplicit-fallthrough    Catch missing break statements
+# -Walloca              Warn about alloca usage
+# -Wvla                 Warn about variable length arrays
+# -Wformat-signedness   Format string sign mismatches
+# -Wduplicated-cond     Duplicated conditions in if-else chains
+# -Wduplicated-branches Identical branches in if-else
+# -Wnull-dereference    Potential null pointer dereferences
+# -Wdouble-promotion    Float to double promotions
+# -I$(DEPS_BUILD_DIR)   Include path for mbedTLS headers
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -fstack-protector-strong -fPIE -fstack-clash-protection -Wimplicit-fallthrough -Walloca -Wvla -Wformat-signedness -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+
+# Debug-specific flags:
+# -Og                   Optimization for debugging (enables FORTIFY_SOURCE)
+# -fsanitize=address    Enable AddressSanitizer for memory error detection
+# -fsanitize=undefined  Enable UndefinedBehaviorSanitizer
+# -fno-omit-frame-pointer  Better stack traces in sanitizers
+CFLAGS_DEBUG = $(CFLAGS_COMMON) -Og -fsanitize=address,undefined -fno-omit-frame-pointer
+
+# Release-specific flags:
+# -O2                   Security-recommended optimization level
+# -DNDEBUG              Define NDEBUG to disable assertions
+# -flto                 Enable Link Time Optimization
+CFLAGS_RELEASE = $(CFLAGS_COMMON) -O2 -DNDEBUG -flto
+
+# ThreadSanitizer flags:
+# -O1                   Basic optimization (TSAN works better with optimization)
+# -fsanitize=thread     Enable ThreadSanitizer for race detection
+CFLAGS_TSAN = $(CFLAGS_COMMON) -O1 -fsanitize=thread
+
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
-LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
-LDFLAGS_DEBUG = $(LDFLAGS_COMMON) -fsanitize=address
+
+# Linker flags explanation:
+# -L$(DEPS_BUILD_DIR)   Library search path for mbedTLS
+# -Wl,-rpath,...        Set runtime library search path
+# -pie                  Create position independent executable
+# -Wl,-z,relro          Read-only relocations (partial RELRO)
+# -Wl,-z,now            Resolve all symbols at startup (full RELRO)
+# -Wl,-z,noexecstack    Mark stack as non-executable
+# -Wl,--as-needed       Only link libraries that are actually used
+# -lpthread             Link pthread library
+# -lmbedtls             Link mbedTLS library
+# -lmbedx509            Link mbedTLS X.509 library
+# -lmbedcrypto          Link mbedTLS crypto library
+LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -Wl,--as-needed -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
+
+# Debug-specific linker flags:
+# -fsanitize=address,undefined    Link AddressSanitizer and UBSan runtime
+LDFLAGS_DEBUG = $(LDFLAGS_COMMON) -fsanitize=address,undefined
+
+# Release-specific linker flags:
+# -flto                 Enable Link Time Optimization
 LDFLAGS_RELEASE = $(LDFLAGS_COMMON) -flto
+
+# ThreadSanitizer linker flags:
+# -fsanitize=thread     Link ThreadSanitizer runtime
 LDFLAGS_TSAN = $(LDFLAGS_COMMON) -fsanitize=thread
+
 LDFLAGS = $(LDFLAGS_DEBUG)  # Default to debug
 
 # ============================================================================
@@ -335,8 +407,9 @@ $(BIN_DIR)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR)
 	$(CC) -o $@ $(CLIENT_OBJS_DEBUG) $(LDFLAGS)
 
 # Debug object files - generic rule
+# Note: All debug builds use -march=native to optimize for the build machine
 $(OBJ_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/debug
-	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
+	$(CC) $(CFLAGS_DEBUG) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # ============================================================================
 # Build Rules - Release
@@ -359,6 +432,14 @@ $(BIN_DIR)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR)
 # Release object files - generic rule
 $(OBJ_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/release
 	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
+
+# Release server with x86-64-v4 architecture (requires AVX-512)
+$(OBJ_DIR)/release/server.o: $(SRC_DIR)/server.c | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -march=x86-64-v4 -I$(SRC_DIR) -c -o $@ $<
+
+# Release client with x86-64-v3 architecture (requires AVX2)
+$(OBJ_DIR)/release/client.o: $(SRC_DIR)/client.c | $(OBJ_DIR)/release
+	$(CC) $(CFLAGS_RELEASE) -march=x86-64-v3 -I$(SRC_DIR) -c -o $@ $<
 
 # ============================================================================
 # Test Targets
@@ -406,16 +487,17 @@ $(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)
 # ============================================================================
 
 # TSAN object file compilation rules
+# Note: All TSAN builds use -march=native to optimize for the build machine
 $(OBJ_DIR)/tsan/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/tsan
-	$(CC) $(CFLAGS_TSAN) -I$(SRC_DIR) -c -o $@ $<
+	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # TSAN test object files
 $(OBJ_DIR)/tsan/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/tsan
-	$(CC) $(CFLAGS_TSAN) -I$(SRC_DIR) -c -o $@ $<
+	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # TSAN Unity object
 $(OBJ_DIR)/tsan/unity.o: $(TST_DIR)/vendor/unity.c | $(OBJ_DIR)/tsan
-	$(CC) $(CFLAGS_TSAN) -c -o $@ $<
+	$(CC) $(CFLAGS_TSAN) -march=native -c -o $@ $<
 
 # TSAN executables
 $(BIN_DIR)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR)
@@ -486,7 +568,13 @@ debug-client: client
 .PHONY: fmt
 fmt:
 	$(call check-tool,clang-format,Please install clang-format for code formatting)
-	@find . -path ./node_modules -prune -o -path ./tests/vendor -prune -o \( -name "*.c" -o -name "*.h" \) -type f -print | while read file; do \
+	@find . \( -name "*.c" -o -name "*.h" \) -type f \
+		-not -path "./deps/*" \
+		-not -path "./tests/vendor/*" \
+		-not -path "./obj/*" \
+		-not -path "./bin/*" \
+		-not -path "./pkg/*" \
+		| while read file; do \
 		echo "Formatting: $$file"; \
 		clang-format -i "$$file"; \
 	done

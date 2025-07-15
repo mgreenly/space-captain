@@ -93,11 +93,11 @@ typedef struct {
 static TestData *create_test_data(int id, const char *data_str) {
   TestData *td = malloc(sizeof(TestData));
   TEST_ASSERT_NOT_NULL_MESSAGE(td, "Failed to allocate TestData");
-  
-  td->id       = id;
-  td->data     = strdup(data_str);
+
+  td->id   = id;
+  td->data = strdup(data_str);
   TEST_ASSERT_NOT_NULL_MESSAGE(td->data, "Failed to allocate data string");
-  
+
   return td;
 }
 
@@ -202,7 +202,7 @@ typedef struct {
 void *producer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
-  usleep((unsigned int)(data->delay_ms * 1000));
+  usleep((unsigned int) (data->delay_ms * 1000));
 
   char buffer[64];
   snprintf(buffer, sizeof(buffer), "Test data %d", data->test_value);
@@ -271,7 +271,7 @@ void *delayed_consumer_thread(void *arg) {
   thread_data_t *data = (thread_data_t *) arg;
 
   // Wait before consuming to ensure producer blocks
-  usleep((unsigned int)(data->delay_ms * 1000));
+  usleep((unsigned int) (data->delay_ms * 1000));
 
   // Pop one item to make space
   TestData *td = NULL;
@@ -820,7 +820,7 @@ void test_queue_nuke_with_cleanup_null_callback(void) {
   // Note: In real usage this would leak memory, but for testing we just
   // verify the function handles NULL callback gracefully
   // In practice, the caller would be responsible for item cleanup
-  
+
   // Clean up to avoid AddressSanitizer leak reports
   free_test_data(td1);
   free_test_data(td2);

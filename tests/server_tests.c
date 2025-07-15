@@ -39,15 +39,15 @@ static dtls_session_t *g_dtls_session = NULL;
 
 // Timeout configuration - extend for ThreadSanitizer
 #ifdef __has_feature
-  #if __has_feature(thread_sanitizer)
-    #define DTLS_HANDSHAKE_TIMEOUT 30  // 30 seconds for TSAN
-  #else
-    #define DTLS_HANDSHAKE_TIMEOUT 5   // 5 seconds normally
-  #endif
-#elif defined(__SANITIZE_THREAD__)
-  #define DTLS_HANDSHAKE_TIMEOUT 30    // 30 seconds for TSAN (GCC)
+#if __has_feature(thread_sanitizer)
+#define DTLS_HANDSHAKE_TIMEOUT 30 // 30 seconds for TSAN
 #else
-  #define DTLS_HANDSHAKE_TIMEOUT 5     // 5 seconds normally
+#define DTLS_HANDSHAKE_TIMEOUT 5 // 5 seconds normally
+#endif
+#elif defined(__SANITIZE_THREAD__)
+#define DTLS_HANDSHAKE_TIMEOUT 30 // 30 seconds for TSAN (GCC)
+#else
+#define DTLS_HANDSHAKE_TIMEOUT 5 // 5 seconds normally
 #endif
 static uint8_t g_server_cert_hash[32]; // SHA256 hash of server certificate
 
@@ -76,11 +76,11 @@ void setUp(void) {
     }
     // Use TSAN-instrumented server when running under ThreadSanitizer
 #ifdef __has_feature
-  #if __has_feature(thread_sanitizer)
+#if __has_feature(thread_sanitizer)
     execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
-  #else
+#else
     execl("bin/sc-server", "sc-server", NULL);
-  #endif
+#endif
 #elif defined(__SANITIZE_THREAD__)
     execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
 #else
@@ -342,8 +342,8 @@ void test_ping_pong_message(void) {
   ping_msg.header.protocol_version = htons(0x0001); // v0.1.0
   ping_msg.header.message_type     = htons(MSG_PING);
   ping_msg.header.sequence_number  = htonl(1);
-  ping_msg.header.timestamp        = htobe64((uint64_t)time(NULL) * 1000); // Unix timestamp in ms
-  ping_msg.header.payload_length   = htons(0);                   // No payload for ping
+  ping_msg.header.timestamp        = htobe64((uint64_t) time(NULL) * 1000); // Unix timestamp in ms
+  ping_msg.header.payload_length   = htons(0);                              // No payload for ping
 
   // Send PING message via DTLS
   size_t bytes_written = 0;
