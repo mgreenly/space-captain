@@ -15,4 +15,5 @@ tags
 deps/
 infra/.terraform/
 .secrets
-infra./terraform.tfstate*
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
