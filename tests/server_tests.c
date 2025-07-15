@@ -36,6 +36,19 @@ static struct sockaddr_in server_addr;
 static pid_t server_pid               = -1;
 static dtls_context_t *g_dtls_ctx     = NULL;
 static dtls_session_t *g_dtls_session = NULL;
+
+// Timeout configuration - extend for ThreadSanitizer
+#ifdef __has_feature
+  #if __has_feature(thread_sanitizer)
+    #define DTLS_HANDSHAKE_TIMEOUT 30  // 30 seconds for TSAN
+  #else
+    #define DTLS_HANDSHAKE_TIMEOUT 5   // 5 seconds normally
+  #endif
+#elif defined(__SANITIZE_THREAD__)
+  #define DTLS_HANDSHAKE_TIMEOUT 30    // 30 seconds for TSAN (GCC)
+#else
+  #define DTLS_HANDSHAKE_TIMEOUT 5     // 5 seconds normally
+#endif
 static uint8_t g_server_cert_hash[32]; // SHA256 hash of server certificate
 
 void setUp(void) {
@@ -61,7 +74,18 @@ void setUp(void) {
       dup2(devnull, STDERR_FILENO);
       close(devnull);
     }
+    // Use TSAN-instrumented server when running under ThreadSanitizer
+#ifdef __has_feature
+  #if __has_feature(thread_sanitizer)
+    execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
+  #else
     execl("bin/sc-server", "sc-server", NULL);
+  #endif
+#elif defined(__SANITIZE_THREAD__)
+    execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
+#else
+    execl("bin/sc-server", "sc-server", NULL);
+#endif
     // If execl fails
     exit(1);
   }
@@ -97,7 +121,7 @@ void setUp(void) {
   dtls_result_t result;
   while ((result = sc_dtls_handshake(g_dtls_session)) == DTLS_ERROR_WOULD_BLOCK) {
     // Check for timeout
-    if (time(NULL) - start > 5) {
+    if (time(NULL) - start > DTLS_HANDSHAKE_TIMEOUT) {
       TEST_FAIL_MESSAGE("DTLS handshake timeout");
     }
     usleep(10000); // 10ms

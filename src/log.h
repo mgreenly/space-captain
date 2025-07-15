@@ -30,8 +30,9 @@
 
 static inline void log_timestamp(FILE *stream) {
   char time_buf[LOG_TIME_BUFFER_SIZE];
-  time_t now   = time(NULL);
-  struct tm *t = localtime(&now);
+  time_t now = time(NULL);
+  struct tm tm_buf;
+  struct tm *t = localtime_r(&now, &tm_buf);
   strftime(time_buf, sizeof(time_buf), LOG_TIME_FORMAT, t);
   fprintf(stream, "%s ", time_buf);
 }
