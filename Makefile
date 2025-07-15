@@ -67,12 +67,12 @@ PREFIX ?= $(HOME)/.local
 CC = gcc
 CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0 -fsanitize=address
-CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3 -DNDEBUG
+CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3 -DNDEBUG -flto
 CFLAGS_TSAN = $(CFLAGS_COMMON) -O2 -fsanitize=thread
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
 LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
 LDFLAGS_DEBUG = $(LDFLAGS_COMMON) -fsanitize=address
-LDFLAGS_RELEASE = $(LDFLAGS_COMMON)
+LDFLAGS_RELEASE = $(LDFLAGS_COMMON) -flto
 LDFLAGS_TSAN = $(LDFLAGS_COMMON) -fsanitize=thread
 LDFLAGS = $(LDFLAGS_DEBUG)  # Default to debug
 

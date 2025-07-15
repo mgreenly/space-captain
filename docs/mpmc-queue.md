@@ -1,42 +1,44 @@
-# MPMC Queue Implementation FAQ
+# MPMC Generic Queue Implementation FAQ
 
 ## Overview
 
-The Space Captain project implements a thread-safe Multi-Producer Multi-Consumer (MPMC) FIFO (First-In-First-Out) queue that allows multiple threads to safely add and remove messages concurrently. This queue is a critical component for the server's worker thread pool architecture, enabling efficient message passing between the main server thread and worker threads. Messages are processed in the order they are received, ensuring fair and predictable message handling.
+The Space Captain project implements a thread-safe, generic Multi-Producer Multi-Consumer (MPMC) FIFO (First-In-First-Out) queue. It allows multiple threads to safely add and remove `void*` pointers concurrently.
+
+This generic queue is the foundation for the server's messaging system. It is wrapped by a type-safe implementation (`sc_message_queue_t`) for passing `message_t` pointers between the main server thread and worker threads, ensuring messages are processed in the order they are received.
 
 ## Architecture & Design
 
 ### What is the queue's internal structure?
 
-The queue (`queue_t`) uses a circular buffer design with the following components:
+The queue (`sc_generic_queue_t`) uses a circular buffer design with the following components:
 
 ```c
 typedef struct {
-  message_t **buffer;            // Circular buffer of message pointers
-  size_t capacity;               // Maximum number of messages
-  size_t size;                   // Current number of messages
-  size_t head;                   // Index of next message to remove
-  size_t tail;                   // Index where next message will be added
+  void **buffer;                 // Circular buffer of void pointers
+  size_t capacity;               // Maximum number of items
+  size_t size;                   // Current number of items
+  size_t head;                   // Index of next item to remove
+  size_t tail;                   // Index where next item will be added
   pthread_rwlock_t rwlock;       // Reader-writer lock for data access
   pthread_mutex_t cond_mutex;    // Separate mutex for condition variables
   pthread_cond_t cond_not_empty; // Signaled when queue becomes non-empty
   pthread_cond_t cond_not_full;  // Signaled when queue becomes non-full
-} queue_t;
+} sc_generic_queue_t;
 ```
 
 ### Why use a circular buffer?
 
 The circular buffer provides O(1) performance for both enqueue and dequeue operations. The `head` and `tail` indices wrap around using modulo arithmetic (`% capacity`), eliminating the need to shift elements and providing consistent performance regardless of queue size. This design naturally implements FIFO semantics:
-- New messages are added at the `tail` position (end of queue)
-- Messages are removed from the `head` position (front of queue)
-- This ensures the first message added is the first message removed
+- New items are added at the `tail` position (end of queue)
+- Items are removed from the `head` position (front of queue)
+- This ensures the first item added is the first item removed
 
 ### What synchronization mechanisms are used?
 
 The queue employs a sophisticated two-lock design:
 
-1. **Reader-Writer Lock (`rwlock`)**: Protects the queue's data structure during operations
-2. **Condition Mutex (`cond_mutex`)**: Separate mutex specifically for condition variable operations
+1. **Reader-Writer Lock (`rwlock`)**: Protects the queue's data structure during operations.
+2. **Condition Mutex (`cond_mutex`)**: A separate mutex used exclusively for condition variable operations.
 
 This design prevents deadlocks that could occur if a single lock was used for both data protection and condition waiting.
 
@@ -45,20 +47,20 @@ This design prevents deadlocks that could occur if a single lock was used for bo
 ### How is a queue created?
 
 ```c
-queue_t *sc_queue_init(size_t capacity)
+sc_generic_queue_t *sc_generic_queue_init(size_t capacity);
 ```
 
 The creation process:
 
-1. **Validation**: Checks capacity is > 0 and doesn't exceed `QUEUE_MAX_CAPACITY`
+1. **Validation**: Checks that capacity is > 0 and does not exceed `SC_GENERIC_QUEUE_MAX_CAPACITY`.
 2. **Memory Allocation**: 
-   - Allocates the queue structure using `calloc` (zero-initialized)
-   - Allocates the circular buffer array for message pointers
-   - Checks for integer overflow in buffer size calculation
+   - Allocates the queue structure using `calloc` (zero-initialized).
+   - Allocates the circular buffer array for `void*` pointers.
+   - Checks for integer overflow in buffer size calculation.
 3. **Initialization**:
-   - Sets capacity, size=0, head=0, tail=0
-   - Initializes pthread synchronization primitives (rwlock, mutex, conditions)
-4. **Error Handling**: Properly cleans up on any failure, returning NULL
+   - Sets capacity, size=0, head=0, tail=0.
+   - Initializes all pthread synchronization primitives (rwlock, mutex, conditions).
+4. **Error Handling**: Properly cleans up all allocated resources on any failure, returning NULL.
 
 ### How is a queue destroyed?
 
@@ -66,209 +68,133 @@ Two destruction methods are provided:
 
 #### Basic Destruction
 ```c
-sc_queue_ret_val_t sc_queue_nuke(queue_t *q)
+sc_generic_queue_ret_val_t sc_generic_queue_nuke(sc_generic_queue_t *q);
 ```
-- Destroys synchronization primitives
-- Frees the buffer and queue structure
-- **Important**: Does NOT free messages still in the queue
+- Destroys synchronization primitives.
+- Frees the buffer and the queue structure itself.
+- **Important**: Does NOT free the items still in the queue. The caller is responsible for managing the memory of any remaining items.
 
 #### Destruction with Cleanup
 ```c
-void sc_queue_nuke_with_cleanup(queue_t *q, queue_cleanup_fn cleanup_fn, void *user_data)
+void sc_generic_queue_nuke_with_cleanup(sc_generic_queue_t *q, sc_generic_queue_cleanup_fn cleanup_fn, void *user_data);
 ```
-- Locks the queue to prevent new operations
-- Drains all remaining messages
-- Calls the cleanup function for each message (if provided)
-- Then performs normal destruction
+- Locks the queue to prevent any new operations.
+- Drains all remaining items from the queue.
+- Calls the user-provided `cleanup_fn` callback for each item.
+- Then performs the normal destruction of the queue resources.
 
 ## Core Operations
 
-### How does message addition work?
+### How does item addition work?
 
 #### Blocking Add
 ```c
-sc_queue_ret_val_t sc_queue_add(queue_t *q, message_t *msg)
+sc_generic_queue_ret_val_t sc_generic_queue_add(sc_generic_queue_t *q, void *item);
 ```
 
-1. Acquires write lock on the queue
-2. If queue is full:
-   - Releases the write lock
-   - Waits on `cond_not_full` condition with timeout
-   - Re-acquires write lock when space becomes available
-3. Adds message at tail position
-4. Updates tail index: `tail = (tail + 1) % capacity`
-5. Increments size
-6. Signals `cond_not_empty` for waiting consumers
+1. Acquires a write lock on the queue.
+2. If the queue is full:
+   - It releases the write lock.
+   - It waits on the `cond_not_full` condition variable (with a timeout).
+   - It re-acquires the write lock before attempting to add the item again.
+3. Adds the item at the `tail` position.
+4. Updates the tail index: `tail = (tail + 1) % capacity`.
+5. Increments the size.
+6. Signals the `cond_not_empty` condition to wake up any waiting consumers.
 
 #### Non-blocking Add
 ```c
-sc_queue_ret_val_t sc_queue_try_add(queue_t *q, message_t *msg)
+sc_generic_queue_ret_val_t sc_generic_queue_try_add(sc_generic_queue_t *q, void *item);
 ```
 
-- Same as blocking add but returns `QUEUE_ERR_FULL` immediately if full
-- Never waits or blocks
+- Same as the blocking add, but if the queue is full, it returns `SC_GENERIC_QUEUE_ERR_FULL` immediately instead of waiting.
 
-### How does message removal work?
+### How does item removal work?
 
 #### Blocking Pop
 ```c
-sc_queue_ret_val_t sc_queue_pop(queue_t *q, message_t **msg)
+sc_generic_queue_ret_val_t sc_generic_queue_pop(sc_generic_queue_t *q, void **item);
 ```
 
-1. Acquires write lock on the queue
-2. If queue is empty:
-   - Releases the write lock
-   - Waits on `cond_not_empty` condition with timeout
-   - Re-acquires write lock when message becomes available
-3. Retrieves message from head position (FIFO - oldest message first)
-4. Updates head index: `head = (head + 1) % capacity`
-5. Decrements size
-6. Signals `cond_not_full` for waiting producers
+1. Acquires a write lock on the queue.
+2. If the queue is empty:
+   - It releases the write lock.
+   - It waits on the `cond_not_empty` condition variable (with a timeout).
+   - It re-acquires the write lock before attempting to pop the item again.
+3. Retrieves the item from the `head` position (FIFO - oldest item first).
+4. Updates the head index: `head = (head + 1) % capacity`.
+5. Decrements the size.
+6. Signals the `cond_not_full` condition to wake up any waiting producers.
 
 #### Non-blocking Pop
 ```c
-sc_queue_ret_val_t sc_queue_try_pop(queue_t *q, message_t **msg)
+sc_generic_queue_ret_val_t sc_generic_queue_try_pop(sc_generic_queue_t *q, void **item);
 ```
 
-- Same as blocking pop but returns `QUEUE_ERR_EMPTY` immediately if empty
-- Never waits or blocks
+- Same as the blocking pop, but if the queue is empty, it returns `SC_GENERIC_QUEUE_ERR_EMPTY` immediately instead of waiting.
 
 ## Status Functions
 
 ### Queue State Queries
 
-All status functions use read locks for thread-safety:
+All status functions use read locks for thread-safety, allowing multiple threads to query the state concurrently without blocking writers unnecessarily.
 
-- `sc_queue_is_empty(queue_t *q)`: Returns true if size == 0
-- `sc_queue_is_full(queue_t *q)`: Returns true if size == capacity
-- `sc_queue_get_size(queue_t *q)`: Returns current number of messages
+- `sc_generic_queue_is_empty(sc_generic_queue_t *q)`: Returns true if size == 0.
+- `sc_generic_queue_is_full(sc_generic_queue_t *q)`: Returns true if size == capacity.
+- `sc_generic_queue_get_size(sc_generic_queue_t *q)`: Returns the current number of items.
 
 ## Error Handling
 
 ### Thread-Local Error Storage
 
-The queue uses thread-local storage for error codes:
+The queue uses thread-local storage for error codes to ensure that error states are isolated between threads.
 
 ```c
-static __thread int queue_errno = QUEUE_SUCCESS;
+static __thread sc_generic_queue_ret_val_t queue_errno = SC_GENERIC_QUEUE_SUCCESS;
 ```
-
-This allows each thread to have its own error state without interference.
 
 ### Error Codes
 
-- `QUEUE_SUCCESS` (0): Operation completed successfully
-- `QUEUE_ERR_TIMEOUT` (-1): Blocking operation timed out
-- `QUEUE_ERR_THREAD` (-2): pthread operation failed
-- `QUEUE_ERR_NULL` (-3): NULL pointer parameter
-- `QUEUE_ERR_MEMORY` (-4): Memory allocation failed
-- `QUEUE_ERR_FULL` (-5): Queue full (try_add)
-- `QUEUE_ERR_EMPTY` (-6): Queue empty (try_pop)
-- `QUEUE_ERR_INVALID` (-7): Invalid parameter
-- `QUEUE_ERR_OVERFLOW` (-8): Integer overflow
+- `SC_GENERIC_QUEUE_SUCCESS` (0): Operation completed successfully.
+- `SC_GENERIC_QUEUE_ERR_TIMEOUT` (-1): Blocking operation timed out.
+- `SC_GENERIC_QUEUE_ERR_THREAD` (-2): A pthread operation failed.
+- `SC_GENERIC_QUEUE_ERR_NULL` (-3): A required parameter was NULL.
+- `SC_GENERIC_QUEUE_ERR_MEMORY` (-4): A memory allocation failed.
+- `SC_GENERIC_QUEUE_ERR_FULL` (-5): Queue is full (for `try_add`).
+- `SC_GENERIC_QUEUE_ERR_EMPTY` (-6): Queue is empty (for `try_pop`).
+- `SC_GENERIC_QUEUE_ERR_INVALID` (-7): An invalid parameter was provided (e.g., capacity=0).
+- `SC_GENERIC_QUEUE_ERR_OVERFLOW` (-8): Integer overflow during capacity calculation.
 
 ### Error Functions
 
-- `sc_queue_get_error()`: Get last error for current thread
-- `sc_queue_clear_error()`: Clear error state
-- `sc_queue_strerror(int err)`: Get human-readable error message
+- `sc_generic_queue_get_error()`: Get the last error code for the current thread.
+- `sc_generic_queue_clear_error()`: Clear the error state for the current thread.
+- `sc_generic_queue_strerror(sc_generic_queue_ret_val_t err)`: Get a human-readable error message.
+
+## Type-Safe Wrappers (The `message_queue`)
+
+While the generic queue is powerful, it is not type-safe. To solve this, the project uses a common C pattern: a thin, static inline wrapper that provides type safety.
+
+The `message_queue.h` and `message_queue.c` files provide this wrapper for `message_t*`.
+
+### Example: `sc_message_queue_add`
+
+The wrapper function is simple:
+```c
+// In message_queue.h (often as a static inline function)
+sc_message_queue_ret_val_t sc_message_queue_add(sc_message_queue_t *queue, message_t *msg) {
+  return (sc_message_queue_ret_val_t) sc_generic_queue_add(queue, (void *) msg);
+}
+```
+This provides compile-time type checking, preventing accidental insertion of incorrect pointer types. With compiler optimizations like `-O2` or `-O3` and Link-Time Optimization (`-flto`), these wrapper functions are **inlined**, resulting in **zero performance overhead**.
 
 ## Configuration
 
 ### Timeouts
 
-- `QUEUE_POP_TIMEOUT`: 2 seconds for blocking pop operations
-- `QUEUE_ADD_TIMEOUT`: 2 seconds for blocking add operations
+- `SC_GENERIC_QUEUE_POP_TIMEOUT`: 2 seconds for blocking pop operations.
+- `SC_GENERIC_QUEUE_ADD_TIMEOUT`: 2 seconds for blocking add operations.
 
 ### Capacity Limits
 
-- Maximum capacity: `SIZE_MAX / sizeof(message_t *) / 2`
-- Prevents integer overflow in buffer allocation
-
-## Performance Characteristics
-
-### Time Complexity
-
-- Add/Pop operations: O(1) for all variants
-- Status queries: O(1)
-
-### Lock Contention
-
-The two-lock design minimizes contention:
-- Data operations hold rwlock briefly
-- Condition waiting uses separate mutex
-- Readers can access status concurrently
-
-### Memory Usage
-
-- Fixed memory allocation based on capacity
-- No dynamic resizing (predictable memory footprint)
-- Stores pointers only (messages allocated separately)
-
-## Common Usage Patterns
-
-### Producer Thread
-```c
-message_t *msg = create_message(...);
-sc_queue_ret_val_t result = sc_queue_add(queue, msg);
-if (result != QUEUE_SUCCESS) {
-    // Handle error - timeout or other failure
-    message_destroy(msg);
-}
-```
-
-### Consumer Thread
-```c
-message_t *msg = NULL;
-sc_queue_ret_val_t result = sc_queue_pop(queue, &msg);
-if (result == QUEUE_SUCCESS) {
-    // Process message
-    process_message(msg);
-    message_destroy(msg);
-}
-```
-
-### Graceful Shutdown
-```c
-// Custom cleanup function
-void cleanup_message(message_t *msg, void *user_data) {
-    log_info("Cleaning up message type: %d", msg->type);
-    message_destroy(msg);
-}
-
-// Destroy queue with cleanup
-sc_queue_nuke_with_cleanup(queue, cleanup_message, NULL);
-```
-
-## Design Decisions & Trade-offs
-
-### Why Reader-Writer Lock?
-
-While all current operations use write locks, the rwlock provides:
-- Future extensibility for read-only operations
-- Better semantics (distinguishes read vs write intent)
-- Potential for concurrent status queries
-
-### Why Separate Condition Mutex?
-
-Prevents deadlock scenarios where:
-1. Thread A holds rwlock, waits on condition
-2. Thread B needs rwlock to signal condition
-3. Result: deadlock
-
-The separate mutex allows clean handoff between data protection and condition waiting.
-
-### Why Fixed Capacity?
-
-- Predictable memory usage
-- No allocation during operation (better real-time behavior)  
-- Simpler implementation with guaranteed O(1) operations
-- Suitable for bounded producer-consumer scenarios
-
-## Thread Safety Guarantees
-
-- All operations are fully thread-safe
-- Multiple producers and consumers can operate concurrently
-- No data races or undefined behavior
-- Timeout mechanisms prevent indefinite blocking
-- Error states are thread-local (no interference between threads)
+- Maximum capacity: `SC_GENERIC_QUEUE_MAX_CAPACITY`, which is defined as `SIZE_MAX / sizeof(void *) / 2` to prevent integer overflow during buffer allocation.
