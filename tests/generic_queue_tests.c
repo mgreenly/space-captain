@@ -820,6 +820,10 @@ void test_queue_nuke_with_cleanup_null_callback(void) {
   // Note: In real usage this would leak memory, but for testing we just
   // verify the function handles NULL callback gracefully
   // In practice, the caller would be responsible for item cleanup
+  
+  // Clean up to avoid AddressSanitizer leak reports
+  free_test_data(td1);
+  free_test_data(td2);
 }
 
 void test_queue_nuke_with_cleanup_partial_queue(void) {

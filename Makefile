@@ -66,10 +66,13 @@ PREFIX ?= $(HOME)/.local
 # ============================================================================
 CC = gcc
 CFLAGS_COMMON = -D_DEFAULT_SOURCE -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
-CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0
-CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3
+CFLAGS_DEBUG = $(CFLAGS_COMMON) -O0 -fsanitize=address
+CFLAGS_RELEASE = $(CFLAGS_COMMON) -O3 -DNDEBUG
 CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
-LDFLAGS = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
+LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
+LDFLAGS_DEBUG = $(LDFLAGS_COMMON) -fsanitize=address
+LDFLAGS_RELEASE = $(LDFLAGS_COMMON)
+LDFLAGS = $(LDFLAGS_DEBUG)  # Default to debug
 
 # ============================================================================
 # Package Metadata
@@ -334,7 +337,7 @@ $(OBJ_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/debug
 # Release binary versioning helper
 define build-release-binary
 	@VERSION=$$($(get-version)); \
-	$(CC) -o $(BIN_DIR)/$(1)-$$VERSION $(2) $(LDFLAGS); \
+	$(CC) -o $(BIN_DIR)/$(1)-$$VERSION $(2) $(LDFLAGS_RELEASE); \
 	ln -sf $(1)-$$VERSION $(BIN_DIR)/$(1)-release
 endef
 
@@ -360,7 +363,7 @@ tests: mbedtls $(TEST_BINS)
 run-tests: mbedtls tests server client
 	@for test in $(TEST_BINS); do \
 		echo "Running $$test..."; \
-		$$test || exit 1; \
+		ASAN_OPTIONS=allocator_may_return_null=1 $$test || exit 1; \
 	done
 
 # Unity framework object
