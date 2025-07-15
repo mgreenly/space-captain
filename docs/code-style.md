@@ -1,52 +1,90 @@
 # Code Style Guidelines
 
-This document outlines the code style guidelines for the Space Captain project.
+This document outlines the code style guidelines for the Space Captain project. Adhering to these standards is mandatory for maintaining code quality and consistency.
 
-## General Style Requirements
+## 1. General Principles
 
-- Single-line comments only (`//` not `/* */`)
-- Document all function parameters and return values
-- Trim trailing whitespace
-- Use consistent indentation (clang-format handles this)
-- Descriptive variable and function names
+These high-level rules apply to all code written for this project.
 
-## Function Naming Convention
+- **Descriptive Naming:** All variables, functions, and types should have clear, descriptive names.
+- **No Magic Numbers:** Use `#define` or `enum` for constants instead of embedding literal values directly in the code. This improves readability and maintainability.
+- **Single-Line Comments:** Use `//` for all comments. Block comments (`/* ... */`) are not permitted.
+- **Document Interfaces:** All public function parameters and return values must be documented.
+- **No Trailing Whitespace:** Ensure no lines end with trailing whitespace.
 
-All public functions must use the pattern `<project>_<module>_<function>` where:
-- `<project>` is the project prefix `sc` for (Space Captain)
-- `<module>` matches the source filename (e.g., `queue` for queue.c)
-- `<function>` is the descriptive function name
+**Example: Magic Numbers**
+```c
+#define SERVER_MAX_CONNECTIONS 1024
 
-### Lifecycle Functions
+// PREFER:
+if (connection_count >= SERVER_MAX_CONNECTIONS) { /* ... */ }
 
-Module creation/destruction functions must use `*_init` and `*_nuke` (not `*_create`/`*_destroy`)
+// AVOID:
+if (connection_count >= 1024) { /* What does 1024 mean? */ }
+```
 
-### Examples
+## 2. Naming Conventions
 
-- `sc_queue_init()`, `sc_queue_nuke()`
-- `sc_worker_pool_init()`, `sc_worker_pool_nuke()`
-- `sc_state_write()`, `sc_state_load()`, `sc_state_nuke()`
+A consistent naming scheme is enforced for all public APIs and types.
 
-## Formatting
-
-Always run `make fmt` after making changes to ensure consistent formatting across the codebase. This uses clang-format with the project's configuration.
-
-## Pointers to Statically-Sized Arrays
-
-When a function accepts a buffer whose size is fixed at compile time, the parameter MUST be declared as a pointer to an array of that specific size.
-
-**Rationale:**
-
-*   **Type Safety:** Enforces that only arrays of the exact specified size can be passed, preventing common buffer size errors at compile time.
-*   **Clarity:** The function's signature explicitly documents the expected buffer size.
-*   **Prevents Pointer Decay:** It distinguishes between a pointer to a single element and a pointer to an entire array.
+### Type Naming
+- **`struct` and `enum` tags:** Use `snake_case`.
+- **`typedef`:** Use `snake_case` with a `_t` suffix.
 
 **Example:**
-
 ```c
-// PREFER: The compiler will enforce that the argument is an array of 256 bytes.
-void handle_message(uint8_t (*message)[256]);
+typedef struct sc_client_session {
+  int fd;
+  // ...
+} sc_client_session_t;
 
-// AVOID: Any pointer to a uint8_t can be passed, losing size information.
-void handle_message(uint8_t* message);
+typedef enum sc_error_code {
+  SC_ERROR_NONE,
+  SC_ERROR_FAILED
+} sc_error_code_t;
 ```
+
+### Function Naming
+- **Public Functions:** Must follow the pattern `sc_<module>_<function>`.
+- **Lifecycle Functions:** Must use `_init` and `_nuke` for creation and destruction.
+
+**Example:**
+```c
+sc_message_queue_t* sc_message_queue_init(size_t capacity);
+void sc_message_queue_nuke(sc_message_queue_t* queue);
+```
+
+## 3. API Design and Data Handling
+
+These rules ensure that function signatures are safe, clear, and explicit.
+
+### `const` Correctness
+Function parameters that are pointers to data not intended for modification MUST be declared as `const`. This enforces read-only access and clearly communicates intent.
+
+**Example:**
+```c
+// PREFER: The function cannot modify the content of 'data'.
+void sc_auth_verify_token(const char *token);
+
+// AVOID: The function is free to modify 'token'.
+void sc_auth_verify_token(char *token);
+```
+
+### Pointers to Statically-Sized Arrays
+When a function accepts a buffer whose size is fixed at compile time, the parameter MUST be a pointer to an array of that specific size. This embeds the size in the type signature and prevents pointer decay.
+
+**Example:**
+```c
+// PREFER: Enforces that the buffer is exactly 256 bytes.
+void sc_crypto_hash_data(const uint8_t (*data)[256]);
+
+// AVOID: Loses critical size information.
+void sc_crypto_hash_data(const uint8_t* data);
+```
+
+## 4. Formatting
+
+Code formatting is automated to ensure consistency.
+
+- **Tool:** `clang-format` is used for all C code.
+- **Command:** Run `make fmt` after making any changes to apply the project's formatting rules.
