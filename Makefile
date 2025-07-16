@@ -783,6 +783,21 @@ package-docker:
 version:
 	@$(get-version)
 
+.PHONY: deps
+deps:
+	@echo "External Dependencies"
+	@echo "===================="
+	@echo ""
+	@echo "mbedTLS:"
+	@echo "  Version: $(MBEDTLS_VERSION)"
+	@echo "  Source:  https://github.com/Mbed-TLS/mbedtls.git"
+	@echo "  Path:    $(DEPS_SRC_DIR)/mbedtls"
+	@echo ""
+	@echo "Unity Test Framework:"
+	@echo "  Version: $(UNITY_VERSION)"
+	@echo "  Source:  https://github.com/ThrowTheSwitch/Unity.git"
+	@echo "  Path:    $(DEPS_SRC_DIR)/unity"
+
 .PHONY: package-info
 package-info:
 	@echo "Package Information:"
@@ -971,6 +986,7 @@ help:
 	@echo "  make docker-info     Display Docker configuration"
 	@echo ""
 	@echo "Dependencies:"
+	@echo "  make deps            Display external dependencies and versions"
 	@echo "  make clone-unity     Clone/update Unity test framework to $(DEPS_SRC_DIR)"
 	@echo "  make clone-mbedtls   Clone/update mbedTLS source to $(DEPS_SRC_DIR)"
 	@echo "  make mbedtls         Build mbedTLS in $(DEPS_BUILD_DIR)"
