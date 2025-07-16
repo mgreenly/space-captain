@@ -59,8 +59,7 @@ UNITY_VERSION = v2.5.2
 # ============================================================================
 # Installation Settings
 # ============================================================================
-HOME := $(shell echo $$HOME)
-PREFIX ?= $(HOME)/.local
+PREFIX ?= /usr/local
 
 # ============================================================================
 # Compiler Settings
@@ -678,19 +677,12 @@ docs/arch.png: arch.dot $(SRC_FILES)
 # ============================================================================
 
 .PHONY: install
-install: release
-	@echo "Installing Space Captain to $(PREFIX)/bin"
-	@install -d $(PREFIX)/bin
-	@SERVER_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/sc-server-release)) && \
-	CLIENT_VERSIONED=$$(basename $$(readlink -f $(BIN_DIR)/sc-client-release)) && \
-	echo "Installing server: $$SERVER_VERSIONED" && \
-	install -m 755 $(BIN_DIR)/$$SERVER_VERSIONED $(PREFIX)/bin/$$SERVER_VERSIONED && \
-	echo "Installing client: $$CLIENT_VERSIONED" && \
-	install -m 755 $(BIN_DIR)/$$CLIENT_VERSIONED $(PREFIX)/bin/$$CLIENT_VERSIONED && \
-	echo "Creating symlinks..." && \
-	ln -sf $$SERVER_VERSIONED $(PREFIX)/bin/space-captain-server && \
-	ln -sf $$CLIENT_VERSIONED $(PREFIX)/bin/space-captain-client && \
-	echo "Installation complete!"
+install: release certs
+	@scripts/install.sh "$(PREFIX)" "$(BIN_DIR)" "$(OS_DIR)"
+
+.PHONY: uninstall
+uninstall:
+	@scripts/uninstall.sh "$(PREFIX)"
 
 .PHONY: clean
 clean:
@@ -967,6 +959,7 @@ help:
 	@echo "  make clean-all       Remove all artifacts including deps"
 	@echo "  make clean-certs     Remove generated certificates"
 	@echo "  make install         Install release versions to PREFIX"
+	@echo "  make uninstall       Remove installed files from PREFIX"
 	@echo "  make package-deb     Build Debian package in $(PACKAGE_OUT_DIR)/"
 	@echo "  make package-rpm     Build RPM package in $(PACKAGE_OUT_DIR)/"
 	@echo "  make dot             Generate architecture diagram"
@@ -1013,7 +1006,7 @@ help:
 	@echo "  make deploy-telemetry Deploy telemetry stack (TODO)"
 	@echo ""
 	@echo "Environment Variables:"
-	@echo "  PREFIX=<path>        Set installation prefix (default: ~/.local)"
+	@echo "  PREFIX=<path>        Set installation prefix (default: /usr/local)"
 
 # ============================================================================
 # Directory Creation
