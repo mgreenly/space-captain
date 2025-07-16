@@ -64,7 +64,7 @@ PREFIX ?= /usr/local
 # ============================================================================
 # Compiler Settings
 # ============================================================================
-CC = gcc
+CC ?= gcc
 
 # Compiler flags explanation:
 # -D_DEFAULT_SOURCE           Enable default set of feature test macros
@@ -240,7 +240,7 @@ endef
 
 # Check for all required build tools
 define check-build-tools
-	$(call check-tool,gcc,Please install GCC compiler)
+	$(call check-tool,$(CC),Please install C compiler ($(CC)))
 	$(call check-tool,make,Please install GNU Make)
 	$(call check-tool,git,Please install Git version control)
 endef
