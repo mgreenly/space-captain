@@ -66,6 +66,41 @@ PREFIX ?= /usr/local
 # ============================================================================
 CC ?= gcc
 
+# Detect compiler type
+COMPILER_TYPE := unknown
+ifeq ($(CC),gcc)
+    COMPILER_TYPE := gcc
+else ifeq ($(CC),g++)
+    COMPILER_TYPE := gcc
+else ifeq ($(CC),cc)
+    # cc is usually a symlink to gcc or clang, detect the actual compiler
+    COMPILER_VERSION := $(shell $(CC) --version 2>/dev/null | head -1)
+    ifneq (,$(findstring Debian,$(COMPILER_VERSION)))
+        # Debian's cc is gcc
+        COMPILER_TYPE := gcc
+    else ifneq (,$(findstring gcc,$(COMPILER_VERSION)))
+        COMPILER_TYPE := gcc
+    else ifneq (,$(findstring GCC,$(COMPILER_VERSION)))
+        COMPILER_TYPE := gcc
+    else ifneq (,$(findstring clang,$(COMPILER_VERSION)))
+        COMPILER_TYPE := clang
+    endif
+else ifeq ($(CC),clang)
+    COMPILER_TYPE := clang
+else ifeq ($(CC),clang++)
+    COMPILER_TYPE := clang
+else
+    # Try to detect based on version output
+    COMPILER_VERSION := $(shell $(CC) --version 2>/dev/null | head -1)
+    ifneq (,$(findstring gcc,$(COMPILER_VERSION)))
+        COMPILER_TYPE := gcc
+    else ifneq (,$(findstring GCC,$(COMPILER_VERSION)))
+        COMPILER_TYPE := gcc
+    else ifneq (,$(findstring clang,$(COMPILER_VERSION)))
+        COMPILER_TYPE := clang
+    endif
+endif
+
 # Compiler flags explanation:
 # -D_DEFAULT_SOURCE           Enable default set of feature test macros
 # -D_FORTIFY_SOURCE=2         Runtime buffer overflow detection
@@ -99,7 +134,38 @@ CC ?= gcc
 # -Wdouble-promotion          Float to double promotions
 # -fdiagnostics-color         Enable colored compiler output
 # -I$(DEPS_BUILD_DIR)         Include path for mbedTLS headers
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -fstack-protector-strong -fPIE -fstack-clash-protection -Wimplicit-fallthrough -Walloca -Wvla -Wformat-signedness -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -fdiagnostics-color -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+
+# Common flags for all compilers
+CFLAGS_BASE = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic \
+              -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings \
+              -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef \
+              -g -MMD -MP -fstack-protector-strong -fPIE \
+              -Wimplicit-fallthrough -Walloca -Wvla \
+              -Wnull-dereference -Wdouble-promotion \
+              -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+
+# GCC-specific flags
+CFLAGS_GCC = -fanalyzer -fstack-clash-protection \
+             -Wduplicated-cond -Wduplicated-branches \
+             -Wformat-signedness \
+             -fdiagnostics-color
+
+# Clang-specific flags
+CFLAGS_CLANG = -fcolor-diagnostics \
+               -Wno-gnu-zero-variadic-macro-arguments
+
+# Select appropriate compiler-specific flags
+ifeq ($(COMPILER_TYPE),gcc)
+    CFLAGS_COMPILER = $(CFLAGS_GCC)
+else ifeq ($(COMPILER_TYPE),clang)
+    CFLAGS_COMPILER = $(CFLAGS_CLANG)
+else
+    # Unknown compiler - use no specific flags
+    CFLAGS_COMPILER =
+endif
+
+# Combined common flags
+CFLAGS_COMMON = $(CFLAGS_BASE) $(CFLAGS_COMPILER)
 
 # Debug-specific flags:
 # -Og                      Optimization for debugging (enables FORTIFY_SOURCE)
@@ -142,6 +208,15 @@ LDFLAGS_DEBUG = $(LDFLAGS_COMMON) -fsanitize=address,undefined
 # Release-specific linker flags:
 # -flto                 Enable Link Time Optimization
 LDFLAGS_RELEASE = $(LDFLAGS_COMMON) -flto
+
+# Compiler-specific LDFLAGS adjustments
+ifeq ($(COMPILER_TYPE),gcc)
+    # GCC-specific linker flags (if any)
+    LDFLAGS_GCC =
+else ifeq ($(COMPILER_TYPE),clang)
+    # Clang-specific linker flags (if any)
+    LDFLAGS_CLANG =
+endif
 
 # ThreadSanitizer linker flags:
 # -fsanitize=thread     Link ThreadSanitizer runtime
@@ -243,6 +318,7 @@ define check-build-tools
 	$(call check-tool,$(CC),Please install C compiler ($(CC)))
 	$(call check-tool,make,Please install GNU Make)
 	$(call check-tool,git,Please install Git version control)
+	@echo "Detected compiler type: $(COMPILER_TYPE) ($(CC))"
 endef
 
 # Check for package building tools
