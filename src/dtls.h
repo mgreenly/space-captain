@@ -90,16 +90,16 @@ dtls_result_t sc_dtls_write(dtls_session_t *session, const uint8_t *buf, size_t 
 void sc_dtls_close(dtls_session_t *session);
 
 // Get file descriptor for a session (for epoll)
-int sc_dtls_get_fd(dtls_session_t *session);
+int sc_dtls_get_fd(const dtls_session_t *session);
 
 // Get client address for a session
-const struct sockaddr *sc_dtls_get_client_addr(dtls_session_t *session);
+const struct sockaddr *sc_dtls_get_client_addr(const dtls_session_t *session);
 
 // Get client address length for a session
-socklen_t sc_dtls_get_client_addr_len(dtls_session_t *session);
+socklen_t sc_dtls_get_client_addr_len(const dtls_session_t *session);
 
 // Check if handshake is complete
-bool sc_dtls_is_handshake_complete(dtls_session_t *session);
+bool sc_dtls_is_handshake_complete(const dtls_session_t *session);
 
 // Get last error string for debugging
 const char *sc_dtls_error_string(dtls_result_t result);

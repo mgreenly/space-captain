@@ -55,20 +55,20 @@ sc_message_queue_ret_val_t sc_message_queue_try_pop(sc_message_queue_t *queue, m
 // Checks if the queue is empty (thread-safe).
 // @param queue Pointer to the queue.
 // @return true if the queue is empty, false otherwise.
-bool sc_message_queue_is_empty(sc_message_queue_t *queue) {
+bool sc_message_queue_is_empty(const sc_message_queue_t *queue) {
   return sc_generic_queue_is_empty(queue);
 }
 
 // Checks if the queue is full (thread-safe).
 // @param queue Pointer to the queue.
 // @return true if the queue is full, false otherwise.
-bool sc_message_queue_is_full(sc_message_queue_t *queue) {
+bool sc_message_queue_is_full(const sc_message_queue_t *queue) {
   return sc_generic_queue_is_full(queue);
 }
 
 // Gets the current number of items in the queue (thread-safe).
 // @param queue Pointer to the queue.
 // @return Number of items currently in the queue, or 0 on error.
-size_t sc_message_queue_size(sc_message_queue_t *queue) {
+size_t sc_message_queue_size(const sc_message_queue_t *queue) {
   return sc_generic_queue_get_size(queue);
 }

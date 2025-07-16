@@ -530,19 +530,19 @@ void sc_dtls_close(dtls_session_t *session) {
   mbedtls_ssl_close_notify(&session->ssl);
 }
 
-int sc_dtls_get_fd(dtls_session_t *session) {
+int sc_dtls_get_fd(const dtls_session_t *session) {
   return session ? session->fd : -1;
 }
 
-const struct sockaddr *sc_dtls_get_client_addr(dtls_session_t *session) {
+const struct sockaddr *sc_dtls_get_client_addr(const dtls_session_t *session) {
   return session ? (const struct sockaddr *) &session->client_addr : NULL;
 }
 
-socklen_t sc_dtls_get_client_addr_len(dtls_session_t *session) {
+socklen_t sc_dtls_get_client_addr_len(const dtls_session_t *session) {
   return session ? session->addr_len : 0;
 }
 
-bool sc_dtls_is_handshake_complete(dtls_session_t *session) {
+bool sc_dtls_is_handshake_complete(const dtls_session_t *session) {
   return session ? session->handshake_complete : false;
 }
 

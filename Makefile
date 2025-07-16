@@ -97,8 +97,9 @@ CC = gcc
 # -Wduplicated-branches       Identical branches in if-else
 # -Wnull-dereference          Potential null pointer dereferences
 # -Wdouble-promotion          Float to double promotions
+# -fdiagnostics-color         Enable colored compiler output
 # -I$(DEPS_BUILD_DIR)         Include path for mbedTLS headers
-CFLAGS_COMMON = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -fstack-protector-strong -fPIE -fstack-clash-protection -Wimplicit-fallthrough -Walloca -Wvla -Wformat-signedness -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+CFLAGS_COMMON = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic -fanalyzer -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef -g -MMD -MP -fstack-protector-strong -fPIE -fstack-clash-protection -Wimplicit-fallthrough -Walloca -Wvla -Wformat-signedness -Wduplicated-cond -Wduplicated-branches -Wnull-dereference -Wdouble-promotion -fdiagnostics-color -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
 
 # Debug-specific flags:
 # -Og                      Optimization for debugging (enables FORTIFY_SOURCE)

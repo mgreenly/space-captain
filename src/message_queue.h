@@ -62,14 +62,14 @@ sc_message_queue_ret_val_t sc_message_queue_try_pop(sc_message_queue_t *queue, m
 
 // Check if the queue is empty
 // Returns: true if empty, false otherwise
-bool sc_message_queue_is_empty(sc_message_queue_t *queue);
+bool sc_message_queue_is_empty(const sc_message_queue_t *queue);
 
 // Check if the queue is full
 // Returns: true if full, false otherwise
-bool sc_message_queue_is_full(sc_message_queue_t *queue);
+bool sc_message_queue_is_full(const sc_message_queue_t *queue);
 
 // Get the current number of messages in the queue
 // Returns: Number of messages currently in the queue
-size_t sc_message_queue_size(sc_message_queue_t *queue);
+size_t sc_message_queue_size(const sc_message_queue_t *queue);
 
 #endif // MESSAGE_QUEUE_H

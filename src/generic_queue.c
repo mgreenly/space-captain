@@ -64,6 +64,26 @@ static void get_absolute_timeout(struct timespec *abs_timeout, int timeout_secon
   abs_timeout->tv_sec += timeout_seconds;
 }
 
+// Const-correct wrapper for pthread_rwlock_rdlock
+// @param rwlock Pointer to the read-write lock (const-correct)
+// @return Same as pthread_rwlock_rdlock
+static inline int pthread_rwlock_rdlock_const(const pthread_rwlock_t *rwlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+  return pthread_rwlock_rdlock((pthread_rwlock_t *) rwlock);
+#pragma GCC diagnostic pop
+}
+
+// Const-correct wrapper for pthread_rwlock_unlock
+// @param rwlock Pointer to the read-write lock (const-correct)
+// @return Same as pthread_rwlock_unlock
+static inline int pthread_rwlock_unlock_const(const pthread_rwlock_t *rwlock) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+  return pthread_rwlock_unlock((pthread_rwlock_t *) rwlock);
+#pragma GCC diagnostic pop
+}
+
 // ============================================================================
 // Queue Lifecycle Functions
 // ============================================================================
@@ -418,7 +438,7 @@ sc_generic_queue_ret_val_t sc_generic_queue_try_pop(sc_generic_queue_t *q, void 
 // Checks if the queue is empty (thread-safe)
 // @param q Pointer to the queue
 // @return true if the queue is empty, false otherwise (including on error)
-bool sc_generic_queue_is_empty(sc_generic_queue_t *q) {
+bool sc_generic_queue_is_empty(const sc_generic_queue_t *q) {
   queue_errno = SC_GENERIC_QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -426,16 +446,16 @@ bool sc_generic_queue_is_empty(sc_generic_queue_t *q) {
     return false;
   }
 
-  pthread_rwlock_rdlock(&q->rwlock);
+  pthread_rwlock_rdlock_const(&q->rwlock);
   bool is_empty = (q->size == 0);
-  pthread_rwlock_unlock(&q->rwlock);
+  pthread_rwlock_unlock_const(&q->rwlock);
   return is_empty;
 }
 
 // Checks if the queue is full (thread-safe)
 // @param q Pointer to the queue
 // @return true if the queue is full, false otherwise (including on error)
-bool sc_generic_queue_is_full(sc_generic_queue_t *q) {
+bool sc_generic_queue_is_full(const sc_generic_queue_t *q) {
   queue_errno = SC_GENERIC_QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -443,16 +463,16 @@ bool sc_generic_queue_is_full(sc_generic_queue_t *q) {
     return false;
   }
 
-  pthread_rwlock_rdlock(&q->rwlock);
+  pthread_rwlock_rdlock_const(&q->rwlock);
   bool is_full = (q->size == q->capacity);
-  pthread_rwlock_unlock(&q->rwlock);
+  pthread_rwlock_unlock_const(&q->rwlock);
   return is_full;
 }
 
 // Gets the current number of items in the queue (thread-safe)
 // @param q Pointer to the queue
 // @return Number of items currently in the queue, 0 on error
-size_t sc_generic_queue_get_size(sc_generic_queue_t *q) {
+size_t sc_generic_queue_get_size(const sc_generic_queue_t *q) {
   queue_errno = SC_GENERIC_QUEUE_SUCCESS;
 
   if (q == NULL) {
@@ -460,8 +480,8 @@ size_t sc_generic_queue_get_size(sc_generic_queue_t *q) {
     return 0;
   }
 
-  pthread_rwlock_rdlock(&q->rwlock);
+  pthread_rwlock_rdlock_const(&q->rwlock);
   size_t size = q->size;
-  pthread_rwlock_unlock(&q->rwlock);
+  pthread_rwlock_unlock_const(&q->rwlock);
   return size;
 }

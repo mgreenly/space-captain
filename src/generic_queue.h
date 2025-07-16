@@ -77,9 +77,9 @@ sc_generic_queue_ret_val_t sc_generic_queue_try_pop(sc_generic_queue_t *q, void 
 // Queue Status Functions
 // ============================================================================
 
-bool sc_generic_queue_is_empty(sc_generic_queue_t *q);
-bool sc_generic_queue_is_full(sc_generic_queue_t *q);
-size_t sc_generic_queue_get_size(sc_generic_queue_t *q);
+bool sc_generic_queue_is_empty(const sc_generic_queue_t *q);
+bool sc_generic_queue_is_full(const sc_generic_queue_t *q);
+size_t sc_generic_queue_get_size(const sc_generic_queue_t *q);
 
 // ============================================================================
 // Error Handling Functions
