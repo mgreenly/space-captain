@@ -2,16 +2,18 @@
 #include <time.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <threads.h>
 
 #include "generic_queue.h"
 #include "log.h"
+#include "portability.h"
 
 // ============================================================================
 // Error Handling
 // ============================================================================
 
 // Thread-local error variable for queue operations
-static __thread sc_generic_queue_ret_val_t queue_errno = SC_GENERIC_QUEUE_SUCCESS;
+static thread_local sc_generic_queue_ret_val_t queue_errno = SC_GENERIC_QUEUE_SUCCESS;
 
 // Gets the last error code for the current thread
 // @return The last error code set by a queue operation
@@ -68,20 +70,22 @@ static void get_absolute_timeout(struct timespec *abs_timeout, int timeout_secon
 // @param rwlock Pointer to the read-write lock (const-correct)
 // @return Same as pthread_rwlock_rdlock
 static inline int pthread_rwlock_rdlock_const(const pthread_rwlock_t *rwlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-  return pthread_rwlock_rdlock((pthread_rwlock_t *) rwlock);
-#pragma GCC diagnostic pop
+  union {
+    const pthread_rwlock_t *c;
+    pthread_rwlock_t *nc;
+  } u = {.c = rwlock};
+  return pthread_rwlock_rdlock(u.nc);
 }
 
 // Const-correct wrapper for pthread_rwlock_unlock
 // @param rwlock Pointer to the read-write lock (const-correct)
 // @return Same as pthread_rwlock_unlock
 static inline int pthread_rwlock_unlock_const(const pthread_rwlock_t *rwlock) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-  return pthread_rwlock_unlock((pthread_rwlock_t *) rwlock);
-#pragma GCC diagnostic pop
+  union {
+    const pthread_rwlock_t *c;
+    pthread_rwlock_t *nc;
+  } u = {.c = rwlock};
+  return pthread_rwlock_unlock(u.nc);
 }
 
 // ============================================================================
@@ -108,7 +112,7 @@ sc_generic_queue_t *sc_generic_queue_init(size_t capacity) {
   }
   // Check for overflow before allocating buffer
   size_t buffer_size;
-  if (__builtin_mul_overflow(capacity, sizeof(void *), &buffer_size)) {
+  if (SC_MUL_OVERFLOW(capacity, sizeof(void *), &buffer_size)) {
     queue_errno = SC_GENERIC_QUEUE_ERR_OVERFLOW;
     log_error("Integer overflow calculating buffer size for capacity %zu", capacity);
     free(q);

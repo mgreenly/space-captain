@@ -2,6 +2,7 @@
 #define MESSAGE_H
 
 #include <stdint.h>
+#include "portability.h"
 
 // Message types for v0.1.0 protocol
 // Client-to-Server: 0x0000-0x0FFF
@@ -34,13 +35,15 @@ typedef enum {
 } message_type_t;
 
 // Message header format per PRD Section 5
-typedef struct __attribute__((packed)) {
+PACKED_STRUCT_BEGIN
+typedef struct PACKED_ATTR {
   uint16_t protocol_version; // Protocol version (0x0001 for v0.1.0)
   uint16_t message_type;     // Message type from enum above
   uint32_t sequence_number;  // For ordering and acknowledgment
   uint64_t timestamp;        // Unix timestamp in milliseconds
   uint16_t payload_length;   // Size of the message payload
 } message_header_t;
+PACKED_STRUCT_END
 
 // Generic message structure
 typedef struct {
@@ -49,14 +52,18 @@ typedef struct {
 } message_t;
 
 // PING message (header only for initial testing)
-typedef struct __attribute__((packed)) {
+PACKED_STRUCT_BEGIN
+typedef struct PACKED_ATTR {
   message_header_t header;
 } ping_message_t;
+PACKED_STRUCT_END
 
 // PONG message (header only for initial testing)
-typedef struct __attribute__((packed)) {
+PACKED_STRUCT_BEGIN
+typedef struct PACKED_ATTR {
   message_header_t header;
 } pong_message_t;
+PACKED_STRUCT_END
 
 // Utility function to convert message type to string
 const char *message_type_to_string(message_type_t type);
