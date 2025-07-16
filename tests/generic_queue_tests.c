@@ -6,7 +6,7 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "vendor/unity.h"
+#include "unity.h"
 
 #include "../src/generic_queue.h"
 

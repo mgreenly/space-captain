@@ -14,7 +14,7 @@
 #include <time.h>
 #include <endian.h>
 
-#include "vendor/unity.h"
+#include "unity.h"
 #include "../src/config.h"
 #include "../src/message.h"
 #include "../src/dtls.h"

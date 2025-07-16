@@ -54,6 +54,7 @@ PACKAGE_VERSION := $(shell $(get-version))
 # Package-safe version with '-' replaced by '~' for deb/rpm filenames
 PACKAGE_VERSION_SAFE := $(shell $(get-version) | sed 's/-/~/g')
 MBEDTLS_VERSION = v2.28.3
+UNITY_VERSION = v2.5.2
 
 # ============================================================================
 # Installation Settings
@@ -385,6 +386,18 @@ mbedtls: clone-mbedtls
 		echo "mbedTLS already built in $(DEPS_BUILD_DIR)/$(OS_DIR)"; \
 	fi
 
+# Ensure Unity source is available
+.PHONY: clone-unity
+clone-unity:
+	@if [ ! -d "$(DEPS_SRC_DIR)/unity" ]; then \
+		echo "Cloning Unity $(UNITY_VERSION)..."; \
+		mkdir -p $(DEPS_SRC_DIR); \
+		git clone --depth 1 --branch $(UNITY_VERSION) https://github.com/ThrowTheSwitch/Unity.git $(DEPS_SRC_DIR)/unity; \
+		cd $(DEPS_SRC_DIR)/unity && git config advice.detachedHead false; \
+	else \
+		echo "Unity source already exists in $(DEPS_SRC_DIR)/unity"; \
+	fi
+
 # Build release versions
 .PHONY: release
 release:
@@ -457,8 +470,8 @@ run-tests: mbedtls tests server client
 	done
 
 # Unity framework object
-$(UNITY_OBJ): $(TST_DIR)/vendor/unity.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS_DEBUG) -c -o $@ $<
+$(UNITY_OBJ): $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR) clone-unity
+	$(CC) $(CFLAGS_DEBUG) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # Test executable link command
 define link-test
@@ -480,8 +493,8 @@ endef
 $(foreach test,$(basename $(notdir $(TEST_SRCS))),$(eval $(call test-rule,$(test))))
 
 # Test object files
-$(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -c -o $@ $<
+$(OBJ_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR) clone-unity
+	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # ============================================================================
 # ThreadSanitizer Targets
@@ -493,12 +506,12 @@ $(OBJ_DIR)/tsan/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/tsan
 	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # TSAN test object files
-$(OBJ_DIR)/tsan/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/tsan
-	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
+$(OBJ_DIR)/tsan/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/tsan clone-unity
+	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN Unity object
-$(OBJ_DIR)/tsan/unity.o: $(TST_DIR)/vendor/unity.c | $(OBJ_DIR)/tsan
-	$(CC) $(CFLAGS_TSAN) -march=native -c -o $@ $<
+$(OBJ_DIR)/tsan/unity.o: $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/tsan clone-unity
+	$(CC) $(CFLAGS_TSAN) -march=native -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN executables
 $(BIN_DIR)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR)
@@ -746,7 +759,7 @@ builder-%:
 
 # Pattern rule for Docker-based package building
 .PHONY: package-%
-package-%: clone-mbedtls builder-% certs
+package-%: clone-mbedtls clone-unity builder-% certs
 	@$(MAKE) package-docker OS=$* PACKAGE_TYPE=$($*_PACKAGE_TYPE) PACKAGE_CMD=$($*_PACKAGE_CMD)
 
 # Common docker packaging target
@@ -958,6 +971,7 @@ help:
 	@echo "  make docker-info     Display Docker configuration"
 	@echo ""
 	@echo "Dependencies:"
+	@echo "  make clone-unity     Clone/update Unity test framework to $(DEPS_SRC_DIR)"
 	@echo "  make clone-mbedtls   Clone/update mbedTLS source to $(DEPS_SRC_DIR)"
 	@echo "  make mbedtls         Build mbedTLS in $(DEPS_BUILD_DIR)"
 	@echo ""

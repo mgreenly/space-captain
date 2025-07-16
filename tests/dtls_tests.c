@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "vendor/unity.h"
+#include "unity.h"
 #include "../src/dtls.h"
 
 // Unity framework functions

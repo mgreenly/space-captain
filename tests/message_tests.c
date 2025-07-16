@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "vendor/unity.h"
+#include "unity.h"
 
 #include "../src/message.h"
 
