@@ -394,7 +394,7 @@ SERVER_OBJS_TSAN = $(SERVER_OBJ_TSAN) $(OBJ_DIR)/$(OS_DIR)/tsan/message.o $(OBJ_
 CLIENT_OBJS_TSAN = $(CLIENT_OBJ_TSAN)
 
 # Test files
-TEST_SRCS = $(wildcard $(TST_DIR)/*_tests.c)
+TEST_SRCS = $(wildcard $(TST_DIR)/test_*.c)
 TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_OS)/sc-%,$(TEST_SRCS))
 TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/%.o,$(TEST_SRCS))
 
@@ -603,9 +603,9 @@ define link-test
 endef
 
 # Function to get module name from test name
-# Default: remove _tests suffix (e.g., message_tests -> message)
-# Special case: server_tests depends on dtls module
-get-test-module = $(if $(filter server_tests,$(1)),dtls,$(patsubst %_tests,%,$(1)))
+# Default: remove test_ prefix (e.g., test_message -> message)
+# Special case: test_server depends on dtls module
+get-test-module = $(if $(filter test_server,$(1)),dtls,$(patsubst test_%,%,$(1)))
 
 # Generic test rule generator
 define test-rule
@@ -617,7 +617,7 @@ endef
 $(foreach test,$(basename $(notdir $(TEST_SRCS))),$(eval $(call test-rule,$(test))))
 
 # Test object files
-$(OBJ_DIR)/$(OS_DIR)/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/$(OS_DIR) clone-unity
+$(OBJ_DIR)/$(OS_DIR)/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR)/$(OS_DIR) clone-unity
 	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # ============================================================================
@@ -630,7 +630,7 @@ $(OBJ_DIR)/$(OS_DIR)/tsan/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/tsan
 	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # TSAN test object files
-$(OBJ_DIR)/$(OS_DIR)/tsan/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/$(OS_DIR)/tsan clone-unity
+$(OBJ_DIR)/$(OS_DIR)/tsan/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR)/$(OS_DIR)/tsan clone-unity
 	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN Unity object
@@ -662,19 +662,19 @@ define link-test-tsan
 endef
 
 # Generic queue tests (no dependencies)
-$(BIN_DIR_OS)/sc-generic_queue_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue.o
+$(BIN_DIR_OS)/sc-test_generic_queue-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_generic_queue.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue.o
 	$(call link-test-tsan)
 
 # Message tests  
-$(BIN_DIR_OS)/sc-message_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/message_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/message.o
+$(BIN_DIR_OS)/sc-test_message-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_message.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/message.o
 	$(call link-test-tsan)
 
 # DTLS tests
-$(BIN_DIR_OS)/sc-dtls_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/dtls_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_OS)/sc-test_dtls-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_dtls.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
 	$(call link-test-tsan)
 
 # Server tests (uses DTLS but not full server)
-$(BIN_DIR_OS)/sc-server_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/server_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_OS)/sc-test_server-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_server.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
 	$(call link-test-tsan)
 
 .PHONY: tsan
