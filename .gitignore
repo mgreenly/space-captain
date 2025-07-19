@@ -7,9 +7,9 @@ node_modules/
 obj/
 package-lock.json
 package.json
-pkg/build/
-pkg/out/
-pkg/tmp/
+pkg/*/out/
+pkg/*/build/
+pkg/*/tmp/
 prompt*.txt
 tags
 deps/

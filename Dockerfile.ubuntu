@@ -1,0 +1,24 @@
+FROM ubuntu:24.04
+
+# Install build dependencies for Space Captain and gosu for proper user switching
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    make \
+    cmake \
+    python3 \
+    dpkg-dev \
+    gosu \
+    git \
+    clang-format \
+    openssl \
+    graphviz \
+    gdb \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy entrypoint script
+COPY scripts/docker-entrypoint-ubuntu.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]

@@ -2,15 +2,16 @@
 set -e
 
 # Build RPM package for Space Captain
-# Usage: build-rpm-package.sh <version> <arch> <bin_dir> [git_sha]
+# Usage: build-rpm-package.sh <version> <arch> <bin_dir> [git_sha] [os_dir]
 
 VERSION=$1
 ARCH=$2
 BIN_DIR=$3
 GIT_SHA=$4
+OS_DIR=${5:-amazon}  # Default to amazon for backward compatibility
 
 if [ -z "$VERSION" ] || [ -z "$ARCH" ] || [ -z "$BIN_DIR" ]; then
-    echo "Usage: $0 <version> <arch> <bin_dir> [git_sha]"
+    echo "Usage: $0 <version> <arch> <bin_dir> [git_sha] [os_dir]"
     exit 1
 fi
 
@@ -18,7 +19,7 @@ fi
 # This maintains backward compatibility
 
 # Create output directory if it doesn't exist
-mkdir -p pkg/out
+mkdir -p pkg/${OS_DIR}/out
 
 echo "Creating RPM package version $VERSION for $ARCH"
 
@@ -41,7 +42,7 @@ mkdir -p "$TMPDIR/space-captain-$VERSION/etc/space-captain"
 cp "$SERVER_BINARY" "$TMPDIR/space-captain-$VERSION/usr/bin/"
 
 # Copy mbedTLS libraries
-cp deps/build/amazon/lib/*.so* "$TMPDIR/space-captain-$VERSION/usr/lib/" 2>/dev/null || true
+cp deps/build/${OS_DIR}/lib/*.so* "$TMPDIR/space-captain-$VERSION/usr/lib/" 2>/dev/null || true
 
 # Copy certificate files
 if [ -f ".secrets/certs/server.crt" ] && [ -f ".secrets/certs/server.key" ]; then
@@ -52,7 +53,7 @@ else
 fi
 
 # Copy systemd service file to tarball
-cp pkg/rpm/space-captain-server.service "$TMPDIR/space-captain-$VERSION/"
+cp pkg/${OS_DIR}/templates/space-captain-server.service "$TMPDIR/space-captain-$VERSION/" 2>/dev/null || true
 
 # Create the source tarball
 cd "$TMPDIR" && tar czf "$RPMBUILD_DIR/SOURCES/space-captain-$VERSION.tar.gz" "space-captain-$VERSION"
@@ -64,16 +65,16 @@ RELEASE=$(cat .vREL)
 sed -e "s/@VERSION@/$VERSION/g" \
     -e "s/@DATE@/$DATE/g" \
     -e "s/@RELEASE@/$RELEASE/g" \
-    pkg/rpm/space-captain.spec.template > "$RPMBUILD_DIR/SPECS/space-captain.spec"
+    pkg/${OS_DIR}/templates/space-captain.spec.template > "$RPMBUILD_DIR/SPECS/space-captain.spec"
 
 # Build the RPM
 rpmbuild --define "_topdir $RPMBUILD_DIR" -bb "$RPMBUILD_DIR/SPECS/space-captain.spec"
 
-# Copy the built RPM to pkg/out
-cp "$RPMBUILD_DIR"/RPMS/$ARCH/space-captain-server-$VERSION-$RELEASE*.rpm pkg/out/
+# Copy the built RPM to pkg/${OS_DIR}/out
+cp "$RPMBUILD_DIR"/RPMS/$ARCH/space-captain-server-$VERSION-$RELEASE*.rpm pkg/${OS_DIR}/out/
 
 # Clean up
 rm -rf "$TMPDIR"
 rm -rf "$RPMBUILD_DIR"
 
-echo "RPM package created in pkg/out/"
+echo "RPM package created in pkg/${OS_DIR}/out/"
