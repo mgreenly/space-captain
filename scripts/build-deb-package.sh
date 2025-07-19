@@ -44,6 +44,17 @@ fi
 cp "$SERVER_BINARY" "$PKG_DIR/usr/lib/space-captain/"
 chmod 755 "$PKG_DIR/usr/lib/space-captain/$(basename "$SERVER_BINARY")"
 
+# Strip RPATH from the binary for security and portability
+BINARY_PATH="$PKG_DIR/usr/lib/space-captain/$(basename "$SERVER_BINARY")"
+echo "Checking RPATH in binary..."
+if chrpath -l "$BINARY_PATH" 2>/dev/null | grep -q "RPATH\|RUNPATH"; then
+    echo "Found RPATH/RUNPATH, stripping it..."
+    chrpath -d "$BINARY_PATH"
+    echo "RPATH stripped successfully"
+else
+    echo "No RPATH/RUNPATH found in binary"
+fi
+
 # Copy mbedTLS libraries if they exist (for custom builds)
 if [ -d "deps/build/${OS_DIR}/lib" ]; then
     cp deps/build/${OS_DIR}/lib/*.so* "$PKG_DIR/usr/lib/space-captain/" 2>/dev/null || true

@@ -17,6 +17,7 @@ RUN yum update -y && yum install -y \
     clang-tools-extra \
     graphviz \
     gdb \
+    chrpath \
     && yum clean all
 
 # Install gosu for proper user switching

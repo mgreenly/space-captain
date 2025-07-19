@@ -450,6 +450,12 @@ clone-mbedtls:
 		echo "mbedTLS source already exists in $(DEPS_SRC_DIR)/mbedtls"; \
 	fi
 
+# External dependency compiler flags
+# Use minimal, functional flags for external dependencies since we don't control their code
+# These flags ensure compatibility and optimization without strict warnings
+# -Wno-error explicitly disables treating warnings as errors in external code
+EXTERNAL_DEPS_CFLAGS = -O2 -fPIC -D_DEFAULT_SOURCE -Wno-error
+
 # Build mbedTLS in deps/build/<os>
 .PHONY: mbedtls
 mbedtls: clone-mbedtls
@@ -464,7 +470,12 @@ mbedtls: clone-mbedtls
 		cd $(DEPS_SRC_DIR)/mbedtls && make clean 2>/dev/null || true && cd $(PWD); \
 		mkdir -p $(DEPS_BUILD_DIR)/$(OS_DIR)/build-mbedtls; \
 		cd $(DEPS_BUILD_DIR)/$(OS_DIR)/build-mbedtls && \
-		cmake -DCMAKE_INSTALL_PREFIX=$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR) -DUSE_SHARED_MBEDTLS_LIBRARY=On $(PWD)/$(DEPS_SRC_DIR)/mbedtls && \
+		CFLAGS="$(EXTERNAL_DEPS_CFLAGS)" \
+		cmake -DCMAKE_INSTALL_PREFIX=$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR) \
+		      -DCMAKE_C_FLAGS="$(EXTERNAL_DEPS_CFLAGS)" \
+		      -DUSE_SHARED_MBEDTLS_LIBRARY=On \
+		      -DMBEDTLS_FATAL_WARNINGS=OFF \
+		      $(PWD)/$(DEPS_SRC_DIR)/mbedtls && \
 		make -j$$(nproc) && \
 		make install && \
 		cd $(PWD) && \
@@ -558,7 +569,7 @@ run-tests: mbedtls tests server client
 
 # Unity framework object
 $(UNITY_OBJ): $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/$(OS_DIR) clone-unity
-	$(CC) $(CFLAGS_DEBUG) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
+	$(CC) $(EXTERNAL_DEPS_CFLAGS) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # Test executable link command
 define link-test
@@ -598,7 +609,7 @@ $(OBJ_DIR)/$(OS_DIR)/tsan/%_tests.o: $(TST_DIR)/%_tests.c | $(OBJ_DIR)/$(OS_DIR)
 
 # TSAN Unity object
 $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o: $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/$(OS_DIR)/tsan clone-unity
-	$(CC) $(CFLAGS_TSAN) -march=native -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
+	$(CC) $(EXTERNAL_DEPS_CFLAGS) -fsanitize=thread -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN executables
 $(BIN_DIR)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR)
@@ -1007,6 +1018,28 @@ rel-reset:
 # Packaging
 # ============================================================================
 
+# Auto-detect OS and build appropriate package
+.PHONY: package
+package:
+	@echo "Auto-detecting OS for package build..."; \
+	if [ "$(OS_ID)" = "debian" ]; then \
+		echo "Detected Debian - building DEB package"; \
+		$(MAKE) package-debian; \
+	elif [ "$(OS_ID)" = "ubuntu" ]; then \
+		echo "Detected Ubuntu - building DEB package"; \
+		$(MAKE) package-ubuntu; \
+	elif [ "$(OS_ID)" = "amzn" ]; then \
+		echo "Detected Amazon Linux - building RPM package"; \
+		$(MAKE) package-amazon; \
+	elif [ "$(OS_ID)" = "fedora" ]; then \
+		echo "Detected Fedora - building RPM package"; \
+		$(MAKE) package-fedora; \
+	else \
+		echo "Error: Unsupported OS '$(OS_ID)' for package building"; \
+		echo "Supported: debian, ubuntu, amzn, fedora"; \
+		exit 1; \
+	fi
+
 # Build packages for all supported operating systems (host only)
 .PHONY: packages
 packages:
@@ -1127,6 +1160,7 @@ help:
 	@echo "  make uninstall       Remove installed files from PREFIX"
 	@echo ""
 	@echo "Packaging:"
+	@echo "  make package         Auto-detect OS and build package"
 	@echo "  make packages        Build packages for all OSes (host only)"
 	@echo "  make package-<os>    Build package for OS (debian/ubuntu/amazon/fedora)"
 	@echo "  make package-deb     Build Debian package (.deb)"

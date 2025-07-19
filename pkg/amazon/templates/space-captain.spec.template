@@ -9,6 +9,7 @@ Source0:        space-captain-%{version}.tar.gz
 BuildRequires:  gcc
 BuildRequires:  make
 BuildRequires:  cmake
+BuildRequires:  chrpath
 
 # Exclude bundled mbedTLS libraries from automatic dependency detection
 %global __requires_exclude ^libmbedcrypto\\.so.*|^libmbedtls\\.so.*|^libmbedx509\\.so.*$
@@ -37,6 +38,10 @@ install -m 644 space-captain-server.service %{buildroot}/usr/lib/systemd/system/
 
 # Move all binaries to lib directory and create wrapper script
 mv %{buildroot}/usr/bin/* %{buildroot}/usr/lib/space-captain/
+
+# Strip RPATH from the binary for security and portability
+chrpath -d %{buildroot}/usr/lib/space-captain/sc-server-* || true
+
 cat > %{buildroot}/usr/bin/space-captain-server << 'EOF'
 #!/bin/bash
 export LD_LIBRARY_PATH=/usr/lib/space-captain:$LD_LIBRARY_PATH
