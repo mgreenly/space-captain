@@ -24,6 +24,12 @@ fi
 # Remove runtime files
 rm -f "$VM_MONITOR" "$VM_SERIAL" "$VM_PIDFILE"
 
+# Remove MAC address file
+if [ -f "$VM_MAC_FILE" ]; then
+    echo "Removing MAC address file..."
+    rm -f "$VM_MAC_FILE"
+fi
+
 echo "VM '$VM_NAME' destroyed"
 echo ""
 echo "Note: The base cloud image was preserved at:"

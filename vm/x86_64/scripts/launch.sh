@@ -7,7 +7,7 @@ source "$(dirname "$0")/../config.sh"
 # Check if QEMU is installed
 if ! command -v "$QEMU_BIN" &> /dev/null; then
     echo "Error: $QEMU_BIN is not installed"
-    echo "Install with: sudo apt-get install qemu-system-arm"
+    echo "Install with: sudo apt-get install qemu-system-x86"
     exit 1
 fi
 
@@ -30,39 +30,46 @@ if [ ! -f "$VM_DISK" ]; then
     qemu-img create -f qcow2 -F qcow2 -b "$VM_CLOUD_IMG" "$VM_DISK" "$VM_DISK_SIZE"
 fi
 
-# Update cloud-init with current SSH key
-echo "Updating cloud-init with current SSH key..."
-SSH_PUB_KEY="$PROJECT_ROOT/.secrets/ssh/space-captain.pub"
-if [ -f "$SSH_PUB_KEY" ]; then
-    # Read the SSH public key
-    SSH_KEY_CONTENT=$(cat "$SSH_PUB_KEY")
-    
-    # Create temporary cloud-init directory
-    TEMP_CLOUD_INIT="$VM_DIR/temp-cloud-init"
-    rm -rf "$TEMP_CLOUD_INIT"
-    mkdir -p "$TEMP_CLOUD_INIT"
-    
-    # Copy meta-data
-    cp "$CLOUD_INIT_DIR/meta-data" "$TEMP_CLOUD_INIT/"
-    
-    # Generate user-data from template
-    cp "$CLOUD_INIT_DIR/user-data.template" "$TEMP_CLOUD_INIT/user-data"
-    
-    # Replace placeholder with actual SSH key (escape special characters)
-    SSH_KEY_ESCAPED=$(echo "$SSH_KEY_CONTENT" | sed 's/[[\.*^$()+?{|]/\\&/g')
-    sed -i "s|SSH_KEY_PLACEHOLDER|$SSH_KEY_ESCAPED|g" "$TEMP_CLOUD_INIT/user-data"
-    
-    # Create cloud-init ISO from temp directory
+# Create cloud-init seed if it doesn't exist
+if [ ! -f "$VM_SEED" ]; then
     echo "Creating cloud-init seed ISO..."
-    cd "$TEMP_CLOUD_INIT"
-    genisoimage -output "$VM_SEED" -volid cidata -joliet -rock user-data meta-data
-    
-    # Clean up temp directory
-    rm -rf "$TEMP_CLOUD_INIT"
-else
-    echo "Error: SSH public key not found at $SSH_PUB_KEY"
-    echo "Run 'make vm-ssh-keys' to generate SSH keys"
-    exit 1
+    SSH_PUB_KEY="$PROJECT_ROOT/.secrets/ssh/space-captain.pub"
+    if [ -f "$SSH_PUB_KEY" ]; then
+        # Read the SSH public key
+        SSH_KEY_CONTENT=$(cat "$SSH_PUB_KEY")
+        
+        # Create temporary cloud-init directory
+        TEMP_CLOUD_INIT="$VM_DIR/temp-cloud-init"
+        rm -rf "$TEMP_CLOUD_INIT"
+        mkdir -p "$TEMP_CLOUD_INIT"
+        
+        # Copy meta-data
+        cp "$CLOUD_INIT_DIR/meta-data" "$TEMP_CLOUD_INIT/"
+        
+        # Generate user-data from template
+        cp "$CLOUD_INIT_DIR/user-data.template" "$TEMP_CLOUD_INIT/user-data"
+        
+        # Replace placeholder with actual SSH key (escape special characters)
+        SSH_KEY_ESCAPED=$(echo "$SSH_KEY_CONTENT" | sed 's/[[\.*^$()+?{|]/\\&/g')
+        sed -i "s|SSH_KEY_PLACEHOLDER|$SSH_KEY_ESCAPED|g" "$TEMP_CLOUD_INIT/user-data"
+        
+        # Replace UID/GID placeholders with host user information
+        HOST_UID=$(id -u)
+        HOST_GID=$(id -g)
+        sed -i "s|HOST_UID_PLACEHOLDER|$HOST_UID|g" "$TEMP_CLOUD_INIT/user-data"
+        sed -i "s|HOST_GID_PLACEHOLDER|$HOST_GID|g" "$TEMP_CLOUD_INIT/user-data"
+        
+        # Create cloud-init ISO from temp directory
+        cd "$TEMP_CLOUD_INIT"
+        genisoimage -output "$VM_SEED" -volid cidata -joliet -rock user-data meta-data
+        
+        # Clean up temp directory
+        rm -rf "$TEMP_CLOUD_INIT"
+    else
+        echo "Error: SSH public key not found at $SSH_PUB_KEY"
+        echo "Run 'make vm-ssh-keys' to generate SSH keys"
+        exit 1
+    fi
 fi
 
 # Clean up old socket/files
@@ -103,7 +110,7 @@ if [ -f "$VM_PIDFILE" ] && kill -0 $(cat "$VM_PIDFILE") 2>/dev/null; then
         echo ""
     fi
     echo "To connect:"
-    echo "  SSH: ssh -p 2222 debian@localhost"
+    echo "  SSH: ssh -4 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 debian@localhost"
     echo "  Serial: tail -f $VM_SERIAL"
     echo "  Monitor: socat - UNIX-CONNECT:$VM_MONITOR"
     echo ""

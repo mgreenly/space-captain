@@ -26,7 +26,7 @@ if [ -f "$VM_PIDFILE" ] && kill -0 $(cat "$VM_PIDFILE") 2>/dev/null; then
     echo "  Serial: $VM_SERIAL"
     echo ""
     echo "Connect with:"
-    echo "  ssh -p 2222 debian@localhost"
+    echo "  ssh -4 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 debian@localhost"
 else
     echo "Status: STOPPED"
     echo ""

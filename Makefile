@@ -587,7 +587,7 @@ tests: mbedtls $(TEST_BINS)
 run-tests: mbedtls tests server client
 	@for test in $(TEST_BINS); do \
 		echo "Running $$test..."; \
-		ASAN_OPTIONS=allocator_may_return_null=1 $$test || exit 1; \
+		ASAN_OPTIONS=allocator_may_return_null=1 SC_OS_DIR=$(OS_DIR) $$test || exit 1; \
 	done
 
 # Unity framework object
@@ -1200,28 +1200,28 @@ infra-status:
 .PHONY: vm-ssh-keys
 vm-ssh-keys: .secrets/ssh/space-captain
 
-.PHONY: aarch64-start
-aarch64-start: vm-ssh-keys
-	@cd vm/scripts && ./launch.sh
+.PHONY: x86_64-start
+x86_64-start: vm-ssh-keys clone-mbedtls clone-unity
+	@cd vm/x86_64/scripts && ./launch.sh
 	@echo ""
 	@echo "Following serial console output (Ctrl+C to exit)..."
-	@tail -f vm/space-captain-dev.serial
+	@tail -f vm/x86_64/space-captain-dev.serial
 
-.PHONY: aarch64-stop
-aarch64-stop:
-	@cd vm/scripts && ./stop.sh
+.PHONY: x86_64-stop
+x86_64-stop:
+	@cd vm/x86_64/scripts && ./stop.sh
 
-.PHONY: aarch64-destroy
-aarch64-destroy:
-	@cd vm/scripts && ./destroy.sh
+.PHONY: x86_64-destroy
+x86_64-destroy:
+	@cd vm/x86_64/scripts && ./destroy.sh
 
-.PHONY: aarch64-ssh
-aarch64-ssh: vm-ssh-keys
-	@cd vm/scripts && ./ssh.sh
+.PHONY: x86_64-ssh
+x86_64-ssh: vm-ssh-keys clone-mbedtls clone-unity
+	@cd vm/x86_64/scripts && ./ssh.sh
 
-.PHONY: aarch64-status
-aarch64-status:
-	@cd vm/scripts && ./status.sh
+.PHONY: x86_64-status
+x86_64-status:
+	@cd vm/x86_64/scripts && ./status.sh
 
 
 # ============================================================================
@@ -1309,11 +1309,11 @@ help:
 	@echo "  make deploy-telemetry Deploy telemetry stack (TODO)"
 	@echo ""
 	@echo "Virtual Machine:"
-	@echo "  make aarch64-start   Start ARM64 development VM"
-	@echo "  make aarch64-stop    Stop ARM64 development VM"
-	@echo "  make aarch64-destroy Destroy ARM64 VM and disk"
-	@echo "  make aarch64-ssh     SSH into running ARM64 VM"
-	@echo "  make aarch64-status  Check ARM64 VM status"
+	@echo "  make x86_64-start    Start x86_64 development VM"
+	@echo "  make x86_64-stop     Stop x86_64 development VM"
+	@echo "  make x86_64-destroy  Destroy x86_64 VM and disk"
+	@echo "  make x86_64-ssh      SSH into running x86_64 VM"
+	@echo "  make x86_64-status   Check x86_64 VM status"
 	@echo ""
 	@echo "Tools:"
 	@echo "  make check-tools     Check for required build tools"

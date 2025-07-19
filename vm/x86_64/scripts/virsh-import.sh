@@ -15,13 +15,13 @@ fi
 
 # Make sure the VM is not running via QEMU direct
 if [ -f "$VM_PIDFILE" ] && kill -0 $(cat "$VM_PIDFILE") 2>/dev/null; then
-    echo "VM is running via QEMU. Stop it first with: make aarch64-stop"
+    echo "VM is running via QEMU. Stop it first with: make x86_64-stop"
     exit 1
 fi
 
 # Check if disk exists
 if [ ! -f "$VM_DISK" ]; then
-    echo "VM disk not found. Run 'make aarch64-start' at least once to create it."
+    echo "VM disk not found. Run 'make x86_64-start' at least once to create it."
     exit 1
 fi
 

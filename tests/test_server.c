@@ -74,17 +74,26 @@ void setUp(void) {
       dup2(devnull, STDERR_FILENO);
       close(devnull);
     }
+    // Get OS directory from environment (default to "debian" if not set)
+    const char *os_dir = getenv("SC_OS_DIR");
+    if (!os_dir) os_dir = "debian";
+    
+    char server_path[256];
     // Use TSAN-instrumented server when running under ThreadSanitizer
 #ifdef __has_feature
 #if __has_feature(thread_sanitizer)
-    execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
+    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server-tsan", os_dir);
+    execl(server_path, "sc-server-tsan", NULL);
 #else
-    execl("bin/sc-server", "sc-server", NULL);
+    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server", os_dir);
+    execl(server_path, "sc-server", NULL);
 #endif
 #elif defined(__SANITIZE_THREAD__)
-    execl("bin/sc-server-tsan", "sc-server-tsan", NULL);
+    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server-tsan", os_dir);
+    execl(server_path, "sc-server-tsan", NULL);
 #else
-    execl("bin/sc-server", "sc-server", NULL);
+    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server", os_dir);
+    execl(server_path, "sc-server", NULL);
 #endif
     // If execl fails
     exit(1);

@@ -15,7 +15,7 @@ if [[ "$SCRIPT_DIR" == */scripts ]]; then
 else
     VM_DIR="$SCRIPT_DIR"
 fi
-PROJECT_ROOT="$(dirname "$VM_DIR")"
+PROJECT_ROOT="$(dirname "$(dirname "$VM_DIR")")"
 IMAGES_DIR="$VM_DIR/images"
 CLOUD_INIT_DIR="$VM_DIR/cloud-init"
 
@@ -28,7 +28,14 @@ VM_MONITOR="$VM_DIR/${VM_NAME}.monitor"
 VM_SERIAL="$VM_DIR/${VM_NAME}.serial"
 
 # Network
-VM_MAC="52:54:00:$(openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/:$//')"
+# Use a persistent MAC address based on VM name to ensure consistency across restarts
+VM_MAC_FILE="$VM_DIR/.${VM_NAME}.mac"
+if [ -f "$VM_MAC_FILE" ]; then
+    VM_MAC=$(cat "$VM_MAC_FILE")
+else
+    VM_MAC="52:54:00:$(openssl rand -hex 3 | sed 's/\(..\)/\1:/g; s/:$//')"
+    echo "$VM_MAC" > "$VM_MAC_FILE"
+fi
 VM_NET_DEVICE="virtio-net-pci"
 
 # Debian Cloud Image URL (latest stable)

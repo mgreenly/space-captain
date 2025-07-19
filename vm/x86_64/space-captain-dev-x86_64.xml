@@ -25,13 +25,13 @@
     <!-- Main disk -->
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='/home/mgreenly/Projects/space-captain/vm/images/space-captain-dev-disk.qcow2'/>
+      <source file='/home/mgreenly/Projects/space-captain/vm/x86_64/images/space-captain-dev-disk.qcow2'/>
       <target dev='vda' bus='virtio'/>
     </disk>
     <!-- Cloud-init seed ISO -->
     <disk type='file' device='disk'>
       <driver name='qemu' type='raw'/>
-      <source file='/home/mgreenly/Projects/space-captain/vm/images/space-captain-dev-seed.iso'/>
+      <source file='/home/mgreenly/Projects/space-captain/vm/x86_64/images/space-captain-dev-seed.iso'/>
       <target dev='vdb' bus='virtio'/>
       <readonly/>
     </disk>

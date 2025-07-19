@@ -22,29 +22,30 @@ sudo apt-get install qemu-system-x86 qemu-utils genisoimage cloud-image-utils so
 
 ```bash
 # Start the VM
-make aarch64-start
+make x86_64-start
 
 # SSH into the VM
-./vm/ssh-vm.sh
+./vm/x86_64/ssh-vm.sh
 
 # Check VM status
-make aarch64-status
+make x86_64-status
 
 # Stop the VM
-make aarch64-stop
+make x86_64-stop
 
 # Destroy the VM (removes disk and cloud-init seed)
-make aarch64-destroy
+make x86_64-destroy
 ```
 
 ## SSH Access
 
 The VM is configured with SSH key authentication using the project's SSH key:
-- **Username**: `debian`
+- **Username**: debian
+- **UID/GID**: Automatically adjusted to match your host UID/GID for proper file permissions
 - **SSH Key**: Uses the key at `.secrets/ssh/space-captain`
 - **Port**: 2222
 
-Connect using: `./vm/ssh-vm.sh`
+Connect using: `./vm/x86_64/ssh-vm.sh`
 
 Or manually: `ssh -i .secrets/ssh/space-captain -p 2222 debian@localhost`
 
@@ -63,22 +64,25 @@ The VM comes pre-installed with all development tools needed for Space Captain:
 - make, cmake
 - openssh-server
 
-## Architecture Note
+## Architecture Support
 
-The VM was originally configured for ARM64 (aarch64) but has been switched to x86_64 for better performance on x86_64 host systems. The Makefile targets still use the "aarch64" prefix for backward compatibility.
+The VM directory is organized by architecture. Currently supported:
+- `x86_64/` - x86_64 virtual machines
+
+Future architectures can be added in their own subdirectories (e.g., `aarch64/`, `arm64/`).
 
 ## Troubleshooting
 
 ### SSH Connection Issues
 
 If SSH fails to connect:
-1. Check if the VM is still booting: `tail -f vm/space-captain-dev.serial`
+1. Check if the VM is still booting: `tail -f vm/x86_64/space-captain-dev.serial`
 2. Wait for the message "Space Captain Dev VM is ready!"
 3. Ensure the SSH key exists at `.secrets/ssh/space-captain`
 
 ### Host Key Warnings
 
-The `ssh-vm.sh` script is configured to not save host keys, so you won't get warnings when recreating VMs.
+The `ssh-vm.sh` script (located in `vm/x86_64/`) is configured to not save host keys, so you won't get warnings when recreating VMs.
 
 ### Performance Issues
 
@@ -93,20 +97,21 @@ groups | grep kvm
 
 ## Files
 
-- `config.sh` - Central configuration for VM settings
-- `cloud-init/` - Cloud-init configuration files
-- `scripts/` - VM management scripts
-- `images/` - VM disk images (created on first run)
-- `ssh-vm.sh` - SSH helper script
-- `*.serial` - Serial console output
-- `*.monitor` - QEMU monitor socket
-- `*.pid` - VM process ID
+- `x86_64/` - x86_64 VM configuration and scripts
+  - `config.sh` - Central configuration for VM settings
+  - `cloud-init/` - Cloud-init configuration files
+  - `scripts/` - VM management scripts
+  - `images/` - VM disk images (created on first run)
+  - `ssh-vm.sh` - SSH helper script
+  - `*.serial` - Serial console output
+  - `*.monitor` - QEMU monitor socket
+  - `*.pid` - VM process ID
 
 ## Commands to Use the VM
 
-1. **Start the VM**: `make aarch64-start`
-2. **SSH into the VM**: `./vm/ssh-vm.sh`
-3. **Run commands in the VM**: `./vm/ssh-vm.sh "ls -la"`
-4. **Check VM status**: `make aarch64-status`
-5. **Stop the VM**: `make aarch64-stop`
-6. **Destroy and clean up**: `make aarch64-destroy`
+1. **Start the VM**: `make x86_64-start`
+2. **SSH into the VM**: `./vm/x86_64/ssh-vm.sh`
+3. **Run commands in the VM**: `./vm/x86_64/ssh-vm.sh "ls -la"`
+4. **Check VM status**: `make x86_64-status`
+5. **Stop the VM**: `make x86_64-stop`
+6. **Destroy and clean up**: `make x86_64-destroy`

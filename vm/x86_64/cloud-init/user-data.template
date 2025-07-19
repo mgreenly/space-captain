@@ -6,7 +6,6 @@ users:
     ssh_authorized_keys:
       - SSH_KEY_PLACEHOLDER
     sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
 
 # Disable password authentication for SSH
 ssh_pwauth: false
@@ -17,18 +16,53 @@ network:
   ethernets:
     enp0s2:
       dhcp4: true
+      dhcp4-overrides:
+        use-dns: true
+        use-routes: true
       optional: true
+      link-local: []
 
-# Package management - minimal for now
-package_update: false
+# Package management
+package_update: true
 package_upgrade: false
 packages:
+  # Essential packages for VM functionality
   - openssh-server
   - linux-image-amd64  # Install full kernel for 9p support
   - ca-certificates
   - curl
   - gnupg
   - lsb-release
+  
+  # Required build packages
+  - gcc
+  - make
+  - git
+  - cmake
+  - openssl
+  - libasan6  # AddressSanitizer library
+  - libubsan1  # UndefinedBehaviorSanitizer library
+  - build-essential
+  
+  # Optional development packages
+  - python3
+  - python3-pip
+  - clang-format
+  - gdb
+  - valgrind
+  - graphviz
+  - dpkg-dev  # For Debian packaging
+  - chrpath  # For RPATH stripping
+  - genisoimage  # For VM cloud-init ISO creation
+  
+  # Development utilities
+  - vim
+  - htop
+  - net-tools
+  - iputils-ping
+  - socat
+  - strace
+  - tcpdump
 
 # Set hostname
 hostname: space-captain-dev
@@ -37,25 +71,69 @@ manage_etc_hosts: true
 # Create mount point and fix network wait
 runcmd:
   - mkdir -p /workspace
+  # Fix debian user UID/GID to match host user
+  - |
+    HOST_UID=HOST_UID_PLACEHOLDER
+    HOST_GID=HOST_GID_PLACEHOLDER
+    DEBIAN_UID=$(id -u debian)
+    DEBIAN_GID=$(id -g debian)
+    
+    # Only fix if UIDs don't match
+    if [ "$DEBIAN_UID" != "$HOST_UID" ] || [ "$DEBIAN_GID" != "$HOST_GID" ]; then
+      # Stop any services running as debian
+      systemctl stop 'user@'"$DEBIAN_UID".service || true
+      pkill -u debian || true
+      sleep 1
+      
+      # Change UID and GID
+      groupmod -g "$HOST_GID" debian
+      usermod -u "$HOST_UID" -g "$HOST_GID" debian
+      
+      # Fix ownership of home directory
+      chown -R debian:debian /home/debian
+    fi
+  # Configure systemd-networkd-wait-online with a shorter timeout to prevent boot hangs
+  - mkdir -p /etc/systemd/system/systemd-networkd-wait-online.service.d
+  - |
+    cat > /etc/systemd/system/systemd-networkd-wait-online.service.d/override.conf << 'EOF'
+    [Service]
+    ExecStart=
+    ExecStart=/lib/systemd/systemd-networkd-wait-online --timeout=10
+    EOF
+  - systemctl daemon-reload
   - systemctl restart systemd-networkd
   - systemctl restart ssh
   - ss -tlnp | grep :22 || true
-  # Set custom prompt for debian user
+  # Set custom prompt for the user
   - |
-    OS_ID=$(grep '^ID=' /etc/os-release | cut -d= -f2)
+    OS_ID=$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
     ARCH=$(uname -m)
-    echo "PS1='\\[\\e[36;1;2m\\][${OS_ID}:${ARCH}]@\\W\\\\ \\$ \\[\\e[0m\\]'" >> /home/debian/.bashrc
+    cat >> /home/debian/.profile << EOF
+    
+    # Custom prompt for Space Captain Dev VM
+    PS1='\\[\\e[36;1;2m\\][${OS_ID}:${ARCH}]@\\W \\$ \\[\\e[0m\\]'
+    export PS1
+    
     # Start in workspace directory
-    echo "cd /workspace" >> /home/debian/.bashrc
-    echo "[ -d /workspace ] && cd /workspace" >> /home/debian/.profile
+    [ -d /workspace ] && cd /workspace
+    EOF
   # Install Docker
   - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
   - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
   - apt-get update
   - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-  - usermod -aG docker debian
   - systemctl enable docker
   - systemctl start docker
+  # Ensure SSH directory and permissions are correct
+  - |
+    # Fix SSH permissions for debian user
+    mkdir -p /home/debian/.ssh
+    chmod 700 /home/debian/.ssh
+    chown debian:debian /home/debian/.ssh
+    if [ -f /home/debian/.ssh/authorized_keys ]; then
+      chmod 600 /home/debian/.ssh/authorized_keys
+      chown debian:debian /home/debian/.ssh/authorized_keys
+    fi
   # Create script to handle kernel setup and workspace mounting
   - |
     cat > /usr/local/bin/setup-vm-kernel-and-mount.sh << 'EOSCRIPT'
@@ -108,6 +186,21 @@ runcmd:
     EOSCRIPT
     chmod +x /usr/local/bin/setup-vm-kernel-and-mount.sh
   - /usr/local/bin/setup-vm-kernel-and-mount.sh
+  # Fix debian user UID/GID to match host
+  - |
+    echo "Fixing debian user UID/GID to match host..."
+    # Stop any processes running as debian user
+    pkill -u debian || true
+    # Change UID/GID
+    usermod -u HOST_UID_PLACEHOLDER debian
+    groupmod -g HOST_GID_PLACEHOLDER debian
+    # Fix home directory ownership
+    chown -R debian:debian /home/debian
+    # Fix workspace ownership (if mounted)
+    if [ -d /workspace ]; then
+      chown -R debian:debian /workspace || true
+    fi
+    echo "UID/GID fix completed"
 
 # Mount workspace via virtfs (disabled - cloud kernel doesn't have 9p modules)
 # mounts:
