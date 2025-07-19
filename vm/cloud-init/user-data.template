@@ -1,0 +1,117 @@
+#cloud-config
+
+# Configure SSH key authentication
+users:
+  - name: debian
+    ssh_authorized_keys:
+      - SSH_KEY_PLACEHOLDER
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+
+# Disable password authentication for SSH
+ssh_pwauth: false
+
+# Network configuration
+network:
+  version: 2
+  ethernets:
+    enp0s2:
+      dhcp4: true
+      optional: true
+
+# Package management - minimal for now
+package_update: false
+package_upgrade: false
+packages:
+  - openssh-server
+  - linux-image-amd64  # Install full kernel for 9p support
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+
+# Set hostname
+hostname: space-captain-dev
+manage_etc_hosts: true
+
+# Create mount point and fix network wait
+runcmd:
+  - mkdir -p /workspace
+  - systemctl restart systemd-networkd
+  - systemctl restart ssh
+  - ss -tlnp | grep :22 || true
+  # Set custom prompt for debian user
+  - |
+    OS_ID=$(grep '^ID=' /etc/os-release | cut -d= -f2)
+    ARCH=$(uname -m)
+    echo "PS1='\\[\\e[36;1;2m\\][${OS_ID}:${ARCH}]@\\W\\\\ \\$ \\[\\e[0m\\]'" >> /home/debian/.bashrc
+    # Start in workspace directory
+    echo "cd /workspace" >> /home/debian/.bashrc
+    echo "[ -d /workspace ] && cd /workspace" >> /home/debian/.profile
+  # Install Docker
+  - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker debian
+  - systemctl enable docker
+  - systemctl start docker
+  # Create script to handle kernel setup and workspace mounting
+  - |
+    cat > /usr/local/bin/setup-vm-kernel-and-mount.sh << 'EOSCRIPT'
+    #!/bin/bash
+    # Ensure we boot with full kernel that has 9p support
+    if uname -r | grep -q cloud; then
+      # Set GRUB to prefer full kernel
+      mkdir -p /etc/default/grub.d/
+      echo 'GRUB_DEFAULT="1>2"' > /etc/default/grub.d/50-prefer-full-kernel.cfg
+      update-grub
+      # Schedule a reboot in the background to switch to full kernel
+      nohup bash -c 'sleep 10 && touch /var/lib/cloud/instance/sem/config_reboot_for_kernel && /sbin/reboot' > /dev/null 2>&1 &
+    fi
+    
+    # Create systemd mount unit for workspace
+    cat > /etc/systemd/system/workspace.mount << 'EOF'
+    [Unit]
+    Description=Mount workspace via 9p
+    After=systemd-modules-load.service
+    
+    [Mount]
+    What=workspace
+    Where=/workspace
+    Type=9p
+    Options=trans=virtio,version=9p2000.L,rw,cache=loose,msize=512000
+    
+    [Install]
+    WantedBy=local-fs.target
+    EOF
+    systemctl enable workspace.mount
+    
+    # Also create a service to ensure 9p modules are loaded
+    cat > /etc/systemd/system/load-9p-modules.service << 'EOF'
+    [Unit]
+    Description=Load 9p kernel modules
+    Before=workspace.mount
+    ConditionPathExists=/lib/modules/%v/kernel/fs/9p/9p.ko
+    
+    [Service]
+    Type=oneshot
+    RemainAfterExit=yes
+    ExecStart=/sbin/modprobe 9p
+    ExecStart=/sbin/modprobe 9pnet
+    ExecStart=/sbin/modprobe 9pnet_virtio
+    
+    [Install]
+    WantedBy=sysinit.target
+    EOF
+    systemctl enable load-9p-modules.service
+    EOSCRIPT
+    chmod +x /usr/local/bin/setup-vm-kernel-and-mount.sh
+  - /usr/local/bin/setup-vm-kernel-and-mount.sh
+
+# Mount workspace via virtfs (disabled - cloud kernel doesn't have 9p modules)
+# mounts:
+#   - [ "workspace", "/workspace", "9p", "trans=virtio,version=9p2000.L,rw", "0", "0" ]
+
+# Final message
+final_message: "Space Captain Dev VM is ready! SSH as debian@<ip>"

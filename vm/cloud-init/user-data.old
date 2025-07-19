@@ -1,0 +1,47 @@
+#cloud-config
+
+# Configure SSH key authentication
+users:
+  - name: debian
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPgemiugD3J9fNqJg++O9eP3rBX7+/ZSvY42exDx6ZEa space-captain@vm
+
+# Disable password authentication for SSH
+ssh_pwauth: false
+
+# Package management
+package_update: true
+package_upgrade: true
+packages:
+  - build-essential
+  - git
+  - vim
+  - htop
+  - curl
+  - wget
+  - net-tools
+  - iproute2
+  - libmbedtls-dev
+  - clang-format
+  - gdb
+  - valgrind
+  - make
+  - cmake
+  - openssh-server
+
+# Set hostname
+hostname: space-captain-dev
+manage_etc_hosts: true
+
+# Create mount point and fix network wait
+runcmd:
+  - mkdir -p /workspace
+  - systemctl disable systemd-networkd-wait-online.service
+  - systemctl mask systemd-networkd-wait-online.service
+
+# Mount disabled until NFS is configured
+# mounts:
+#   - [ "workspace", "/workspace", "9p", "trans=virtio,version=9p2000.L,rw", "0", "0" ]
+
+# Final message
+final_message: "Space Captain Dev VM is ready! SSH as debian@<ip>"

@@ -991,6 +991,9 @@ deps:
 	@echo "  - dpkg-dev (for Debian packaging)"
 	@echo "  - rpm-build (for RPM packaging)"
 	@echo "  - chrpath (for RPATH stripping)"
+	@echo "  - genisoimage (for VM cloud-init ISO creation)"
+	@echo "  - qemu-system-x86 (for x86_64 VM support)"
+	@echo "  - socat (for VM graceful shutdown)"
 	@echo ""
 	@echo "External libraries (fetched automatically):"
 	@echo "  - mbedTLS $(MBEDTLS_VERSION)"
@@ -1182,6 +1185,46 @@ infra-status:
 
 
 # ============================================================================
+# VM Targets
+# ============================================================================
+
+# SSH key generation for VMs
+.secrets/ssh/space-captain:
+	@echo "Generating SSH key pair for VMs..."
+	@mkdir -p .secrets/ssh
+	@ssh-keygen -t ed25519 -f .secrets/ssh/space-captain -N "" -C "space-captain@vm" -q
+	@chmod 600 .secrets/ssh/space-captain
+	@chmod 644 .secrets/ssh/space-captain.pub
+	@echo "SSH key pair generated at .secrets/ssh/space-captain"
+
+.PHONY: vm-ssh-keys
+vm-ssh-keys: .secrets/ssh/space-captain
+
+.PHONY: aarch64-start
+aarch64-start: vm-ssh-keys
+	@cd vm/scripts && ./launch.sh
+	@echo ""
+	@echo "Following serial console output (Ctrl+C to exit)..."
+	@tail -f vm/space-captain-dev.serial
+
+.PHONY: aarch64-stop
+aarch64-stop:
+	@cd vm/scripts && ./stop.sh
+
+.PHONY: aarch64-destroy
+aarch64-destroy:
+	@cd vm/scripts && ./destroy.sh
+
+.PHONY: aarch64-ssh
+aarch64-ssh: vm-ssh-keys
+	@cd vm/scripts && ./ssh.sh
+
+.PHONY: aarch64-status
+aarch64-status:
+	@cd vm/scripts && ./status.sh
+
+
+# ============================================================================
 # Help Target
 # ============================================================================
 
@@ -1264,6 +1307,13 @@ help:
 	@echo "  make deploy-server   Deploy latest RPM to running server"
 	@echo "  make deploy-clients  Deploy latest RPM to running clients (TODO)"
 	@echo "  make deploy-telemetry Deploy telemetry stack (TODO)"
+	@echo ""
+	@echo "Virtual Machine:"
+	@echo "  make aarch64-start   Start ARM64 development VM"
+	@echo "  make aarch64-stop    Stop ARM64 development VM"
+	@echo "  make aarch64-destroy Destroy ARM64 VM and disk"
+	@echo "  make aarch64-ssh     SSH into running ARM64 VM"
+	@echo "  make aarch64-status  Check ARM64 VM status"
 	@echo ""
 	@echo "Tools:"
 	@echo "  make check-tools     Check for required build tools"

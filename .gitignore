@@ -17,3 +17,6 @@ infra/.terraform/
 .secrets
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
+space-captain/vm/images
+**/*.qcow2
+**/*.iso
