@@ -177,6 +177,37 @@ To add a new source file to the project:
 - Debug: `-O0 -g` - No optimization, debug symbols
 - Release: `-O3` - Maximum optimization
 
+### External Dependencies vs Project Code
+
+The build system uses different compiler flags for external dependencies (like mbedTLS and Unity) compared to project code:
+
+#### Project Code Flags
+Project code uses strict warning flags with `-Werror` to ensure high code quality:
+```makefile
+CFLAGS_BASE = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic \
+              -Wshadow -Wstrict-prototypes -Wmissing-prototypes -Wwrite-strings \
+              -Werror -Wall -Wextra -Wformat=2 -Wconversion -Wcast-qual -Wundef
+```
+
+Additional compiler-specific flags:
+- **GCC**: `-fanalyzer -fstack-clash-protection -Wduplicated-cond -Wduplicated-branches`
+- **Clang**: `-fcolor-diagnostics -Wno-gnu-zero-variadic-macro-arguments`
+
+#### External Dependency Flags
+External dependencies use minimal, functional flags since we don't control their code:
+```makefile
+EXTERNAL_DEPS_CFLAGS = -O2 -fPIC -D_DEFAULT_SOURCE -Wno-error
+```
+
+This approach:
+- Avoids build failures from warnings in third-party code
+- Maintains optimization (`-O2`) for performance
+- Ensures position-independent code (`-fPIC`) for shared libraries
+- Explicitly disables treating warnings as errors (`-Wno-error`)
+
+For mbedTLS specifically, we also pass:
+- `-DMBEDTLS_FATAL_WARNINGS=OFF` to CMake to disable its internal warning-as-error settings
+
 ## Tool Checking
 
 The build system automatically checks for required tools:
@@ -275,3 +306,201 @@ If package building fails:
 2. Check architecture with `make arch-info`
 3. Verify package metadata with `make package-info`
 4. For Docker builds, ensure builder image exists
+
+## Adding Support for a New OS
+
+To add support for a new operating system to the build system, follow these steps:
+
+### 1. Create Docker Builder Image
+
+Create `Dockerfile.<os>` in the project root:
+```dockerfile
+FROM <base-image>
+
+# Install build dependencies
+RUN <package-manager> install -y \
+    gcc \
+    make \
+    cmake \
+    python3 \
+    <package-builder> \    # dpkg-dev or rpm-build
+    chrpath \               # For RPATH stripping
+    gosu \                  # For user switching
+    git \
+    clang-tools-extra \
+    graphviz \
+    gdb \
+    openssl \
+    openssl-devel \         # or libssl-dev for Debian-based
+    && <cleanup-command>    # yum/dnf clean all or rm -rf /var/lib/apt/lists/*
+
+# Install gosu for proper user switching
+RUN curl -L https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64 -o /usr/local/bin/gosu && \
+    chmod +x /usr/local/bin/gosu
+
+# Copy entrypoint script
+COPY scripts/docker-entrypoint-<os>.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]
+```
+
+### 2. Create Docker Entrypoint Script
+
+Create `scripts/docker-entrypoint-<os>.sh`:
+```bash
+#!/bin/bash
+# Docker entrypoint script for <os> builder container
+
+USER_ID=${USER_ID:-1000}
+GROUP_ID=${GROUP_ID:-1000}
+
+# Create group and user with matching IDs (silently)
+groupadd -g $GROUP_ID -o builduser 2>/dev/null || true
+useradd -u $USER_ID -g $GROUP_ID -o -m -s /bin/bash builduser 2>/dev/null || true
+
+# Get OS ID from /etc/os-release
+OS_ID=$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
+
+# Set custom PS1 for builduser
+echo "export PS1='\\[\\e[36;1;2m\\]${OS_ID}@\\W\\[\\e[0m\\]\\\$ '" >> /home/builduser/.bashrc
+
+# Change to workspace directory
+cd /workspace
+
+# Use gosu to properly switch user with TTY preservation
+exec gosu builduser "$@"
+```
+
+### 3. Update Makefile OS Detection
+
+Add OS detection in the Makefile (around line 255):
+```makefile
+else ifeq ($(OS_ID),<os>)
+    OS_DIR := <os>
+    PACKAGE_TYPE := <deb|rpm>
+    PACKAGE_BUILDER := <dpkg-deb|rpmbuild>
+```
+
+Add to the error message at the end of the OS detection block:
+```makefile
+$(error Unsupported OS: $(OS_ID). This project only supports Debian (ID=debian), Ubuntu (ID=ubuntu), Amazon Linux (ID=amzn), Fedora (ID=fedora) and <OS> (ID=<os>))
+```
+
+### 4. Update Architecture Mapping
+
+Add architecture mapping (around line 297):
+```makefile
+else ifeq ($(OS_ID),<os>)
+    PACKAGE_ARCH := $(DEB_ARCH)  # or $(RPM_ARCH) depending on package type
+```
+
+### 5. Update Docker Configuration
+
+Add Docker image configuration (around line 805):
+```makefile
+<os>_IMAGE = <base-image>
+<os>_IMAGE_SOURCE = <Docker Hub|Other Registry>
+```
+
+### 6. Add Build Targets
+
+The following targets will be automatically available due to pattern rules:
+- `make pull-<os>` - Pull base Docker image
+- `make build-<os>` - Build Docker builder image
+- `make shell-<os>` - Start interactive shell in builder
+- `make package-<os>` - Build package using Docker
+
+You need to manually add:
+
+1. Update the `packages` target to include the new OS (around line 1026):
+```makefile
+echo "=== Building <OS> package ==="; \
+$(MAKE) package-<os>; \
+echo ""; \
+```
+
+2. Update help text sections:
+- Docker section: Add to the list of supported OSes
+- Packaging section: Add to the list of supported OSes
+
+### 7. Create Package Templates
+
+Create the directory structure:
+```bash
+mkdir -p pkg/<os>/templates
+```
+
+For DEB-based systems, create:
+- `pkg/<os>/templates/control.template`
+- `pkg/<os>/templates/postinst`
+- `pkg/<os>/templates/prerm`
+- `pkg/<os>/templates/conffiles`
+- `pkg/<os>/templates/space-captain-server.service`
+
+For RPM-based systems, create:
+- `pkg/<os>/templates/space-captain.spec.template`
+- `pkg/<os>/templates/space-captain-server.service`
+
+### 8. Test the New OS Support
+
+```bash
+# Build Docker image
+make build-<os>
+
+# Enter build environment
+make shell-<os>
+
+# Inside container, test building
+make clean-all
+make
+make tests
+make run-tests
+
+# Test packaging
+make package
+
+# From host, test full package build
+make package-<os>
+```
+
+### Example: Adding Rocky Linux Support
+
+Here's a concrete example of adding Rocky Linux support:
+
+1. Create `Dockerfile.rocky`:
+```dockerfile
+FROM rockylinux:9
+
+RUN dnf install -y \
+    gcc make cmake python3 rpm-build chrpath \
+    tar gzip shadow-utils util-linux \
+    git clang-tools-extra graphviz gdb \
+    openssl openssl-devel \
+    && dnf clean all
+
+RUN curl -L https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64 -o /usr/local/bin/gosu && \
+    chmod +x /usr/local/bin/gosu
+
+COPY scripts/docker-entrypoint-rocky.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]
+```
+
+2. Copy and adapt the entrypoint script:
+```bash
+cp scripts/docker-entrypoint-fedora.sh scripts/docker-entrypoint-rocky.sh
+```
+
+3. Update Makefile OS detection:
+```makefile
+else ifeq ($(OS_ID),rocky)
+    OS_DIR := rocky
+    PACKAGE_TYPE := rpm
+    PACKAGE_BUILDER := rpmbuild
+```
+
+4. Add remaining configuration and test.

@@ -247,6 +247,9 @@ else
     OS_ID := unknown
 endif
 
+# Store host OS for comparison
+HOST_OS_ID := $(OS_ID)
+
 # OS-specific settings
 ifeq ($(OS_ID),debian)
     OS_DIR := debian
@@ -267,6 +270,16 @@ else ifeq ($(OS_ID),fedora)
 else
     $(error Unsupported OS: $(OS_ID). This project only supports Debian (ID=debian), Ubuntu (ID=ubuntu), Amazon Linux (ID=amzn) and Fedora (ID=fedora))
 endif
+
+# Check if we're building for the host OS
+ifeq ($(HOST_OS_ID),$(OS_ID))
+    IS_HOST_BUILD := 1
+else
+    IS_HOST_BUILD := 0
+endif
+
+# Update BIN_DIR to be OS-specific
+BIN_DIR_OS = $(BIN_DIR)/$(OS_DIR)
 
 # ============================================================================
 # Architecture Detection
@@ -382,7 +395,7 @@ CLIENT_OBJS_TSAN = $(CLIENT_OBJ_TSAN)
 
 # Test files
 TEST_SRCS = $(wildcard $(TST_DIR)/*_tests.c)
-TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/sc-%,$(TEST_SRCS))
+TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_OS)/sc-%,$(TEST_SRCS))
 TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/%.o,$(TEST_SRCS))
 
 # Unity test framework
@@ -401,7 +414,7 @@ DEPS = $(COMMON_OBJS_DEBUG:.o=.d) $(COMMON_OBJS_RELEASE:.o=.d) $(COMMON_OBJS_TSA
 
 # Default target - build debug versions
 .PHONY: all
-all: check-tools mbedtls $(BIN_DIR)/sc-server $(BIN_DIR)/sc-client
+all: check-tools mbedtls $(BIN_DIR_OS)/sc-server $(BIN_DIR_OS)/sc-client
 
 # Check all required tools
 .PHONY: check-tools
@@ -429,10 +442,10 @@ check-all-tools: check-tools
 
 # Build individual debug targets
 .PHONY: server
-server: mbedtls $(BIN_DIR)/sc-server
+server: mbedtls $(BIN_DIR_OS)/sc-server
 
 .PHONY: client
-client: mbedtls $(BIN_DIR)/sc-client
+client: mbedtls $(BIN_DIR_OS)/sc-client
 
 # ============================================================================
 # Vendor Dependencies
@@ -475,6 +488,7 @@ mbedtls: clone-mbedtls
 		      -DCMAKE_C_FLAGS="$(EXTERNAL_DEPS_CFLAGS)" \
 		      -DUSE_SHARED_MBEDTLS_LIBRARY=On \
 		      -DMBEDTLS_FATAL_WARNINGS=OFF \
+		      -DENABLE_TESTING=OFF \
 		      $(PWD)/$(DEPS_SRC_DIR)/mbedtls && \
 		make -j$$(nproc) && \
 		make install && \
@@ -500,23 +514,28 @@ clone-unity:
 .PHONY: release
 release:
 	@echo "Building release for $(OS_ID) ($(OS_DIR))..."
-	@$(MAKE) clean
 	@$(MAKE) mbedtls
-	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR)/sc-server-release $(BIN_DIR)/sc-client-release
+	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR_OS)/sc-server-release $(BIN_DIR_OS)/sc-client-release
 	@echo "Release build complete for $(OS_ID)"
-	@echo "Binaries: $(BIN_DIR)/sc-server-release -> $$(readlink $(BIN_DIR)/sc-server-release)"
-	@echo "          $(BIN_DIR)/sc-client-release -> $$(readlink $(BIN_DIR)/sc-client-release)"
+	@echo "Binaries: $(BIN_DIR_OS)/sc-server-release -> $$(readlink $(BIN_DIR_OS)/sc-server-release)"
+	@echo "          $(BIN_DIR_OS)/sc-client-release -> $$(readlink $(BIN_DIR_OS)/sc-client-release)"
 
 # ============================================================================
 # Build Rules - Debug
 # ============================================================================
 
 # Debug executables
-$(BIN_DIR)/sc-server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR_OS)
 	$(CC) -o $@ $(SERVER_OBJS_DEBUG) $(LDFLAGS)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 
-$(BIN_DIR)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR_OS)
 	$(CC) -o $@ $(CLIENT_OBJS_DEBUG) $(LDFLAGS)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 
 # Debug object files - generic rule
 # Note: All debug builds use -march=native to optimize for the build machine
@@ -530,15 +549,19 @@ $(OBJ_DIR)/$(OS_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/debug
 # Release binary versioning helper
 define build-release-binary
 	@VERSION=$$($(get-version)); \
-	$(CC) -o $(BIN_DIR)/$(1)-$$VERSION $(2) $(LDFLAGS_RELEASE); \
-	ln -sf $(1)-$$VERSION $(BIN_DIR)/$(1)-release
+	$(CC) -o $(BIN_DIR_OS)/$(1)-$$VERSION $(2) $(LDFLAGS_RELEASE); \
+	ln -sf $(1)-$$VERSION $(BIN_DIR_OS)/$(1)-release; \
+	if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $(BIN_DIR_OS)/$(1)-$$VERSION $(BIN_DIR)/ 2>/dev/null || true; \
+		ln -sf $(1)-$$VERSION $(BIN_DIR)/$(1)-release 2>/dev/null || true; \
+	fi
 endef
 
 # Release executables (with versioning)
-$(BIN_DIR)/sc-server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR_OS)
 	$(call build-release-binary,sc-server,$^)
 
-$(BIN_DIR)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR_OS)
 	$(call build-release-binary,sc-client,$^)
 
 # Release object files - generic rule
@@ -574,6 +597,9 @@ $(UNITY_OBJ): $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/$(OS_DIR) clone-uni
 # Test executable link command
 define link-test
 	$(CC) -o $@ $^ $(LDFLAGS)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 endef
 
 # Function to get module name from test name
@@ -583,7 +609,7 @@ get-test-module = $(if $(filter server_tests,$(1)),dtls,$(patsubst %_tests,%,$(1
 
 # Generic test rule generator
 define test-rule
-$(BIN_DIR)/sc-$(1): $(OBJ_DIR)/$(OS_DIR)/$(1).o $(UNITY_OBJ) $(OBJ_DIR)/$(OS_DIR)/debug/$(call get-test-module,$(1)).o | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-$(1): $(OBJ_DIR)/$(OS_DIR)/$(1).o $(UNITY_OBJ) $(OBJ_DIR)/$(OS_DIR)/debug/$(call get-test-module,$(1)).o | $(BIN_DIR_OS)
 	$$(link-test)
 endef
 
@@ -612,38 +638,47 @@ $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o: $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR
 	$(CC) $(EXTERNAL_DEPS_CFLAGS) -fsanitize=thread -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN executables
-$(BIN_DIR)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR_OS)
 	$(CC) -o $@ $(SERVER_OBJS_TSAN) $(LDFLAGS_TSAN)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 
-$(BIN_DIR)/sc-client-tsan: $(CLIENT_OBJS_TSAN) | $(BIN_DIR)
+$(BIN_DIR_OS)/sc-client-tsan: $(CLIENT_OBJS_TSAN) | $(BIN_DIR_OS)
 	$(CC) -o $@ $(CLIENT_OBJS_TSAN) $(LDFLAGS_TSAN)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 
 # TSAN test executables
-TEST_BINS_TSAN = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR)/sc-%-tsan,$(TEST_SRCS))
+TEST_BINS_TSAN = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_OS)/sc-%-tsan,$(TEST_SRCS))
 
 # Helper function to build tsan test with proper module dependencies
 define link-test-tsan
 	$(CC) -o $@ $^ $(LDFLAGS_TSAN)
+	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
+		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
+	fi
 endef
 
 # Generic queue tests (no dependencies)
-$(BIN_DIR)/sc-generic_queue_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue.o
+$(BIN_DIR_OS)/sc-generic_queue_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue.o
 	$(call link-test-tsan)
 
 # Message tests  
-$(BIN_DIR)/sc-message_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/message_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/message.o
+$(BIN_DIR_OS)/sc-message_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/message_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/message.o
 	$(call link-test-tsan)
 
 # DTLS tests
-$(BIN_DIR)/sc-dtls_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/dtls_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_OS)/sc-dtls_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/dtls_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
 	$(call link-test-tsan)
 
 # Server tests (uses DTLS but not full server)
-$(BIN_DIR)/sc-server_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/server_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_OS)/sc-server_tests-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/server_tests.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
 	$(call link-test-tsan)
 
 .PHONY: tsan
-tsan: mbedtls $(BIN_DIR)/sc-server-tsan $(BIN_DIR)/sc-client-tsan $(TEST_BINS_TSAN)
+tsan: mbedtls $(BIN_DIR_OS)/sc-server-tsan $(BIN_DIR_OS)/sc-client-tsan $(TEST_BINS_TSAN)
 
 .PHONY: check-tsan
 check-tsan: tsan
@@ -661,20 +696,20 @@ check-tsan: tsan
 # Run targets
 .PHONY: run-server
 run-server: server | $(DAT_DIR)
-	$(BIN_DIR)/sc-server
+	$(BIN_DIR_OS)/sc-server
 
 .PHONY: run-client
 run-client: client
-	$(BIN_DIR)/sc-client
+	$(BIN_DIR_OS)/sc-client
 
 # Debug with GDB
 .PHONY: debug-server
 debug-server: server
-	gdb $(BIN_DIR)/sc-server
+	gdb $(BIN_DIR_OS)/sc-server
 
 .PHONY: debug-client
 debug-client: client
-	gdb $(BIN_DIR)/sc-client
+	gdb $(BIN_DIR_OS)/sc-client
 
 # Code formatting
 .PHONY: fmt
@@ -783,7 +818,10 @@ uninstall:
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJ_DIR) $(BIN_DIR)
+	rm -rf $(OBJ_DIR)
+	# Clean bin directory - remove OS-specific dirs and any files in bin/
+	rm -rf $(BIN_DIR)/*/
+	rm -f $(BIN_DIR)/*
 
 .PHONY: clean-all
 clean-all: clean
@@ -932,18 +970,31 @@ version:
 
 .PHONY: deps
 deps:
-	@echo "External Dependencies"
-	@echo "===================="
+	@echo "System Dependencies"
+	@echo "==================="
 	@echo ""
-	@echo "mbedTLS:"
-	@echo "  Version: $(MBEDTLS_VERSION)"
-	@echo "  Source:  https://github.com/Mbed-TLS/mbedtls.git"
-	@echo "  Path:    $(DEPS_SRC_DIR)/mbedtls"
+	@echo "Required packages:"
+	@echo "  - gcc"
+	@echo "  - make"
+	@echo "  - git"
+	@echo "  - cmake"
+	@echo "  - openssl"
+	@echo "  - AddressSanitizer library"
+	@echo "  - UndefinedBehaviorSanitizer library"
 	@echo ""
-	@echo "Unity Test Framework:"
-	@echo "  Version: $(UNITY_VERSION)"
-	@echo "  Source:  https://github.com/ThrowTheSwitch/Unity.git"
-	@echo "  Path:    $(DEPS_SRC_DIR)/unity"
+	@echo "Optional packages:"
+	@echo "  - python3 (for mbedTLS configuration checks and tests)"
+	@echo "  - clang-format"
+	@echo "  - gdb"
+	@echo "  - graphviz"
+	@echo "  - docker"
+	@echo "  - dpkg-dev (for Debian packaging)"
+	@echo "  - rpm-build (for RPM packaging)"
+	@echo "  - chrpath (for RPATH stripping)"
+	@echo ""
+	@echo "External libraries (fetched automatically):"
+	@echo "  - mbedTLS $(MBEDTLS_VERSION)"
+	@echo "  - Unity Test Framework $(UNITY_VERSION)"
 
 .PHONY: package-info
 package-info:
@@ -1227,7 +1278,7 @@ help:
 # Directory Creation
 # ============================================================================
 
-$(BIN_DIR) $(DAT_DIR) $(OBJ_DIR)/$(OS_DIR)/debug $(OBJ_DIR)/$(OS_DIR)/release $(OBJ_DIR)/$(OS_DIR)/tsan $(OBJ_DIR)/$(OS_DIR):
+$(BIN_DIR) $(BIN_DIR_OS) $(DAT_DIR) $(OBJ_DIR)/$(OS_DIR)/debug $(OBJ_DIR)/$(OS_DIR)/release $(OBJ_DIR)/$(OS_DIR)/tsan $(OBJ_DIR)/$(OS_DIR):
 	mkdir -p $@
 
 # ============================================================================

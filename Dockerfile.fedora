@@ -18,6 +18,8 @@ RUN dnf install -y \
     openssl \
     openssl-devel \
     chrpath \
+    libasan \
+    libubsan \
     && dnf clean all
 
 # Install gosu for proper user switching

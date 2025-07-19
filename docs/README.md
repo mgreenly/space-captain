@@ -17,6 +17,7 @@ This directory contains documentation about the current state of the Space Capta
 
 ### Build System
 - [Traditional Build System](build-system.md) - Comprehensive guide to the build system, including tool checking, packaging, and Docker integration
+- [Packaging Guide](packaging.md) - Multi-OS packaging system, RPATH management, and OS-specific considerations
 - [Vendored Libraries](vendored-libraries.md) - How mbedTLS is bundled and isolated in packages
 - [Versioning Guide](versioning.md) - Semantic versioning and package naming conventions
 
