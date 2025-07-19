@@ -1,6 +1,6 @@
 FROM debian:stable-slim
 
-# Install build dependencies for Space Captain
+# Install build dependencies for Space Captain and gosu for proper user switching
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     python3 \
     dpkg-dev \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy entrypoint script

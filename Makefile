@@ -817,17 +817,27 @@ pull-debian:
 	@echo "Debian slim image pulled successfully"
 
 # Pattern rule for building Docker images
-.PHONY: builder-%
-builder-%:
+.PHONY: build-%
+build-%:
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
 	@echo "Building Space Captain $* builder image..."
 	@docker build -f Dockerfile.$* -t space-captain-$*-builder .
 	@echo "Builder image created successfully"
 
+# Pattern rule for interactive shell in Docker builder
+.PHONY: shell-%
+shell-%:
+	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
+	@if ! docker image inspect space-captain-$*-builder >/dev/null 2>&1; then \
+		echo "Error: Builder image 'space-captain-$*-builder' not found. Run 'make build-$*' first."; \
+		exit 1; \
+	fi
+	@echo "Starting interactive shell in $* builder container..."
+	@docker run -it --volume "$$(pwd)":/workspace --workdir=/workspace space-captain-$*-builder /bin/bash
 
 # Pattern rule for Docker-based package building
 .PHONY: package-%
-package-%: clone-mbedtls clone-unity builder-% certs
+package-%: clone-mbedtls clone-unity build-% certs
 	@$(MAKE) package-docker OS=$* PACKAGE_TYPE=$($*_PACKAGE_TYPE) PACKAGE_CMD=$($*_PACKAGE_CMD)
 
 # Common docker packaging target
@@ -836,7 +846,7 @@ package-docker:
 	@echo "Building $(PACKAGE_TYPE) package using Docker..."
 	@mkdir -p $(DEPS_BUILD_DIR)/$(OS)
 	@if ! docker image inspect space-captain-$(OS)-builder >/dev/null 2>&1; then \
-		echo "Error: Builder image 'space-captain-$(OS)-builder' not found. Run 'make builder-$(OS)' first."; \
+		echo "Error: Builder image 'space-captain-$(OS)-builder' not found. Run 'make build-$(OS)' first."; \
 		exit 1; \
 	fi
 	@HOST_GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
@@ -1058,7 +1068,8 @@ help:
 	@echo "  make clone-unity     Clone/update Unity test framework to $(DEPS_SRC_DIR)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make builder-<os>    Build Docker builder image (debian/amazon)"
+	@echo "  make shell-<os>      Start interactive shell in builder (debian/amazon)"
+	@echo "  make build-<os>      Build Docker builder image (debian/amazon)"
 	@echo "  make pull-debian     Pull Debian slim Docker image"
 	@echo "  make pull-amazon     Pull Amazon Linux 2023 Docker image"
 	@echo "  make docker-info     Display Docker configuration"

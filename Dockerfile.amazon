@@ -15,6 +15,10 @@ RUN yum update -y && yum install -y \
     util-linux \
     && yum clean all
 
+# Install gosu for proper user switching
+RUN curl -L https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64 -o /usr/local/bin/gosu && \
+    chmod +x /usr/local/bin/gosu
+
 # Set library path to include .local/amazon/lib
 ENV LD_LIBRARY_PATH=/workspace/.local/amazon/lib
 
