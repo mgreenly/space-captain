@@ -13,6 +13,10 @@ RUN yum update -y && yum install -y \
     python3 \
     shadow-utils \
     util-linux \
+    git \
+    clang-tools-extra \
+    graphviz \
+    gdb \
     && yum clean all
 
 # Install gosu for proper user switching

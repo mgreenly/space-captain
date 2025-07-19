@@ -9,6 +9,11 @@ RUN apt-get update && apt-get install -y \
     python3 \
     dpkg-dev \
     gosu \
+    git \
+    clang-format \
+    openssl \
+    graphviz \
+    gdb \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy entrypoint script

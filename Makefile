@@ -716,10 +716,6 @@ docker-info:
 	@echo "Base Images:"
 	@echo "  Debian: $(debian_IMAGE) from $(debian_IMAGE_SOURCE)"
 	@echo "  Amazon: $(amazon_IMAGE) from $(amazon_IMAGE_SOURCE)"
-	@echo ""
-	@echo "Package Types:"
-	@echo "  debian -> $(debian_PACKAGE_TYPE) ($(debian_PACKAGE_CMD))"
-	@echo "  amazon -> $(amazon_PACKAGE_TYPE) ($(amazon_PACKAGE_CMD))"
 
 # Update CLI tools
 .PHONY: update-tools
@@ -790,11 +786,6 @@ debian_IMAGE_SOURCE = Docker Hub
 amazon_IMAGE = amazonlinux:2023
 amazon_IMAGE_SOURCE = Amazon ECR
 
-# Package type mappings for Docker builds
-debian_PACKAGE_TYPE = deb
-debian_PACKAGE_CMD = package-deb
-amazon_PACKAGE_TYPE = rpm
-amazon_PACKAGE_CMD = package-rpm
 
 # Pull base images for builders
 .PHONY: pull-amazon
@@ -826,32 +817,37 @@ build-%:
 
 # Pattern rule for interactive shell in Docker builder
 .PHONY: shell-%
-shell-%:
+shell-%: build-%
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@if ! docker image inspect space-captain-$*-builder >/dev/null 2>&1; then \
-		echo "Error: Builder image 'space-captain-$*-builder' not found. Run 'make build-$*' first."; \
-		exit 1; \
-	fi
 	@echo "Starting interactive shell in $* builder container..."
 	@docker run -it --volume "$$(pwd)":/workspace --workdir=/workspace space-captain-$*-builder /bin/bash
 
-# Pattern rule for Docker-based package building
-.PHONY: package-%
-package-%: clone-mbedtls clone-unity build-% certs
-	@$(MAKE) package-docker OS=$* PACKAGE_TYPE=$($*_PACKAGE_TYPE) PACKAGE_CMD=$($*_PACKAGE_CMD)
-
-# Common docker packaging target
-.PHONY: package-docker
-package-docker:
-	@echo "Building $(PACKAGE_TYPE) package using Docker..."
-	@mkdir -p $(DEPS_BUILD_DIR)/$(OS)
-	@if ! docker image inspect space-captain-$(OS)-builder >/dev/null 2>&1; then \
-		echo "Error: Builder image 'space-captain-$(OS)-builder' not found. Run 'make build-$(OS)' first."; \
-		exit 1; \
+# Smart package targets that auto-detect Docker environment
+.PHONY: package-debian
+package-debian:
+	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
+		echo "Running in Docker container - building package..."; \
+		$(MAKE) package-deb; \
+	else \
+		echo "Not in Docker - launching build in Debian container..."; \
+		$(MAKE) build-debian; \
+		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
+			space-captain-debian-builder make package-debian; \
 	fi
-	@HOST_GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
-	docker run $(DOCKER_RUN_OPTS) -e HOST_GIT_SHA="$$HOST_GIT_SHA" space-captain-$(OS)-builder make mbedtls $(PACKAGE_CMD)
-	@echo "$(PACKAGE_TYPE) package build complete - check $(PACKAGE_OUT_DIR)/"
+
+.PHONY: package-amazon
+package-amazon:
+	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
+		echo "Running in Docker container - building package..."; \
+		$(MAKE) package-rpm; \
+	else \
+		echo "Not in Docker - launching build in Amazon container..."; \
+		$(MAKE) build-amazon; \
+		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
+			space-captain-amazon-builder make package-amazon; \
+	fi
 
 # ============================================================================
 # Version Management
@@ -949,6 +945,25 @@ rel-reset:
 # Packaging
 # ============================================================================
 
+# Build packages for all supported operating systems (host only)
+.PHONY: packages
+packages:
+	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
+		echo "Error: 'make packages' should only be run from the host, not inside Docker"; \
+		echo "Use 'make package-<os>' to build a specific package inside Docker"; \
+		exit 1; \
+	else \
+		echo "Building packages for all supported operating systems..."; \
+		echo ""; \
+		echo "=== Building Debian package ==="; \
+		$(MAKE) package-debian; \
+		echo ""; \
+		echo "=== Building Amazon Linux package ==="; \
+		$(MAKE) package-amazon; \
+		echo ""; \
+		echo "All packages built successfully!"; \
+	fi
+
 .PHONY: package-deb
 package-deb: release certs
 	$(check-package-prereqs)
@@ -1044,9 +1059,10 @@ help:
 	@echo "  make uninstall       Remove installed files from PREFIX"
 	@echo ""
 	@echo "Packaging:"
-	@echo "  make package-deb     Build Debian package in $(PACKAGE_OUT_DIR)/"
-	@echo "  make package-rpm     Build RPM package in $(PACKAGE_OUT_DIR)/"
-	@echo "  make package-<os>    Build package using Docker (debian/amazon)"
+	@echo "  make packages        Build packages for all OSes (host only)"
+	@echo "  make package-<os>    Build package for OS (debian/amazon)"
+	@echo "  make package-deb     Build Debian package (.deb)"
+	@echo "  make package-rpm     Build RPM package (.rpm)"
 	@echo ""
 	@echo "Cleaning:"
 	@echo "  make clean           Remove build artifacts (keeps deps)"
