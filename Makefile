@@ -260,8 +260,12 @@ else ifeq ($(OS_ID),amzn)
     OS_DIR := amazon
     PACKAGE_TYPE := rpm
     PACKAGE_BUILDER := rpmbuild
+else ifeq ($(OS_ID),fedora)
+    OS_DIR := fedora
+    PACKAGE_TYPE := rpm
+    PACKAGE_BUILDER := rpmbuild
 else
-    $(error Unsupported OS: $(OS_ID). This project only supports Debian (ID=debian), Ubuntu (ID=ubuntu) and Amazon Linux (ID=amzn))
+    $(error Unsupported OS: $(OS_ID). This project only supports Debian (ID=debian), Ubuntu (ID=ubuntu), Amazon Linux (ID=amzn) and Fedora (ID=fedora))
 endif
 
 # ============================================================================
@@ -292,6 +296,8 @@ ifeq ($(OS_ID),debian)
 else ifeq ($(OS_ID),ubuntu)
     PACKAGE_ARCH := $(DEB_ARCH)
 else ifeq ($(OS_ID),amzn)
+    PACKAGE_ARCH := $(RPM_ARCH)
+else ifeq ($(OS_ID),fedora)
     PACKAGE_ARCH := $(RPM_ARCH)
 else
     PACKAGE_ARCH := $(MACHINE_ARCH)
@@ -723,6 +729,7 @@ docker-info:
 	@echo "  Debian: $(debian_IMAGE) from $(debian_IMAGE_SOURCE)"
 	@echo "  Ubuntu: $(ubuntu_IMAGE) from $(ubuntu_IMAGE_SOURCE)"
 	@echo "  Amazon: $(amazon_IMAGE) from $(amazon_IMAGE_SOURCE)"
+	@echo "  Fedora: $(fedora_IMAGE) from $(fedora_IMAGE_SOURCE)"
 
 # Update CLI tools
 .PHONY: update-tools
@@ -769,11 +776,11 @@ clean:
 
 .PHONY: clean-all
 clean-all: clean
-	rm -rf $(DEPS_DIR) $(PACKAGE_OUT_DIR)
+	rm -rf $(DEPS_DIR) pkg/*/out
 
 .PHONY: clean-packages
 clean-packages:
-	rm -rf pkg/
+	rm -rf pkg/*/out
 
 .PHONY: clean-certs
 clean-certs:
@@ -798,6 +805,8 @@ amazon_IMAGE = amazonlinux:2023
 amazon_IMAGE_SOURCE = Amazon ECR
 ubuntu_IMAGE = ubuntu:24.04
 ubuntu_IMAGE_SOURCE = Docker Hub
+fedora_IMAGE = fedora:40
+fedora_IMAGE_SOURCE = Docker Hub
 
 
 # Pull base images for builders
@@ -826,6 +835,13 @@ pull-ubuntu:
 	@echo "Pulling Ubuntu image from Docker Hub..."
 	@docker pull ubuntu:24.04
 	@echo "Ubuntu image pulled successfully"
+
+.PHONY: pull-fedora
+pull-fedora:
+	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
+	@echo "Pulling Fedora image from Docker Hub..."
+	@docker pull fedora:40
+	@echo "Fedora image pulled successfully"
 
 # Pattern rule for building Docker images
 .PHONY: build-%
@@ -880,6 +896,19 @@ package-ubuntu:
 		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
 			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
 			space-captain-ubuntu-builder make package-ubuntu; \
+	fi
+
+.PHONY: package-fedora
+package-fedora:
+	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
+		echo "Running in Docker container - building package..."; \
+		$(MAKE) package-rpm; \
+	else \
+		echo "Not in Docker - launching build in Fedora container..."; \
+		$(MAKE) build-fedora; \
+		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
+			space-captain-fedora-builder make package-fedora; \
 	fi
 
 # ============================================================================
@@ -997,6 +1026,9 @@ packages:
 		echo "=== Building Amazon Linux package ==="; \
 		$(MAKE) package-amazon; \
 		echo ""; \
+		echo "=== Building Fedora package ==="; \
+		$(MAKE) package-fedora; \
+		echo ""; \
 		echo "All packages built successfully!"; \
 	fi
 
@@ -1096,7 +1128,7 @@ help:
 	@echo ""
 	@echo "Packaging:"
 	@echo "  make packages        Build packages for all OSes (host only)"
-	@echo "  make package-<os>    Build package for OS (debian/ubuntu/amazon)"
+	@echo "  make package-<os>    Build package for OS (debian/ubuntu/amazon/fedora)"
 	@echo "  make package-deb     Build Debian package (.deb)"
 	@echo "  make package-rpm     Build RPM package (.rpm)"
 	@echo ""
@@ -1120,11 +1152,12 @@ help:
 	@echo "  make clone-unity     Clone/update Unity test framework to $(DEPS_SRC_DIR)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make shell-<os>      Start interactive shell in builder (debian/ubuntu/amazon)"
-	@echo "  make build-<os>      Build Docker builder image (debian/ubuntu/amazon)"
+	@echo "  make shell-<os>      Start interactive shell in builder (debian/ubuntu/amazon/fedora)"
+	@echo "  make build-<os>      Build Docker builder image (debian/ubuntu/amazon/fedora)"
 	@echo "  make pull-debian     Pull Debian slim Docker image"
 	@echo "  make pull-ubuntu     Pull Ubuntu Docker image"
 	@echo "  make pull-amazon     Pull Amazon Linux 2023 Docker image"
+	@echo "  make pull-fedora     Pull Fedora Docker image"
 	@echo "  make docker-info     Display Docker configuration"
 	@echo ""
 	@echo "Version Management:"
