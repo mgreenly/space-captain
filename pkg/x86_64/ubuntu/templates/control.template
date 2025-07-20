@@ -1,0 +1,13 @@
+Package: space-captain-server
+Version: @VERSION@-@RELEASE@
+Architecture: @ARCH@
+Maintainer: Space Captain Development Team <dev@spacecaptain.io>
+Depends: libc6
+Section: games
+Priority: optional
+Homepage: https://github.com/mgreenly/space-captain
+Description: Space Captain MMO Server
+ Space Captain is a toy MMO written in C as a learning experiment
+ for Linux network programming. This package contains the server
+ component that handles multiple concurrent client connections
+ using an epoll-based event loop with DTLS encryption.

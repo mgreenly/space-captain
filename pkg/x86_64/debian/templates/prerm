@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# Pre-removal script for space-captain-server
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # Stop the service before removal
+        if [ -d /run/systemd/system ]; then
+            systemctl stop space-captain-server.service >/dev/null 2>&1 || true
+            if [ "$1" = "remove" ]; then
+                systemctl disable space-captain-server.service >/dev/null 2>&1 || true
+            fi
+        fi
+        ;;
+    
+    failed-upgrade)
+        ;;
+    
+    *)
+        echo "prerm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

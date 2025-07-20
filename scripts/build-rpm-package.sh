@@ -28,7 +28,7 @@ RPMBUILD_DIR=$(mktemp -d)
 mkdir -p "$RPMBUILD_DIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 # Create tarball of the release binaries
-SERVER_BINARY=$(readlink -f "${BIN_DIR}/sc-server-release")
+SERVER_BINARY=$(readlink -f "${BIN_DIR}/${OS_DIR}/sc-server-release")
 if [ ! -f "$SERVER_BINARY" ]; then
     echo "Error: Server binary not found. Run 'make release' first."
     exit 1

@@ -1,0 +1,38 @@
+[Unit]
+Description=Space Captain MMO Server
+Documentation=https://github.com/mgreenly/space-captain
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/space-captain-server
+Restart=on-failure
+RestartSec=5
+User=space-captain
+Group=space-captain
+WorkingDirectory=/var/lib/space-captain
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/space-captain
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+
+# Resource limits
+LimitNOFILE=65536
+CPUQuota=80%
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

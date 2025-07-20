@@ -142,7 +142,7 @@ CFLAGS_BASE = -D_DEFAULT_SOURCE -D_FORTIFY_SOURCE=2 -std=c18 -pedantic \
               -g -MMD -MP -fstack-protector-strong -fPIE \
               -Wimplicit-fallthrough -Walloca -Wvla \
               -Wnull-dereference -Wdouble-promotion \
-              -I$(DEPS_BUILD_DIR)/$(OS_DIR)/include
+              -I$(DEPS_BUILD_DIR_ARCH_OS)/include
 
 # GCC-specific flags
 CFLAGS_GCC = -fanalyzer -fstack-clash-protection \
@@ -199,7 +199,7 @@ CFLAGS = $(CFLAGS_DEBUG)  # Default to debug
 # -lmbedtls             Link mbedTLS library
 # -lmbedx509            Link mbedTLS X.509 library
 # -lmbedcrypto          Link mbedTLS crypto library
-LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR)/lib -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -Wl,--as-needed -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
+LDFLAGS_COMMON = -L$(DEPS_BUILD_DIR_ARCH_OS)/lib -Wl,-rpath,$(PWD)/$(DEPS_BUILD_DIR_ARCH_OS)/lib -pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -Wl,--as-needed -lpthread -lmbedtls -lmbedx509 -lmbedcrypto
 
 # Debug-specific linker flags:
 # -fsanitize=address,undefined    Link AddressSanitizer and UBSan runtime
@@ -233,7 +233,7 @@ PACKAGE_VENDOR = Space Captain Team
 PACKAGE_LICENSE = MIT
 PACKAGE_URL = https://github.com/mgreenly/space-captain
 PACKAGE_MAINTAINER = mgreenly@gmail.com
-PACKAGE_OUT_DIR = pkg/$(OS_DIR)/out
+PACKAGE_OUT_DIR = $(PKG_DIR_ARCH_OS)/out
 
 # ============================================================================
 # OS Detection and Configuration
@@ -278,14 +278,29 @@ else
     IS_HOST_BUILD := 0
 endif
 
-# Update BIN_DIR to be OS-specific
-BIN_DIR_OS = $(BIN_DIR)/$(OS_DIR)
+# Update directories to be arch/OS-specific
+BIN_DIR_ARCH_OS = $(BIN_DIR)/$(ARCH)/$(OS_DIR)
+OBJ_DIR_ARCH_OS = $(OBJ_DIR)/$(ARCH)/$(OS_DIR)
+DEPS_BUILD_DIR_ARCH_OS = $(DEPS_BUILD_DIR)/$(ARCH)/$(OS_DIR)
+PKG_DIR_ARCH_OS = pkg/$(ARCH)/$(OS_DIR)
 
 # ============================================================================
 # Architecture Detection
 # ============================================================================
 # Get raw machine architecture
 MACHINE_ARCH := $(shell uname -m)
+
+# Normalize architecture to x86_64 or aarch64
+ifeq ($(MACHINE_ARCH),x86_64)
+    ARCH := x86_64
+else ifeq ($(MACHINE_ARCH),aarch64)
+    ARCH := aarch64
+else ifeq ($(MACHINE_ARCH),arm64)
+    ARCH := aarch64
+else
+    # Default to x86_64 for unknown architectures
+    ARCH := x86_64
+endif
 
 # Architecture mappings for different package formats
 ifeq ($(MACHINE_ARCH),x86_64)
@@ -369,37 +384,37 @@ endef
 
 # Source files (excluding main files)
 COMMON_SRCS = $(SRC_DIR)/message.c $(SRC_DIR)/dtls.c $(SRC_DIR)/generic_queue.c $(SRC_DIR)/message_queue.c
-COMMON_OBJS_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/debug/%.o,$(COMMON_SRCS))
-COMMON_OBJS_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/release/%.o,$(COMMON_SRCS))
-COMMON_OBJS_TSAN = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/tsan/%.o,$(COMMON_SRCS))
+COMMON_OBJS_DEBUG = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR_ARCH_OS)/debug/%.o,$(COMMON_SRCS))
+COMMON_OBJS_RELEASE = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR_ARCH_OS)/release/%.o,$(COMMON_SRCS))
+COMMON_OBJS_TSAN = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR_ARCH_OS)/tsan/%.o,$(COMMON_SRCS))
 
 # Main source files
 SERVER_MAIN = $(SRC_DIR)/server.c
 CLIENT_MAIN = $(SRC_DIR)/client.c
 
 # Object files for debug and release builds
-SERVER_OBJ_DEBUG = $(OBJ_DIR)/$(OS_DIR)/debug/server.o
-CLIENT_OBJ_DEBUG = $(OBJ_DIR)/$(OS_DIR)/debug/client.o
-SERVER_OBJ_RELEASE = $(OBJ_DIR)/$(OS_DIR)/release/server.o
-CLIENT_OBJ_RELEASE = $(OBJ_DIR)/$(OS_DIR)/release/client.o
-SERVER_OBJ_TSAN = $(OBJ_DIR)/$(OS_DIR)/tsan/server.o
-CLIENT_OBJ_TSAN = $(OBJ_DIR)/$(OS_DIR)/tsan/client.o
+SERVER_OBJ_DEBUG = $(OBJ_DIR_ARCH_OS)/debug/server.o
+CLIENT_OBJ_DEBUG = $(OBJ_DIR_ARCH_OS)/debug/client.o
+SERVER_OBJ_RELEASE = $(OBJ_DIR_ARCH_OS)/release/server.o
+CLIENT_OBJ_RELEASE = $(OBJ_DIR_ARCH_OS)/release/client.o
+SERVER_OBJ_TSAN = $(OBJ_DIR_ARCH_OS)/tsan/server.o
+CLIENT_OBJ_TSAN = $(OBJ_DIR_ARCH_OS)/tsan/client.o
 
 # All objects needed for executables
-SERVER_OBJS_DEBUG = $(SERVER_OBJ_DEBUG) $(OBJ_DIR)/$(OS_DIR)/debug/message.o $(OBJ_DIR)/$(OS_DIR)/debug/dtls.o
+SERVER_OBJS_DEBUG = $(SERVER_OBJ_DEBUG) $(OBJ_DIR_ARCH_OS)/debug/message.o $(OBJ_DIR_ARCH_OS)/debug/dtls.o
 CLIENT_OBJS_DEBUG = $(CLIENT_OBJ_DEBUG)
-SERVER_OBJS_RELEASE = $(SERVER_OBJ_RELEASE) $(OBJ_DIR)/$(OS_DIR)/release/message.o $(OBJ_DIR)/$(OS_DIR)/release/dtls.o
+SERVER_OBJS_RELEASE = $(SERVER_OBJ_RELEASE) $(OBJ_DIR_ARCH_OS)/release/message.o $(OBJ_DIR_ARCH_OS)/release/dtls.o
 CLIENT_OBJS_RELEASE = $(CLIENT_OBJ_RELEASE)
-SERVER_OBJS_TSAN = $(SERVER_OBJ_TSAN) $(OBJ_DIR)/$(OS_DIR)/tsan/message.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+SERVER_OBJS_TSAN = $(SERVER_OBJ_TSAN) $(OBJ_DIR_ARCH_OS)/tsan/message.o $(OBJ_DIR_ARCH_OS)/tsan/dtls.o
 CLIENT_OBJS_TSAN = $(CLIENT_OBJ_TSAN)
 
 # Test files
 TEST_SRCS = $(wildcard $(TST_DIR)/test_*.c)
-TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_OS)/sc-%,$(TEST_SRCS))
-TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR)/$(OS_DIR)/%.o,$(TEST_SRCS))
+TEST_BINS = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_ARCH_OS)/sc-%,$(TEST_SRCS))
+TEST_OBJS = $(patsubst $(TST_DIR)/%.c,$(OBJ_DIR_ARCH_OS)/%.o,$(TEST_SRCS))
 
 # Unity test framework
-UNITY_OBJ = $(OBJ_DIR)/$(OS_DIR)/unity.o
+UNITY_OBJ = $(OBJ_DIR_ARCH_OS)/unity.o
 
 # Dependency files (generated by -MMD -MP)
 DEPS = $(COMMON_OBJS_DEBUG:.o=.d) $(COMMON_OBJS_RELEASE:.o=.d) $(COMMON_OBJS_TSAN:.o=.d) \
@@ -414,7 +429,7 @@ DEPS = $(COMMON_OBJS_DEBUG:.o=.d) $(COMMON_OBJS_RELEASE:.o=.d) $(COMMON_OBJS_TSA
 
 # Default target - build debug versions
 .PHONY: all
-all: check-tools mbedtls $(BIN_DIR_OS)/sc-server $(BIN_DIR_OS)/sc-client
+all: check-tools mbedtls $(BIN_DIR_ARCH_OS)/sc-server $(BIN_DIR_ARCH_OS)/sc-client
 
 # Check all required tools
 .PHONY: check-tools
@@ -442,10 +457,10 @@ check-all-tools: check-tools
 
 # Build individual debug targets
 .PHONY: server
-server: mbedtls $(BIN_DIR_OS)/sc-server
+server: mbedtls $(BIN_DIR_ARCH_OS)/sc-server
 
 .PHONY: client
-client: mbedtls $(BIN_DIR_OS)/sc-client
+client: mbedtls $(BIN_DIR_ARCH_OS)/sc-client
 
 # ============================================================================
 # Vendor Dependencies
@@ -473,29 +488,30 @@ EXTERNAL_DEPS_CFLAGS = -O2 -fPIC -D_DEFAULT_SOURCE -Wno-error
 .PHONY: mbedtls
 mbedtls: clone-mbedtls
 	$(call check-tool,cmake,Please install CMake - required for building mbedTLS)
-	@if [ ! -f "$(DEPS_BUILD_DIR)/$(OS_DIR)/lib/libmbedtls.so" ]; then \
+	@if [ ! -f "$(DEPS_BUILD_DIR_ARCH_OS)/lib/libmbedtls.so" ]; then \
 		if [ ! -d "$(DEPS_SRC_DIR)/mbedtls" ]; then \
 			echo "Error: $(DEPS_SRC_DIR)/mbedtls not found. Run 'make clone-mbedtls' on the host first."; \
 			exit 1; \
 		fi; \
-		echo "Building mbedTLS for $(OS_DIR)..."; \
+		echo "Building mbedTLS for $(ARCH)/$(OS_DIR)..."; \
 		echo "Cleaning mbedTLS source directory..."; \
 		cd $(DEPS_SRC_DIR)/mbedtls && make clean 2>/dev/null || true && cd $(PWD); \
-		mkdir -p $(DEPS_BUILD_DIR)/$(OS_DIR)/build-mbedtls; \
-		cd $(DEPS_BUILD_DIR)/$(OS_DIR)/build-mbedtls && \
+		mkdir -p $(DEPS_BUILD_DIR_ARCH_OS)/build-mbedtls; \
+		cd $(DEPS_BUILD_DIR_ARCH_OS)/build-mbedtls && \
 		CFLAGS="$(EXTERNAL_DEPS_CFLAGS)" \
-		cmake -DCMAKE_INSTALL_PREFIX=$(PWD)/$(DEPS_BUILD_DIR)/$(OS_DIR) \
+		cmake -DCMAKE_INSTALL_PREFIX=$(PWD)/$(DEPS_BUILD_DIR_ARCH_OS) \
 		      -DCMAKE_C_FLAGS="$(EXTERNAL_DEPS_CFLAGS)" \
 		      -DUSE_SHARED_MBEDTLS_LIBRARY=On \
 		      -DMBEDTLS_FATAL_WARNINGS=OFF \
 		      -DENABLE_TESTING=OFF \
+		      -DENABLE_PROGRAMS=OFF \
 		      $(PWD)/$(DEPS_SRC_DIR)/mbedtls && \
-		make -j$$(nproc) && \
+		make -j$$(if [ "$(ARCH)" = "aarch64" ]; then echo 2; else nproc; fi) VERBOSE=1 || (echo "mbedTLS build failed. Check the build log above for errors." && exit 1) && \
 		make install && \
 		cd $(PWD) && \
-		rm -rf $(DEPS_BUILD_DIR)/$(OS_DIR)/build-mbedtls; \
+		rm -rf $(DEPS_BUILD_DIR_ARCH_OS)/build-mbedtls; \
 	else \
-		echo "mbedTLS already built in $(DEPS_BUILD_DIR)/$(OS_DIR)"; \
+		echo "mbedTLS already built in $(DEPS_BUILD_DIR_ARCH_OS)"; \
 	fi
 
 # Ensure Unity source is available
@@ -515,23 +531,23 @@ clone-unity:
 release:
 	@echo "Building release for $(OS_ID) ($(OS_DIR))..."
 	@$(MAKE) mbedtls
-	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR_OS)/sc-server-release $(BIN_DIR_OS)/sc-client-release
+	@$(MAKE) CFLAGS="$(CFLAGS_RELEASE)" $(BIN_DIR_ARCH_OS)/sc-server-release $(BIN_DIR_ARCH_OS)/sc-client-release
 	@echo "Release build complete for $(OS_ID)"
-	@echo "Binaries: $(BIN_DIR_OS)/sc-server-release -> $$(readlink $(BIN_DIR_OS)/sc-server-release)"
-	@echo "          $(BIN_DIR_OS)/sc-client-release -> $$(readlink $(BIN_DIR_OS)/sc-client-release)"
+	@echo "Binaries: $(BIN_DIR_ARCH_OS)/sc-server-release -> $$(readlink $(BIN_DIR_ARCH_OS)/sc-server-release)"
+	@echo "          $(BIN_DIR_ARCH_OS)/sc-client-release -> $$(readlink $(BIN_DIR_ARCH_OS)/sc-client-release)"
 
 # ============================================================================
 # Build Rules - Debug
 # ============================================================================
 
 # Debug executables
-$(BIN_DIR_OS)/sc-server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-server: $(SERVER_OBJS_DEBUG) | $(BIN_DIR_ARCH_OS)
 	$(CC) -o $@ $(SERVER_OBJS_DEBUG) $(LDFLAGS)
 	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
 		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
 	fi
 
-$(BIN_DIR_OS)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR_ARCH_OS)
 	$(CC) -o $@ $(CLIENT_OBJS_DEBUG) $(LDFLAGS)
 	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
 		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
@@ -539,7 +555,7 @@ $(BIN_DIR_OS)/sc-client: $(CLIENT_OBJS_DEBUG) | $(BIN_DIR_OS)
 
 # Debug object files - generic rule
 # Note: All debug builds use -march=native to optimize for the build machine
-$(OBJ_DIR)/$(OS_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/debug
+$(OBJ_DIR_ARCH_OS)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR_ARCH_OS)/debug
 	$(CC) $(CFLAGS_DEBUG) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # ============================================================================
@@ -549,32 +565,32 @@ $(OBJ_DIR)/$(OS_DIR)/debug/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/debug
 # Release binary versioning helper
 define build-release-binary
 	@VERSION=$$($(get-version)); \
-	$(CC) -o $(BIN_DIR_OS)/$(1)-$$VERSION $(2) $(LDFLAGS_RELEASE); \
-	ln -sf $(1)-$$VERSION $(BIN_DIR_OS)/$(1)-release; \
+	$(CC) -o $(BIN_DIR_ARCH_OS)/$(1)-$$VERSION $(2) $(LDFLAGS_RELEASE); \
+	ln -sf $(1)-$$VERSION $(BIN_DIR_ARCH_OS)/$(1)-release; \
 	if [ "$(IS_HOST_BUILD)" = "1" ]; then \
-		ln -f $(BIN_DIR_OS)/$(1)-$$VERSION $(BIN_DIR)/ 2>/dev/null || true; \
+		ln -f $(BIN_DIR_ARCH_OS)/$(1)-$$VERSION $(BIN_DIR)/ 2>/dev/null || true; \
 		ln -sf $(1)-$$VERSION $(BIN_DIR)/$(1)-release 2>/dev/null || true; \
 	fi
 endef
 
 # Release executables (with versioning)
-$(BIN_DIR_OS)/sc-server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-server-release: $(SERVER_OBJS_RELEASE) | $(BIN_DIR_ARCH_OS)
 	$(call build-release-binary,sc-server,$^)
 
-$(BIN_DIR_OS)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-client-release: $(CLIENT_OBJS_RELEASE) | $(BIN_DIR_ARCH_OS)
 	$(call build-release-binary,sc-client,$^)
 
 # Release object files - generic rule
-$(OBJ_DIR)/$(OS_DIR)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/release
+$(OBJ_DIR_ARCH_OS)/release/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR_ARCH_OS)/release
 	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
 
 # Release server with x86-64-v4 architecture (requires AVX-512)
-$(OBJ_DIR)/$(OS_DIR)/release/server.o: $(SRC_DIR)/server.c | $(OBJ_DIR)/$(OS_DIR)/release
-	$(CC) $(CFLAGS_RELEASE) -march=x86-64-v4 -I$(SRC_DIR) -c -o $@ $<
+$(OBJ_DIR_ARCH_OS)/release/server.o: $(SRC_DIR)/server.c | $(OBJ_DIR_ARCH_OS)/release
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
 
 # Release client with x86-64-v3 architecture (requires AVX2)
-$(OBJ_DIR)/$(OS_DIR)/release/client.o: $(SRC_DIR)/client.c | $(OBJ_DIR)/$(OS_DIR)/release
-	$(CC) $(CFLAGS_RELEASE) -march=x86-64-v3 -I$(SRC_DIR) -c -o $@ $<
+$(OBJ_DIR_ARCH_OS)/release/client.o: $(SRC_DIR)/client.c | $(OBJ_DIR_ARCH_OS)/release
+	$(CC) $(CFLAGS_RELEASE) -I$(SRC_DIR) -c -o $@ $<
 
 # ============================================================================
 # Test Targets
@@ -591,7 +607,7 @@ run-tests: mbedtls tests server client
 	done
 
 # Unity framework object
-$(UNITY_OBJ): $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/$(OS_DIR) clone-unity
+$(UNITY_OBJ): $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR_ARCH_OS) clone-unity
 	$(CC) $(EXTERNAL_DEPS_CFLAGS) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # Test executable link command
@@ -609,7 +625,7 @@ get-test-module = $(if $(filter test_server,$(1)),dtls,$(patsubst test_%,%,$(1))
 
 # Generic test rule generator
 define test-rule
-$(BIN_DIR_OS)/sc-$(1): $(OBJ_DIR)/$(OS_DIR)/$(1).o $(UNITY_OBJ) $(OBJ_DIR)/$(OS_DIR)/debug/$(call get-test-module,$(1)).o | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-$(1): $(OBJ_DIR_ARCH_OS)/$(1).o $(UNITY_OBJ) $(OBJ_DIR_ARCH_OS)/debug/$(call get-test-module,$(1)).o | $(BIN_DIR_ARCH_OS)
 	$$(link-test)
 endef
 
@@ -617,7 +633,7 @@ endef
 $(foreach test,$(basename $(notdir $(TEST_SRCS))),$(eval $(call test-rule,$(test))))
 
 # Test object files
-$(OBJ_DIR)/$(OS_DIR)/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR)/$(OS_DIR) clone-unity
+$(OBJ_DIR_ARCH_OS)/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR_ARCH_OS) clone-unity
 	$(CC) $(CFLAGS_DEBUG) -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # ============================================================================
@@ -626,32 +642,32 @@ $(OBJ_DIR)/$(OS_DIR)/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR)/$(OS_DIR) clone-
 
 # TSAN object file compilation rules
 # Note: All TSAN builds use -march=native to optimize for the build machine
-$(OBJ_DIR)/$(OS_DIR)/tsan/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)/$(OS_DIR)/tsan
+$(OBJ_DIR_ARCH_OS)/tsan/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR_ARCH_OS)/tsan
 	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -c -o $@ $<
 
 # TSAN test object files
-$(OBJ_DIR)/$(OS_DIR)/tsan/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR)/$(OS_DIR)/tsan clone-unity
+$(OBJ_DIR_ARCH_OS)/tsan/test_%.o: $(TST_DIR)/test_%.c | $(OBJ_DIR_ARCH_OS)/tsan clone-unity
 	$(CC) $(CFLAGS_TSAN) -march=native -I$(SRC_DIR) -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN Unity object
-$(OBJ_DIR)/$(OS_DIR)/tsan/unity.o: $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR)/$(OS_DIR)/tsan clone-unity
+$(OBJ_DIR_ARCH_OS)/tsan/unity.o: $(DEPS_SRC_DIR)/unity/src/unity.c | $(OBJ_DIR_ARCH_OS)/tsan clone-unity
 	$(CC) $(EXTERNAL_DEPS_CFLAGS) -fsanitize=thread -I$(DEPS_SRC_DIR)/unity/src -c -o $@ $<
 
 # TSAN executables
-$(BIN_DIR_OS)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-server-tsan: $(SERVER_OBJS_TSAN) | $(BIN_DIR_ARCH_OS)
 	$(CC) -o $@ $(SERVER_OBJS_TSAN) $(LDFLAGS_TSAN)
 	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
 		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
 	fi
 
-$(BIN_DIR_OS)/sc-client-tsan: $(CLIENT_OBJS_TSAN) | $(BIN_DIR_OS)
+$(BIN_DIR_ARCH_OS)/sc-client-tsan: $(CLIENT_OBJS_TSAN) | $(BIN_DIR_ARCH_OS)
 	$(CC) -o $@ $(CLIENT_OBJS_TSAN) $(LDFLAGS_TSAN)
 	@if [ "$(IS_HOST_BUILD)" = "1" ]; then \
 		ln -f $@ $(BIN_DIR)/ 2>/dev/null || true; \
 	fi
 
 # TSAN test executables
-TEST_BINS_TSAN = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_OS)/sc-%-tsan,$(TEST_SRCS))
+TEST_BINS_TSAN = $(patsubst $(TST_DIR)/%.c,$(BIN_DIR_ARCH_OS)/sc-%-tsan,$(TEST_SRCS))
 
 # Helper function to build tsan test with proper module dependencies
 define link-test-tsan
@@ -662,23 +678,23 @@ define link-test-tsan
 endef
 
 # Generic queue tests (no dependencies)
-$(BIN_DIR_OS)/sc-test_generic_queue-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_generic_queue.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/generic_queue.o
+$(BIN_DIR_ARCH_OS)/sc-test_generic_queue-tsan: $(OBJ_DIR_ARCH_OS)/tsan/test_generic_queue.o $(OBJ_DIR_ARCH_OS)/tsan/unity.o $(OBJ_DIR_ARCH_OS)/tsan/generic_queue.o
 	$(call link-test-tsan)
 
 # Message tests  
-$(BIN_DIR_OS)/sc-test_message-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_message.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/message.o
+$(BIN_DIR_ARCH_OS)/sc-test_message-tsan: $(OBJ_DIR_ARCH_OS)/tsan/test_message.o $(OBJ_DIR_ARCH_OS)/tsan/unity.o $(OBJ_DIR_ARCH_OS)/tsan/message.o
 	$(call link-test-tsan)
 
 # DTLS tests
-$(BIN_DIR_OS)/sc-test_dtls-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_dtls.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_ARCH_OS)/sc-test_dtls-tsan: $(OBJ_DIR_ARCH_OS)/tsan/test_dtls.o $(OBJ_DIR_ARCH_OS)/tsan/unity.o $(OBJ_DIR_ARCH_OS)/tsan/dtls.o
 	$(call link-test-tsan)
 
 # Server tests (uses DTLS but not full server)
-$(BIN_DIR_OS)/sc-test_server-tsan: $(OBJ_DIR)/$(OS_DIR)/tsan/test_server.o $(OBJ_DIR)/$(OS_DIR)/tsan/unity.o $(OBJ_DIR)/$(OS_DIR)/tsan/dtls.o
+$(BIN_DIR_ARCH_OS)/sc-test_server-tsan: $(OBJ_DIR_ARCH_OS)/tsan/test_server.o $(OBJ_DIR_ARCH_OS)/tsan/unity.o $(OBJ_DIR_ARCH_OS)/tsan/dtls.o
 	$(call link-test-tsan)
 
 .PHONY: tsan
-tsan: mbedtls $(BIN_DIR_OS)/sc-server-tsan $(BIN_DIR_OS)/sc-client-tsan $(TEST_BINS_TSAN)
+tsan: mbedtls $(BIN_DIR_ARCH_OS)/sc-server-tsan $(BIN_DIR_ARCH_OS)/sc-client-tsan $(TEST_BINS_TSAN)
 
 .PHONY: check-tsan
 check-tsan: tsan
@@ -696,20 +712,20 @@ check-tsan: tsan
 # Run targets
 .PHONY: run-server
 run-server: server | $(DAT_DIR)
-	$(BIN_DIR_OS)/sc-server
+	$(BIN_DIR_ARCH_OS)/sc-server
 
 .PHONY: run-client
 run-client: client
-	$(BIN_DIR_OS)/sc-client
+	$(BIN_DIR_ARCH_OS)/sc-client
 
 # Debug with GDB
 .PHONY: debug-server
 debug-server: server
-	gdb $(BIN_DIR_OS)/sc-server
+	gdb $(BIN_DIR_ARCH_OS)/sc-server
 
 .PHONY: debug-client
 debug-client: client
-	gdb $(BIN_DIR_OS)/sc-client
+	gdb $(BIN_DIR_ARCH_OS)/sc-client
 
 # Code formatting
 .PHONY: fmt
@@ -858,106 +874,136 @@ fedora_IMAGE = fedora:40
 fedora_IMAGE_SOURCE = Docker Hub
 
 
-# Pull base images for builders
-.PHONY: pull-amazon
-pull-amazon:
+# Convert architecture for Docker platform
+# Docker uses linux/amd64 and linux/arm64
+ifeq ($(ARCH),x86_64)
+    DOCKER_PLATFORM := linux/amd64
+else ifeq ($(ARCH),aarch64)
+    DOCKER_PLATFORM := linux/arm64
+endif
+
+# Pull base images for builders with architecture support
+.PHONY: pull-%-amazon
+pull-%-amazon:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
 	$(call check-tool,aws,Please install AWS CLI - https://aws.amazon.com/cli/)
 	@echo "Logging in to Amazon ECR Public..."
 	@aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(ECR_REGISTRY)
-	@echo "Pulling Amazon Linux 2023 image..."
-	@docker pull $(ECR_REGISTRY)/$(ECR_REPO)/amazonlinux:2023
-	@echo "Tagging as amazonlinux:2023..."
-	@docker tag $(ECR_REGISTRY)/$(ECR_REPO)/amazonlinux:2023 amazonlinux:2023
-	@echo "Amazon Linux 2023 image pulled successfully"
+	@echo "Pulling Amazon Linux 2023 image for $(ARCH)..."
+	@docker pull --platform=$(DOCKER_PLATFORM) $(ECR_REGISTRY)/$(ECR_REPO)/amazonlinux:2023
+	@echo "Amazon Linux 2023 image for $(ARCH) pulled successfully"
 
-.PHONY: pull-debian
-pull-debian:
+.PHONY: pull-%-debian
+pull-%-debian:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@echo "Pulling Debian slim image from Docker Hub..."
-	@docker pull debian:stable-slim
-	@echo "Debian slim image pulled successfully"
+	@echo "Pulling Debian slim image for $(ARCH)..."
+	@docker pull --platform=$(DOCKER_PLATFORM) debian:stable-slim
+	@echo "Debian slim image for $(ARCH) pulled successfully"
 
-.PHONY: pull-ubuntu
-pull-ubuntu:
+.PHONY: pull-%-ubuntu
+pull-%-ubuntu:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@echo "Pulling Ubuntu image from Docker Hub..."
-	@docker pull ubuntu:24.04
-	@echo "Ubuntu image pulled successfully"
+	@echo "Pulling Ubuntu image for $(ARCH)..."
+	@docker pull --platform=$(DOCKER_PLATFORM) ubuntu:24.04
+	@echo "Ubuntu image for $(ARCH) pulled successfully"
 
-.PHONY: pull-fedora
-pull-fedora:
+.PHONY: pull-%-fedora
+pull-%-fedora:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@echo "Pulling Fedora image from Docker Hub..."
-	@docker pull fedora:40
-	@echo "Fedora image pulled successfully"
+	@echo "Pulling Fedora image for $(ARCH)..."
+	@docker pull --platform=$(DOCKER_PLATFORM) fedora:40
+	@echo "Fedora image for $(ARCH) pulled successfully"
 
-# Pattern rule for building Docker images
+# Pattern rule for building Docker images with architecture
 .PHONY: build-%
 build-%:
+	$(eval PARTS := $(subst -, ,$*))
+	$(eval ARCH := $(word 1,$(PARTS)))
+	$(eval OS := $(word 2,$(PARTS)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@echo "Building Space Captain $* builder image..."
-	@docker build -f Dockerfile.$* -t space-captain-$*-builder .
-	@echo "Builder image created successfully"
+	@echo "Building Space Captain $(ARCH)-$(OS) builder image..."
+	@docker build --platform=$(DOCKER_PLATFORM) -f Dockerfile.$(ARCH).$(OS) -t space-captain-$(ARCH)-$(OS)-builder .
+	@echo "Builder image for $(ARCH)-$(OS) created successfully"
 
 # Pattern rule for interactive shell in Docker builder
 .PHONY: shell-%
 shell-%: build-%
+	$(eval PARTS := $(subst -, ,$*))
+	$(eval ARCH := $(word 1,$(PARTS)))
+	$(eval OS := $(word 2,$(PARTS)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	$(call check-tool,docker,Please install Docker - https://docs.docker.com/get-docker/)
-	@echo "Starting interactive shell in $* builder container..."
-	@docker run -it --volume "$$(pwd)":/workspace --workdir=/workspace space-captain-$*-builder /bin/bash
+	@echo "Starting interactive shell in $(ARCH)-$(OS) builder container..."
+	@docker run -it --platform=$(DOCKER_PLATFORM) --volume "$$(pwd)":/workspace --workdir=/workspace space-captain-$(ARCH)-$(OS)-builder /bin/bash
 
-# Smart package targets that auto-detect Docker environment
-.PHONY: package-debian
-package-debian:
+# Smart package targets that auto-detect Docker environment with architecture
+.PHONY: package-%-debian
+package-%-debian:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
 		echo "Running in Docker container - building package..."; \
-		$(MAKE) package-deb; \
+		$(MAKE) ARCH=$(ARCH) package-deb; \
 	else \
-		echo "Not in Docker - launching build in Debian container..."; \
-		$(MAKE) build-debian; \
-		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
-			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
-			space-captain-debian-builder make package-debian; \
+		echo "Not in Docker - launching build in $(ARCH) Debian container..."; \
+		$(MAKE) build-$(ARCH)-debian; \
+		docker run --rm --platform=$(DOCKER_PLATFORM) --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) -e ARCH=$(ARCH) \
+			space-captain-$(ARCH)-debian-builder make ARCH=$(ARCH) package-$(ARCH)-debian; \
 	fi
 
-.PHONY: package-amazon
-package-amazon:
+.PHONY: package-%-amazon
+package-%-amazon:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
 		echo "Running in Docker container - building package..."; \
-		$(MAKE) package-rpm; \
+		$(MAKE) ARCH=$(ARCH) package-rpm; \
 	else \
-		echo "Not in Docker - launching build in Amazon container..."; \
-		$(MAKE) build-amazon; \
-		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
-			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
-			space-captain-amazon-builder make package-amazon; \
+		echo "Not in Docker - launching build in $(ARCH) Amazon container..."; \
+		$(MAKE) build-$(ARCH)-amazon; \
+		docker run --rm --platform=$(DOCKER_PLATFORM) --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) -e ARCH=$(ARCH) \
+			space-captain-$(ARCH)-amazon-builder make ARCH=$(ARCH) package-$(ARCH)-amazon; \
 	fi
 
-.PHONY: package-ubuntu
-package-ubuntu:
+.PHONY: package-%-ubuntu
+package-%-ubuntu:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
 		echo "Running in Docker container - building package..."; \
-		$(MAKE) package-deb; \
+		$(MAKE) ARCH=$(ARCH) package-deb; \
 	else \
-		echo "Not in Docker - launching build in Ubuntu container..."; \
-		$(MAKE) build-ubuntu; \
-		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
-			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
-			space-captain-ubuntu-builder make package-ubuntu; \
+		echo "Not in Docker - launching build in $(ARCH) Ubuntu container..."; \
+		$(MAKE) build-$(ARCH)-ubuntu; \
+		docker run --rm --platform=$(DOCKER_PLATFORM) --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) -e ARCH=$(ARCH) \
+			space-captain-$(ARCH)-ubuntu-builder make ARCH=$(ARCH) package-$(ARCH)-ubuntu; \
 	fi
 
-.PHONY: package-fedora
-package-fedora:
+.PHONY: package-%-fedora
+package-%-fedora:
+	$(eval ARCH := $(word 1,$(subst -, ,$*)))
+	$(eval DOCKER_PLATFORM := $(if $(filter x86_64,$(ARCH)),linux/amd64,linux/arm64))
 	@if [ -f /.dockerenv ] || [ -n "$$(grep -q docker /proc/1/cgroup 2>/dev/null && echo 1)" ]; then \
 		echo "Running in Docker container - building package..."; \
-		$(MAKE) package-rpm; \
+		$(MAKE) ARCH=$(ARCH) package-rpm; \
 	else \
-		echo "Not in Docker - launching build in Fedora container..."; \
-		$(MAKE) build-fedora; \
-		docker run --rm --volume "$$(pwd)":/workspace --workdir=/workspace \
-			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) \
-			space-captain-fedora-builder make package-fedora; \
+		echo "Not in Docker - launching build in $(ARCH) Fedora container..."; \
+		$(MAKE) build-$(ARCH)-fedora; \
+		docker run --rm --platform=$(DOCKER_PLATFORM) --volume "$$(pwd)":/workspace --workdir=/workspace \
+			-e USER_ID=$$(id -u) -e GROUP_ID=$$(id -g) -e ARCH=$(ARCH) \
+			space-captain-$(ARCH)-fedora-builder make ARCH=$(ARCH) package-$(ARCH)-fedora; \
 	fi
 
 # ============================================================================
@@ -1126,8 +1172,8 @@ package-deb: release certs
 	@GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
 	FULL_VERSION=$$($(get-version)); \
 	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
-	echo "Building Debian package v$$FULL_VERSION for $(DEB_ARCH)..."; \
-	scripts/build-deb-package.sh "$$SAFE_VERSION" "$(DEB_ARCH)" "$(BIN_DIR)" "$$GIT_SHA" "$(OS_DIR)"; \
+	echo "Building Debian package v$$FULL_VERSION for $(ARCH)/$(DEB_ARCH)..."; \
+	scripts/build-deb-package.sh "$$SAFE_VERSION" "$(DEB_ARCH)" "$(BIN_DIR)" "$$GIT_SHA" "$(ARCH)/$(OS_DIR)"; \
 	RELEASE=$$(cat .vREL 2>/dev/null || echo 1); \
 	echo "Debian package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)_$$SAFE_VERSION-$$RELEASE_$(DEB_ARCH).deb"
 
@@ -1139,8 +1185,8 @@ package-rpm: release certs
 	@GIT_SHA=$$(git rev-parse --short HEAD 2>/dev/null || echo "nogit"); \
 	FULL_VERSION=$$($(get-version)); \
 	SAFE_VERSION=$$(echo "$$FULL_VERSION" | sed 's/-/~/g'); \
-	echo "Building RPM package v$$FULL_VERSION for $(RPM_ARCH)..."; \
-	scripts/build-rpm-package.sh "$$SAFE_VERSION" "$(RPM_ARCH)" "$(BIN_DIR)" "$$GIT_SHA" "$(OS_DIR)"; \
+	echo "Building RPM package v$$FULL_VERSION for $(ARCH)/$(RPM_ARCH)..."; \
+	scripts/build-rpm-package.sh "$$SAFE_VERSION" "$(RPM_ARCH)" "$(BIN_DIR)" "$$GIT_SHA" "$(ARCH)/$(OS_DIR)"; \
 	RELEASE=$$(cat .vREL 2>/dev/null || echo 1); \
 	echo "RPM package created: $(PACKAGE_OUT_DIR)/$(PACKAGE_NAME)-$$SAFE_VERSION-$$RELEASE.$(RPM_ARCH).rpm"
 
@@ -1184,44 +1230,8 @@ infra-status:
 	./infra/bin/ssh-info
 
 
-# ============================================================================
-# VM Targets
-# ============================================================================
 
-# SSH key generation for VMs
-.secrets/ssh/space-captain:
-	@echo "Generating SSH key pair for VMs..."
-	@mkdir -p .secrets/ssh
-	@ssh-keygen -t ed25519 -f .secrets/ssh/space-captain -N "" -C "space-captain@vm" -q
-	@chmod 600 .secrets/ssh/space-captain
-	@chmod 644 .secrets/ssh/space-captain.pub
-	@echo "SSH key pair generated at .secrets/ssh/space-captain"
 
-.PHONY: vm-ssh-keys
-vm-ssh-keys: .secrets/ssh/space-captain
-
-.PHONY: x86_64-start
-x86_64-start: vm-ssh-keys clone-mbedtls clone-unity
-	@cd vm/x86_64/scripts && ./launch.sh
-	@echo ""
-	@echo "Following serial console output (Ctrl+C to exit)..."
-	@tail -f vm/x86_64/space-captain-dev.serial
-
-.PHONY: x86_64-stop
-x86_64-stop:
-	@cd vm/x86_64/scripts && ./stop.sh
-
-.PHONY: x86_64-destroy
-x86_64-destroy:
-	@cd vm/x86_64/scripts && ./destroy.sh
-
-.PHONY: x86_64-ssh
-x86_64-ssh: vm-ssh-keys clone-mbedtls clone-unity
-	@cd vm/x86_64/scripts && ./ssh.sh
-
-.PHONY: x86_64-status
-x86_64-status:
-	@cd vm/x86_64/scripts && ./status.sh
 
 
 # ============================================================================
@@ -1256,9 +1266,9 @@ help:
 	@echo "Packaging:"
 	@echo "  make package         Auto-detect OS and build package"
 	@echo "  make packages        Build packages for all OSes (host only)"
-	@echo "  make package-<os>    Build package for OS (debian/ubuntu/amazon/fedora)"
-	@echo "  make package-deb     Build Debian package (.deb)"
-	@echo "  make package-rpm     Build RPM package (.rpm)"
+	@echo "  make package-<arch>-<os>  Build package for arch-os (e.g., x86_64-debian, aarch64-ubuntu)"
+	@echo "  make package-deb     Build Debian package (.deb) for current arch"
+	@echo "  make package-rpm     Build RPM package (.rpm) for current arch"
 	@echo ""
 	@echo "Cleaning:"
 	@echo "  make clean           Remove build artifacts (keeps deps)"
@@ -1280,13 +1290,13 @@ help:
 	@echo "  make clone-unity     Clone/update Unity test framework to $(DEPS_SRC_DIR)"
 	@echo ""
 	@echo "Docker:"
-	@echo "  make shell-<os>      Start interactive shell in builder (debian/ubuntu/amazon/fedora)"
-	@echo "  make build-<os>      Build Docker builder image (debian/ubuntu/amazon/fedora)"
-	@echo "  make pull-debian     Pull Debian slim Docker image"
-	@echo "  make pull-ubuntu     Pull Ubuntu Docker image"
-	@echo "  make pull-amazon     Pull Amazon Linux 2023 Docker image"
-	@echo "  make pull-fedora     Pull Fedora Docker image"
-	@echo "  make docker-info     Display Docker configuration"
+	@echo "  make shell-<arch>-<os>    Start interactive shell in arch-os builder"
+	@echo "  make build-<arch>-<os>    Build Docker builder image for arch-os"
+	@echo "  make pull-<arch>-debian   Pull Debian slim Docker image for arch"
+	@echo "  make pull-<arch>-ubuntu   Pull Ubuntu Docker image for arch"
+	@echo "  make pull-<arch>-amazon   Pull Amazon Linux 2023 Docker image for arch"
+	@echo "  make pull-<arch>-fedora   Pull Fedora Docker image for arch"
+	@echo "  make docker-info          Display Docker configuration"
 	@echo ""
 	@echo "Version Management:"
 	@echo "  make version         Display current version"
@@ -1308,13 +1318,6 @@ help:
 	@echo "  make deploy-clients  Deploy latest RPM to running clients (TODO)"
 	@echo "  make deploy-telemetry Deploy telemetry stack (TODO)"
 	@echo ""
-	@echo "Virtual Machine:"
-	@echo "  make x86_64-start    Start x86_64 development VM"
-	@echo "  make x86_64-stop     Stop x86_64 development VM"
-	@echo "  make x86_64-destroy  Destroy x86_64 VM and disk"
-	@echo "  make x86_64-ssh      SSH into running x86_64 VM"
-	@echo "  make x86_64-status   Check x86_64 VM status"
-	@echo ""
 	@echo "Tools:"
 	@echo "  make check-tools     Check for required build tools"
 	@echo "  make check-all-tools Check for all optional tools"
@@ -1328,7 +1331,7 @@ help:
 # Directory Creation
 # ============================================================================
 
-$(BIN_DIR) $(BIN_DIR_OS) $(DAT_DIR) $(OBJ_DIR)/$(OS_DIR)/debug $(OBJ_DIR)/$(OS_DIR)/release $(OBJ_DIR)/$(OS_DIR)/tsan $(OBJ_DIR)/$(OS_DIR):
+$(BIN_DIR) $(BIN_DIR_ARCH_OS) $(DAT_DIR) $(OBJ_DIR_ARCH_OS)/debug $(OBJ_DIR_ARCH_OS)/release $(OBJ_DIR_ARCH_OS)/tsan $(OBJ_DIR_ARCH_OS):
 	mkdir -p $@
 
 # ============================================================================

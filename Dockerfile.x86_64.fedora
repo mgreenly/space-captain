@@ -1,0 +1,34 @@
+FROM fedora:40
+
+# Install build dependencies for Space Captain
+RUN dnf install -y \
+    gcc \
+    make \
+    cmake \
+    python3 \
+    rpm-build \
+    tar \
+    gzip \
+    shadow-utils \
+    util-linux \
+    git \
+    clang-tools-extra \
+    graphviz \
+    gdb \
+    openssl \
+    openssl-devel \
+    chrpath \
+    libasan \
+    libubsan \
+    && dnf clean all
+
+# Install gosu for proper user switching
+RUN curl -L https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64 -o /usr/local/bin/gosu && \
+    chmod +x /usr/local/bin/gosu
+
+# Copy entrypoint script
+COPY scripts/docker-entrypoint-fedora.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/bin/bash"]

@@ -74,25 +74,24 @@ void setUp(void) {
       dup2(devnull, STDERR_FILENO);
       close(devnull);
     }
-    // Get OS directory from environment (default to "debian" if not set)
-    const char *os_dir = getenv("SC_OS_DIR");
-    if (!os_dir) os_dir = "debian";
-    
+    const char *arch = getenv("ARCH");
+    if (!arch) arch = "x86_64";  // Default to x86_64
+    const char *os_dir = "debian";
     char server_path[256];
     // Use TSAN-instrumented server when running under ThreadSanitizer
 #ifdef __has_feature
 #if __has_feature(thread_sanitizer)
-    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server-tsan", os_dir);
+    snprintf(server_path, sizeof(server_path), "bin/%s/%s/sc-server-tsan", arch, os_dir);
     execl(server_path, "sc-server-tsan", NULL);
 #else
-    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server", os_dir);
+    snprintf(server_path, sizeof(server_path), "bin/%s/%s/sc-server", arch, os_dir);
     execl(server_path, "sc-server", NULL);
 #endif
 #elif defined(__SANITIZE_THREAD__)
-    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server-tsan", os_dir);
+    snprintf(server_path, sizeof(server_path), "bin/%s/%s/sc-server-tsan", arch, os_dir);
     execl(server_path, "sc-server-tsan", NULL);
 #else
-    snprintf(server_path, sizeof(server_path), "bin/%s/sc-server", os_dir);
+    snprintf(server_path, sizeof(server_path), "bin/%s/%s/sc-server", arch, os_dir);
     execl(server_path, "sc-server", NULL);
 #endif
     // If execl fails

@@ -36,7 +36,7 @@ mkdir -p "$PKG_DIR/usr/lib/space-captain"
 mkdir -p "$PKG_DIR/etc/space-captain"
 
 # Find and copy the versioned server binary
-SERVER_BINARY=$(readlink -f "${BIN_DIR}/sc-server-release")
+SERVER_BINARY=$(readlink -f "${BIN_DIR}/${OS_DIR}/sc-server-release")
 if [ ! -f "$SERVER_BINARY" ]; then
     echo "Error: Server binary not found. Run 'make release' first."
     exit 1
